@@ -6,18 +6,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ YOUR SUPABASE INFO
+// Supabase
 const supabase = createClient(
   "https://guisalxfmvdkiwizxlgi.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aXNhbHhmbXZka2l3aXp4bGdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNzI1ODUsImV4cCI6MjA4OTk0ODU4NX0.M65BNqLBYxuDU1-cL7GjTrvCoQwxo8hgf2MKznpwQ14"
 );
 
-// ✅ TEST ROUTE
+// Test route
 app.get("/", (req, res) => {
   res.send("API is running");
 });
 
-// ✅ GET REVIEWS (NO FILTER — SHOW EVERYTHING)
+// GET reviews
 app.get("/reviews", async (req, res) => {
   const { data, error } = await supabase
     .from("reviews")
@@ -25,34 +25,47 @@ app.get("/reviews", async (req, res) => {
     .order("id", { ascending: false });
 
   if (error) {
-    console.error(error);
+    console.error("GET ERROR:", error);
     return res.status(500).send(error.message);
   }
 
   res.json(data);
 });
 
-// ✅ POST REVIEW (AUTO APPROVED)
+// POST review (FIXED + SAFE)
 app.post("/reviews", async (req, res) => {
-  const { name, text, rating } = req.body;
+  try {
+    let { name, text, rating } = req.body;
 
-  const { data, error } = await supabase
-    .from("reviews")
-    .insert([
-      {
-        name,
-        text,
-        rating,
-        approved: true // ✅ always auto approve
-      }
-    ]);
+    // Force correct types
+    rating = parseInt(rating);
 
-  if (error) {
-    console.error(error);
-    return res.status(500).send(error.message);
+    if (!rating || isNaN(rating)) {
+      return res.status(400).send("Invalid rating");
+    }
+
+    const { data, error } = await supabase
+      .from("reviews")
+      .insert([
+        {
+          name: name || "Anonymous",
+          text: text || "",
+          rating: rating,
+          approved: true
+        }
+      ]);
+
+    if (error) {
+      console.error("INSERT ERROR:", error);
+      return res.status(500).send(error.message);
+    }
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("SERVER ERROR:", err);
+    res.status(500).send("Server error");
   }
-
-  res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 3000;
