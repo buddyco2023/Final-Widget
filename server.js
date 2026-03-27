@@ -10,9 +10,10 @@ app.use(express.json({ limit: "2mb" }));
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "mysecrettoken123";
 
-const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
-const CLOUDINARY_API_KEY = "94925617238417";
-const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
+// REPLACE THESE 3 VALUES WITH THE ONES FROM YOUR CLOUDINARY DASHBOARD
+const CLOUDINARY_CLOUD_NAME = "PASTE_YOUR_CLOUDINARY_CLOUD_NAME_HERE";
+const CLOUDINARY_API_KEY = "PASTE_YOUR_CLOUDINARY_API_KEY_HERE";
+const CLOUDINARY_API_SECRET = "PASTE_YOUR_CLOUDINARY_API_SECRET_HERE";
 
 const supabase = createClient(
   "https://guisalxfmvdkiwizxlgi.supabase.co",
