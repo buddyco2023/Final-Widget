@@ -47,7 +47,8 @@ app.post("/reviews", async (req, res) => {
 
     if (image) {
       const result = await cloudinary.uploader.upload(image, {
-        folder: "reviews"
+        folder: "reviews",
+        resource_type: "image"
       });
       imageUrl = result.secure_url;
     }
