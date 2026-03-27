@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const { createClient } = require("@supabase/supabase-js");
+const { Resend } = require("resend");
 
 const app = express();
 
@@ -10,10 +11,15 @@ app.use(express.json({ limit: "2mb" }));
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "mysecrettoken123";
 
-// ✅ YOUR CLOUDINARY KEYS (UPDATED)
 const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
 const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const REVIEW_ALERT_TO = process.env.REVIEW_ALERT_TO || "";
+const RESEND_FROM = process.env.RESEND_FROM || "";
+
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 const supabase = createClient(
   "https://guisalxfmvdkiwizxlgi.supabase.co",
@@ -92,6 +98,28 @@ app.post("/reviews", async (req, res) => {
     if (error) {
       console.error("POST /reviews error:", error);
       return res.status(500).send(error.message);
+    }
+
+    if (resend && REVIEW_ALERT_TO && RESEND_FROM) {
+      try {
+        await resend.emails.send({
+          from: RESEND_FROM,
+          to: [REVIEW_ALERT_TO],
+          subject: "New review submitted",
+          html: `
+            <div style="font-family:Arial,sans-serif;line-height:1.5;">
+              <h2>New review submitted</h2>
+              <p><strong>Name:</strong> ${payload.name}</p>
+              <p><strong>Rating:</strong> ${payload.rating} / 5</p>
+              <p><strong>Message:</strong><br>${payload.text || "(no text)"}</p>
+              <p><strong>Image:</strong> ${payload.image ? "Yes" : "No"}</p>
+              <p>Status: Pending spam screening</p>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error("Resend notification error:", emailErr);
+      }
     }
 
     res.json({ success: true });
