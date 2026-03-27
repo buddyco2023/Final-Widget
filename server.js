@@ -1,18 +1,15 @@
 const express = require("express");
 const cors = require("cors");
-const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-
-const upload = multer({ dest: "uploads/" });
+app.use(express.json({ limit: "10mb" }));
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
-// Cloudinary config
+// Cloudinary
 cloudinary.config({
   cloud_name: "drloe7yv4",
   api_key: "94925617238417",
@@ -25,7 +22,7 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aXNhbHhmbXZka2l3aXp4bGdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNzI1ODUsImV4cCI6MjA4OTk0ODU4NX0.M65BNqLBYxuDU1-cL7GjTrvCoQwxo8hgf2MKznpwQ14"
 );
 
-// TEST ROUTE
+// TEST
 app.get("/", (req, res) => {
   res.send("API running");
 });
@@ -41,15 +38,15 @@ app.get("/reviews", async (req, res) => {
   res.json(data);
 });
 
-// POST REVIEW (WITH IMAGE)
-app.post("/reviews", upload.single("image"), async (req, res) => {
+// POST REVIEW (BASE64 IMAGE)
+app.post("/reviews", async (req, res) => {
   try {
-    const { name, text, rating } = req.body;
+    const { name, text, rating, image } = req.body;
 
     let imageUrl = null;
 
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
+    if (image) {
+      const result = await cloudinary.uploader.upload(image, {
         folder: "reviews"
       });
       imageUrl = result.secure_url;
@@ -89,7 +86,7 @@ app.put("/reviews/:id", async (req, res) => {
 
   const { error } = await supabase
     .from("reviews")
-    .update({ approved })
+    .update({ approved: approved })
     .eq("id", req.params.id);
 
   if (error) return res.status(500).send(error.message);
@@ -97,7 +94,7 @@ app.put("/reviews/:id", async (req, res) => {
   res.json({ success: true });
 });
 
-// DELETE REVIEW
+// DELETE
 app.delete("/reviews/:id", async (req, res) => {
   const token = req.headers.authorization;
 
@@ -117,4 +114,3 @@ app.delete("/reviews/:id", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running"));
-
