@@ -12,11 +12,13 @@
       background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
       color: #1f2937;
     }
+
     .wrap {
       max-width: 980px;
       margin: 0 auto;
       padding: 18px;
     }
+
     .panel {
       background: #ffffff;
       border-radius: 28px;
@@ -24,35 +26,42 @@
       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
       border: 1px solid #e5eefc;
     }
+
     .topbar {
       height: 58px;
       background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
     }
+
     .content {
       padding: 20px;
     }
+
     .brand-row {
       display: flex;
       align-items: center;
       gap: 10px;
       margin-bottom: 10px;
     }
+
     .brand-logo {
       width: 34px;
       height: 34px;
       display: block;
     }
+
     .brand-name {
       font-size: 30px;
       font-weight: 800;
       color: #1f2937;
       margin: 0;
     }
+
     .sub {
       color: #64748b;
       font-size: 14px;
       margin-bottom: 16px;
     }
+
     .login-card,
     .controls-card {
       background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
@@ -62,6 +71,7 @@
       border: 1px solid #e4eefc;
       margin-bottom: 18px;
     }
+
     .input {
       width: 100%;
       box-sizing: border-box;
@@ -74,6 +84,7 @@
       box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
       margin-bottom: 12px;
     }
+
     .btn {
       border: none;
       border-radius: 16px;
@@ -84,32 +95,39 @@
       width: 100%;
       margin-top: 8px;
     }
+
     .btn-blue {
       background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
       color: #fff;
       box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
     }
+
     .btn-green {
       background: #16a34a;
       color: #fff;
     }
+
     .btn-orange {
       background: #f59e0b;
       color: #fff;
     }
+
     .btn-red {
       background: #dc2626;
       color: #fff;
     }
+
     .btn-row {
       display: grid;
       grid-template-columns: 1fr;
       gap: 8px;
       margin-top: 12px;
     }
+
     .hidden {
       display: none;
     }
+
     .review {
       background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
       border-radius: 22px;
@@ -118,12 +136,14 @@
       border: 1px solid #e4eefc;
       margin-bottom: 16px;
     }
+
     .review-name {
       font-size: 20px;
       font-weight: 800;
       margin-bottom: 8px;
       color: #1f2937;
     }
+
     .review-stars {
       margin-bottom: 10px;
       font-size: 22px;
@@ -135,6 +155,7 @@
         0 3px 4px rgba(0,0,0,0.18),
         0 0 10px rgba(255,216,77,0.35);
     }
+
     .review-status {
       display: inline-block;
       padding: 6px 10px;
@@ -143,18 +164,22 @@
       font-weight: 700;
       margin-bottom: 10px;
     }
+
     .status-approved {
       background: #dcfce7;
       color: #166534;
     }
+
     .status-pending {
       background: #fef3c7;
       color: #92400e;
     }
+
     .review-text {
       line-height: 1.6;
       color: #334155;
     }
+
     .review img {
       width: 100%;
       display: block;
@@ -162,6 +187,7 @@
       margin-top: 12px;
       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
     }
+
     .empty {
       background: #ffffff;
       border-radius: 20px;
@@ -225,28 +251,32 @@
         return;
       }
 
-      const res = await fetch(ADMIN_API + "/admin-login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email, password })
-      });
+      try {
+        const res = await fetch(ADMIN_API + "/admin-login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, password })
+        });
 
-      if (!res.ok) {
-        const err = await res.text();
-        alert("Login failed: " + err);
-        return;
+        if (!res.ok) {
+          const err = await res.text();
+          alert("Login failed: " + err);
+          return;
+        }
+
+        const data = await res.json();
+        CURRENT_BUSINESS_ID = data.businessId;
+
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("controlsCard").classList.remove("hidden");
+        document.getElementById("businessLabel").textContent = "Business ID: " + CURRENT_BUSINESS_ID;
+
+        loadAdminReviews();
+      } catch (e) {
+        alert("Login failed: " + (e.message || "Unknown error"));
       }
-
-      const data = await res.json();
-      CURRENT_BUSINESS_ID = data.businessId;
-
-      document.getElementById("loginCard").classList.add("hidden");
-      document.getElementById("controlsCard").classList.remove("hidden");
-      document.getElementById("businessLabel").textContent = "Business ID: " + CURRENT_BUSINESS_ID;
-
-      loadAdminReviews();
     }
 
     document.getElementById("password").addEventListener("keydown", function (e) {
