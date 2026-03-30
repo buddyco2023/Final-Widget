@@ -9,8 +9,6 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "mysecrettoken123";
-
 const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
 const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
@@ -51,6 +49,41 @@ app.get("/cloudinary-signature", (req, res) => {
   } catch (err) {
     console.error("GET /cloudinary-signature error:", err);
     res.status(500).send("Signature error");
+  }
+});
+
+app.post("/admin-login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).send("Missing login details");
+    }
+
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select("*")
+      .eq("email", email.trim())
+      .eq("password", password.trim())
+      .limit(1);
+
+    if (error) {
+      console.error("POST /admin-login error:", error);
+      return res.status(500).send(error.message);
+    }
+
+    if (!data || !data.length) {
+      return res.status(401).send("Invalid login");
+    }
+
+    res.json({
+      success: true,
+      businessId: data[0].business_id,
+      email: data[0].email
+    });
+  } catch (err) {
+    console.error("POST /admin-login server error:", err);
+    res.status(500).send("Server error");
   }
 });
 
@@ -122,18 +155,17 @@ app.post("/reviews", async (req, res) => {
 
 app.put("/reviews/:id", async (req, res) => {
   try {
-    const token = req.headers.authorization;
+    const { approved, businessId } = req.body;
 
-    if (token !== ADMIN_TOKEN) {
-      return res.status(403).send("Unauthorized");
+    if (!businessId) {
+      return res.status(400).send("Missing businessId");
     }
-
-    const { approved } = req.body;
 
     const { error } = await supabase
       .from("reviews")
       .update({ approved: !!approved })
-      .eq("id", req.params.id);
+      .eq("id", req.params.id)
+      .eq("business_id", businessId);
 
     if (error) {
       console.error("PUT /reviews/:id error:", error);
@@ -149,16 +181,17 @@ app.put("/reviews/:id", async (req, res) => {
 
 app.delete("/reviews/:id", async (req, res) => {
   try {
-    const token = req.headers.authorization;
+    const { businessId } = req.body;
 
-    if (token !== ADMIN_TOKEN) {
-      return res.status(403).send("Unauthorized");
+    if (!businessId) {
+      return res.status(400).send("Missing businessId");
     }
 
     const { error } = await supabase
       .from("reviews")
       .delete()
-      .eq("id", req.params.id);
+      .eq("id", req.params.id)
+      .eq("business_id", businessId);
 
     if (error) {
       console.error("DELETE /reviews/:id error:", error);
