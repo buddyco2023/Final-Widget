@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AppLogix Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
+      color: #1f2937;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .panel {
+      background: #ffffff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+      border: 1px solid #e5eefc;
+    }
+
+    .topbar {
+      height: 58px;
+      background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
+    }
+
+    .content {
+      padding: 20px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      display: block;
+    }
+
+    .brand-name {
+      font-size: 30px;
+      font-weight: 800;
+      color: #1f2937;
+      margin: 0;
+    }
+
+    .sub {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .login-card,
+    .controls-card {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e4eefc;
+      margin-bottom: 18px;
+    }
+
+    .input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+      font-size: 16px;
+      color: #1f2937;
+      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+      margin-bottom: 12px;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: #7aa9ff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 13px 16px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-blue {
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: #fff;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+    }
+
+    .btn-green {
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .btn-orange {
+      background: #f59e0b;
+      color: #fff;
+    }
+
+    .btn-red {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .review {
+      background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e4eefc;
+      margin-bottom: 16px;
+    }
+
+    .review-name {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #1f2937;
+    }
+
+    .review-stars {
+      margin-bottom: 10px;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: #ffd84d;
+      text-shadow:
+        0 1px 0 #fff8cc,
+        0 2px 0 #f7c948,
+        0 3px 4px rgba(0,0,0,0.18),
+        0 0 10px rgba(255,216,77,0.35);
+    }
+
+    .review-status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .status-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .review-text {
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    .review img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      margin-top: 12px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    }
+
+    .empty {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 24px;
+      color: #64748b;
+      text-align: center;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e5eefc;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: #ffffff;
+      border-top: 1px solid #e5eefc;
+    }
+
+    .powered {
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-mini svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    .brand-mini span {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1f2937;
+    }
+
+    @media (max-width: 640px) {
+      .content {
+        padding: 16px;
+      }
+
+      .brand-name {
+        font-size: 26px;
+      }
+
+      .footer {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="topbar"></div>
+
+      <div class="content">
+        <div class="brand-row">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="admGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4ea3ff"></stop>
+                <stop offset="100%" stop-color="#2156d8"></stop>
+              </linearGradient>
+            </defs>
+            <polygon points="23,7 39,28 18,35" fill="url(#admGrad1)"></polygon>
+            <polygon points="41,23 54,47 35,47 28,34" fill="url(#admGrad1)"></polygon>
+            <polygon points="22,37 33,47 16,47" fill="url(#admGrad1)"></polygon>
+          </svg>
+          <h1 class="brand-name">AppLogix</h1>
+        </div>
+
+        <div class="sub">Admin dashboard for review moderation and management.</div>
+
+        <div class="login-card" id="loginCard">
+          <input id="token" class="input" type="password" placeholder="Enter admin token">
+          <button class="btn btn-blue" onclick="adminLogin()">Login</button>
+        </div>
+
+        <div class="controls-card hidden" id="controlsCard">
+          <button class="btn btn-blue" onclick="loadAdminReviews()">Refresh Reviews</button>
+        </div>
+
+        <div id="reviews"></div>
+      </div>
+
+      <div class="footer">
+        <span class="powered">Powered by:</span>
+        <div class="brand-mini">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <defs>
+              <linearGradient id="admGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4ea3ff"></stop>
+                <stop offset="100%" stop-color="#2156d8"></stop>
+              </linearGradient>
+            </defs>
+            <polygon points="23,7 39,28 18,35" fill="url(#admGrad2)"></polygon>
+            <polygon points="41,23 54,47 35,47 28,34" fill="url(#admGrad2)"></polygon>
+            <polygon points="22,37 33,47 16,47" fill="url(#admGrad2)"></polygon>
+          </svg>
+          <span>AppLogix</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_API = "https://final-widget.onrender.com";
+    let ADMIN_TOKEN_VALUE = "";
+
+    function adminLogin() {
+      ADMIN_TOKEN_VALUE = document.getElementById("token").value.trim();
+
+      if (!ADMIN_TOKEN_VALUE) {
+        alert("Enter your admin token.");
+        return;
+      }
+
+      document.getElementById("loginCard").classList.add("hidden");
+      document.getElementById("controlsCard").classList.remove("hidden");
+
+      loadAdminReviews();
+    }
+
+    document.getElementById("token").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        adminLogin();
+      }
+    });
+
+    async function loadAdminReviews() {
+      try {
+        const res = await fetch(ADMIN_API + "/reviews");
+        const data = await res.json();
+
+        const container = document.getElementById("reviews");
+
+        if (!Array.isArray(data) || !data.length) {
+          container.innerHTML = `<div class="empty">No reviews found.</div>`;
+          return;
+        }
+
+        container.innerHTML = data.map(r => `
+          <div class="review">
+            <div class="review-name">${r.name || "Anonymous"}</div>
+            <div class="review-stars">${"★".repeat(r.rating || 0)}${"☆".repeat(5 - (r.rating || 0))}</div>
+            <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
+              ${r.approved ? "Approved" : "Pending"}
+            </div>
+            <div class="review-text">${r.text || ""}</div>
+            ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
+            <div class="btn-row">
+              <button class="btn btn-green" onclick="setApproved(${r.id}, true)">Approve</button>
+              <button class="btn btn-orange" onclick="setApproved(${r.id}, false)">Reject</button>
+              <button class="btn btn-red" onclick="deleteReview(${r.id})">Delete</button>
+            </div>
+          </div>
+        `).join("");
+      } catch (e) {
+        document.getElementById("reviews").innerHTML = `<div class="empty">Unable to load reviews.</div>`;
+      }
+    }
+
+    async function setApproved(id, approved) {
+      const res = await fetch(ADMIN_API + "/reviews/" + id, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": ADMIN_TOKEN_VALUE
+        },
+        body: JSON.stringify({ approved })
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        alert("Action failed: " + err);
+        return;
+      }
+
+      loadAdminReviews();
+    }
+
+    async function deleteReview(id) {
+      const confirmed = confirm("Delete this review?");
+      if (!confirmed) return;
+
+      const res = await fetch(ADMIN_API + "/reviews/" + id, {
+        method: "DELETE",
+        headers: {
+          "Authorization": ADMIN_TOKEN_VALUE
+        }
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        alert("Delete failed: " + err);
+        return;
+      }
+
+      loadAdminReviews();
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
+</body>
+</html>
