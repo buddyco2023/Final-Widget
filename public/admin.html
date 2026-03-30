@@ -6,192 +6,44 @@
   <meta name="theme-color" content="#2563eb" />
   <link rel="manifest" href="/manifest.json" />
   <style>
-    body {
-      margin: 0;
-      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
-      color: #1f2937;
-    }
-    .wrap {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 18px;
-    }
-    .panel {
-      background: #ffffff;
-      border-radius: 28px;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
-      border: 1px solid #e5eefc;
-    }
-    .topbar {
-      height: 58px;
-      background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
-    }
-    .content {
-      padding: 20px;
-    }
-    .brand-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .brand-logo {
-      width: 34px;
-      height: 34px;
-      display: block;
-    }
-    .brand-name {
-      font-size: 30px;
-      font-weight: 800;
-      color: #1f2937;
-      margin: 0;
-    }
-    .sub {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 16px;
-    }
-    .login-card,
-    .controls-card {
-      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.06);
-      border: 1px solid #e4eefc;
-      margin-bottom: 18px;
-    }
-    .input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid #cfdcf3;
-      background: #f9fbff;
-      font-size: 16px;
-      color: #1f2937;
-      box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
-      margin-bottom: 12px;
-    }
-    .input:focus {
-      outline: none;
-      border-color: #7aa9ff;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    }
-    .btn {
-      border: none;
-      border-radius: 16px;
-      padding: 13px 16px;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 8px;
-    }
-    .btn-blue {
-      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-      color: #fff;
-      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
-    }
-    .btn-green {
-      background: #16a34a;
-      color: #fff;
-    }
-    .btn-orange {
-      background: #f59e0b;
-      color: #fff;
-    }
-    .btn-red {
-      background: #dc2626;
-      color: #fff;
-    }
-    .btn-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .hidden {
-      display: none;
-    }
-    .review {
-      background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
-      border-radius: 22px;
-      padding: 18px;
-      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.06);
-      border: 1px solid #e4eefc;
-      margin-bottom: 16px;
-    }
-    .review-name {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      color: #1f2937;
-    }
-    .review-stars {
-      margin-bottom: 10px;
-      font-size: 22px;
-      letter-spacing: 2px;
-      color: #ffd84d;
-      text-shadow:
-        0 1px 0 #fff8cc,
-        0 2px 0 #f7c948,
-        0 3px 4px rgba(0,0,0,0.18),
-        0 0 10px rgba(255,216,77,0.35);
-    }
-    .review-status {
-      display: inline-block;
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .status-approved {
-      background: #dcfce7;
-      color: #166534;
-    }
-    .status-pending {
-      background: #fef3c7;
-      color: #92400e;
-    }
-    .review-text {
-      line-height: 1.6;
-      color: #334155;
-    }
-    .review img {
-      width: 100%;
-      display: block;
-      border-radius: 16px;
-      margin-top: 12px;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
-    }
-    .empty {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 24px;
-      color: #64748b;
-      text-align: center;
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-      border: 1px solid #e5eefc;
-    }
+    body { margin: 0; font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif; background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%); color: #1f2937; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 18px; }
+    .panel { background: #ffffff; border-radius: 28px; overflow: hidden; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10); border: 1px solid #e5eefc; }
+    .topbar { height: 58px; background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%); }
+    .content { padding: 20px; }
+    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .brand-logo { width: 34px; height: 34px; display: block; }
+    .brand-name { font-size: 30px; font-weight: 800; color: #1f2937; margin: 0; }
+    .sub { color: #64748b; font-size: 14px; margin-bottom: 16px; }
+    .login-card, .controls-card { background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); border-radius: 22px; padding: 20px; box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.06); border: 1px solid #e4eefc; margin-bottom: 18px; }
+    .input, .select { width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 16px; border: 1px solid #cfdcf3; background: #f9fbff; font-size: 16px; color: #1f2937; box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03); margin-bottom: 12px; }
+    .btn { border: none; border-radius: 16px; padding: 13px 16px; font-size: 15px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 8px; }
+    .btn-blue { background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); color: #fff; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24); }
+    .btn-green { background: #16a34a; color: #fff; }
+    .btn-orange { background: #f59e0b; color: #fff; }
+    .btn-red { background: #dc2626; color: #fff; }
+    .btn-row { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+    .hidden { display: none; }
+    .review { background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%); border-radius: 22px; padding: 18px; box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(15, 23, 42, 0.06); border: 1px solid #e4eefc; margin-bottom: 16px; }
+    .review-name { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #1f2937; }
+    .review-meta { font-size: 13px; color: #64748b; margin-bottom: 8px; }
+    .review-stars { margin-bottom: 10px; font-size: 22px; letter-spacing: 2px; color: #ffd84d; text-shadow: 0 1px 0 #fff8cc, 0 2px 0 #f7c948, 0 3px 4px rgba(0,0,0,0.18), 0 0 10px rgba(255,216,77,0.35); }
+    .review-status { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .status-approved { background: #dcfce7; color: #166534; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .review-text { line-height: 1.6; color: #334155; }
+    .review img { width: 100%; display: block; border-radius: 16px; margin-top: 12px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14); }
+    .empty { background: #ffffff; border-radius: 20px; padding: 24px; color: #64748b; text-align: center; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); border: 1px solid #e5eefc; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="panel">
       <div class="topbar"></div>
-
       <div class="content">
         <div class="brand-row">
           <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
-            <defs>
-              <linearGradient id="admGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#4ea3ff"></stop>
-                <stop offset="100%" stop-color="#2156d8"></stop>
-              </linearGradient>
-            </defs>
+            <defs><linearGradient id="admGrad1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4ea3ff"></stop><stop offset="100%" stop-color="#2156d8"></stop></linearGradient></defs>
             <polygon points="23,7 39,28 18,35" fill="url(#admGrad1)"></polygon>
             <polygon points="41,23 54,47 35,47 28,34" fill="url(#admGrad1)"></polygon>
             <polygon points="22,37 33,47 16,47" fill="url(#admGrad1)"></polygon>
@@ -199,7 +51,7 @@
           <h1 class="brand-name">AppLogix</h1>
         </div>
 
-        <div class="sub">Admin dashboard for review moderation and management.</div>
+        <div class="sub">Admin dashboard for all client reviews.</div>
 
         <div class="login-card" id="loginCard">
           <input id="token" class="input" type="password" placeholder="Enter admin token">
@@ -207,6 +59,7 @@
         </div>
 
         <div class="controls-card hidden" id="controlsCard">
+          <input id="businessFilter" class="input" type="text" placeholder="Filter by business ID (leave blank for all)">
           <button class="btn btn-blue" onclick="loadAdminReviews()">Refresh Reviews</button>
         </div>
 
@@ -221,27 +74,27 @@
 
     function adminLogin() {
       ADMIN_TOKEN_VALUE = document.getElementById("token").value.trim();
-
       if (!ADMIN_TOKEN_VALUE) {
         alert("Enter your admin token.");
         return;
       }
-
       document.getElementById("loginCard").classList.add("hidden");
       document.getElementById("controlsCard").classList.remove("hidden");
-
       loadAdminReviews();
     }
 
     document.getElementById("token").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        adminLogin();
-      }
+      if (e.key === "Enter") adminLogin();
     });
 
     async function loadAdminReviews() {
       try {
-        const res = await fetch(ADMIN_API + "/reviews");
+        const businessFilter = document.getElementById("businessFilter").value.trim();
+        const url = businessFilter
+          ? ADMIN_API + "/reviews?businessId=" + encodeURIComponent(businessFilter)
+          : ADMIN_API + "/reviews";
+
+        const res = await fetch(url);
         const data = await res.json();
 
         const container = document.getElementById("reviews");
@@ -254,10 +107,9 @@
         container.innerHTML = data.map(r => `
           <div class="review">
             <div class="review-name">${r.name || "Anonymous"}</div>
+            <div class="review-meta">Business ID: ${r.business_id || "(none)"}</div>
             <div class="review-stars">${"★".repeat(r.rating || 0)}${"☆".repeat(5 - (r.rating || 0))}</div>
-            <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
-              ${r.approved ? "Approved" : "Pending"}
-            </div>
+            <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">${r.approved ? "Approved" : "Pending"}</div>
             <div class="review-text">${r.text || ""}</div>
             ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
             <div class="btn-row">
