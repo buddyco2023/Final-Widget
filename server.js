@@ -7,7 +7,7 @@ const { createClient } = require("@supabase/supabase-js");
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "10mb" }));
 
 const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
@@ -54,7 +54,8 @@ app.get("/cloudinary-signature", (req, res) => {
 
 app.post("/admin-login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = (req.body.email || "").trim();
+    const password = (req.body.password || "").trim();
 
     if (!email || !password) {
       return res.status(400).send("Missing login details");
@@ -62,9 +63,9 @@ app.post("/admin-login", async (req, res) => {
 
     const { data, error } = await supabase
       .from("admin_users")
-      .select("*")
-      .eq("email", email.trim())
-      .eq("password", password.trim())
+      .select("id, email, password, business_id")
+      .eq("email", email)
+      .eq("password", password)
       .limit(1);
 
     if (error) {
@@ -72,24 +73,24 @@ app.post("/admin-login", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    if (!data || !data.length) {
+    if (!data || data.length === 0) {
       return res.status(401).send("Invalid login");
     }
 
-    res.json({
+    return res.json({
       success: true,
-      businessId: data[0].business_id,
-      email: data[0].email
+      email: data[0].email,
+      businessId: data[0].business_id
     });
   } catch (err) {
     console.error("POST /admin-login server error:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
 app.get("/reviews", async (req, res) => {
   try {
-    const businessId = req.query.businessId;
+    const businessId = (req.query.businessId || "").trim();
 
     let query = supabase
       .from("reviews")
@@ -107,20 +108,22 @@ app.get("/reviews", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    res.json(data || []);
+    return res.json(data || []);
   } catch (err) {
     console.error("GET /reviews server error:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
 app.post("/reviews", async (req, res) => {
   try {
-    const { name, text, rating, image, businessId } = req.body;
+    const name = (req.body.name || "").trim();
+    const text = (req.body.text || "").trim();
+    const image = req.body.image || null;
+    const businessId = (req.body.businessId || "").trim();
+    const parsedRating = parseInt(req.body.rating, 10);
 
-    const parsedRating = parseInt(rating, 10);
-
-    if (!businessId || !businessId.trim()) {
+    if (!businessId) {
       return res.status(400).send("Missing businessId");
     }
 
@@ -129,12 +132,12 @@ app.post("/reviews", async (req, res) => {
     }
 
     const payload = {
-      name: name && name.trim() ? name.trim() : "Anonymous",
-      text: text && text.trim() ? text.trim() : "",
+      name: name || "Anonymous",
+      text: text || "",
       rating: parsedRating,
-      image: image || null,
+      image: image,
       approved: false,
-      business_id: businessId.trim()
+      business_id: businessId
     };
 
     const { error } = await supabase
@@ -146,16 +149,18 @@ app.post("/reviews", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error("POST /reviews server error:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
 app.put("/reviews/:id", async (req, res) => {
   try {
-    const { approved, businessId } = req.body;
+    const id = req.params.id;
+    const approved = !!req.body.approved;
+    const businessId = (req.body.businessId || "").trim();
 
     if (!businessId) {
       return res.status(400).send("Missing businessId");
@@ -163,8 +168,8 @@ app.put("/reviews/:id", async (req, res) => {
 
     const { error } = await supabase
       .from("reviews")
-      .update({ approved: !!approved })
-      .eq("id", req.params.id)
+      .update({ approved })
+      .eq("id", id)
       .eq("business_id", businessId);
 
     if (error) {
@@ -172,16 +177,17 @@ app.put("/reviews/:id", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error("PUT /reviews/:id server error:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
 app.delete("/reviews/:id", async (req, res) => {
   try {
-    const { businessId } = req.body;
+    const id = req.params.id;
+    const businessId = (req.body.businessId || "").trim();
 
     if (!businessId) {
       return res.status(400).send("Missing businessId");
@@ -190,7 +196,7 @@ app.delete("/reviews/:id", async (req, res) => {
     const { error } = await supabase
       .from("reviews")
       .delete()
-      .eq("id", req.params.id)
+      .eq("id", id)
       .eq("business_id", businessId);
 
     if (error) {
@@ -198,10 +204,10 @@ app.delete("/reviews/:id", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     console.error("DELETE /reviews/:id server error:", err);
-    res.status(500).send("Server error");
+    return res.status(500).send("Server error");
   }
 });
 
