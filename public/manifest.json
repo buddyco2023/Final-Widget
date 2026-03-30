@@ -1,0 +1,9 @@
+{
+  "name": "AppLogix Admin",
+  "short_name": "AppLogix",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#eef5ff",
+  "theme_color": "#2563eb",
+  "icons": []
+}
