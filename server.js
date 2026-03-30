@@ -56,10 +56,18 @@ app.get("/cloudinary-signature", (req, res) => {
 
 app.get("/reviews", async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const businessId = req.query.businessId;
+
+    let query = supabase
       .from("reviews")
       .select("*")
       .order("id", { ascending: false });
+
+    if (businessId) {
+      query = query.eq("business_id", businessId);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("GET /reviews error:", error);
@@ -75,9 +83,13 @@ app.get("/reviews", async (req, res) => {
 
 app.post("/reviews", async (req, res) => {
   try {
-    const { name, text, rating, image } = req.body;
+    const { name, text, rating, image, businessId } = req.body;
 
     const parsedRating = parseInt(rating, 10);
+
+    if (!businessId || !businessId.trim()) {
+      return res.status(400).send("Missing businessId");
+    }
 
     if (!parsedRating || Number.isNaN(parsedRating)) {
       return res.status(400).send("Invalid rating");
@@ -88,7 +100,8 @@ app.post("/reviews", async (req, res) => {
       text: text && text.trim() ? text.trim() : "",
       rating: parsedRating,
       image: image || null,
-      approved: false
+      approved: false,
+      business_id: businessId.trim()
     };
 
     const { error } = await supabase
