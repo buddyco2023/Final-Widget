@@ -264,13 +264,13 @@ app.post("/reviews", async (req, res) => {
                           <div style="line-height:1.6;color:#334155;">${payload.text || "(no text)"}</div>
                         </div>
 
-                        <a href="https://final-widget.onrender.com/admin"
+                        <a href="https://final-widget.onrender.com/admin3"
                            style="display:inline-block;padding:12px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
                           Review & Approve
                         </a>
 
                         <p style="margin-top:16px;font-size:13px;color:#64748b;">
-                          Log in to approve, reject, or delete this review.
+                          Log in to approve or delete this review.
                         </p>
                       </div>
                     </div>
