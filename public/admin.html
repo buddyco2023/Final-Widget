@@ -40,6 +40,7 @@
     .brand-row {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 10px;
       margin-bottom: 10px;
     }
@@ -89,12 +90,79 @@
       margin-top: 8px;
     }
 
-    .btn-blue { background: #2563eb; color: white; }
-    .btn-green { background: #16a34a; color: white; }
-    .btn-orange { background: #f59e0b; color: white; }
-    .btn-red { background: #dc2626; color: white; }
+    .btn-blue {
+      background: #2563eb;
+      color: white;
+    }
 
-    .hidden { display: none; }
+    .btn-green {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-orange {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-red {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-gray {
+      background: #64748b;
+      color: white;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .status-box {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #475569;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      background: #f8fbff;
+      border: 1px solid #dbe7fb;
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .avg-stars {
+      font-size: 22px;
+      color: #ffd84d;
+      letter-spacing: 2px;
+      text-shadow:
+        0 1px 0 #fff8cc,
+        0 2px 0 #f7c948,
+        0 3px 4px rgba(0,0,0,0.18),
+        0 0 10px rgba(255,216,77,0.35);
+      margin-top: 4px;
+    }
 
     .review {
       background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
@@ -163,6 +231,17 @@
       box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
       border: 1px solid #e5eefc;
     }
+
+    @media (max-width: 700px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 
@@ -174,6 +253,7 @@
       <div class="content">
         <div class="brand-row">
           <h1 class="brand-name">AppLogix</h1>
+          <button id="logoutBtn" class="btn btn-gray hidden" style="width:auto; margin-top:0;" onclick="logout()">Logout</button>
         </div>
 
         <div class="sub">Business admin dashboard</div>
@@ -181,7 +261,8 @@
         <div class="card" id="loginCard">
           <input id="email" class="input" type="text" placeholder="Email" />
           <input id="password" class="input" type="password" placeholder="Password" />
-          <button class="btn btn-blue" onclick="adminLogin()">Login</button>
+          <button id="loginBtn" class="btn btn-blue" onclick="adminLogin()">Login</button>
+          <div id="loginStatus" class="status-box">Loading login system...</div>
         </div>
 
         <div class="card hidden" id="resetCard">
@@ -189,9 +270,30 @@
           <input id="newPassword" class="input" type="password" placeholder="New password" />
           <input id="confirmPassword" class="input" type="password" placeholder="Confirm password" />
           <button class="btn btn-blue" onclick="resetPassword()">Save</button>
+          <div id="resetStatus" class="status-box"></div>
         </div>
 
         <div class="card hidden" id="dashboard">
+          <div class="sub" id="businessIdLabel"></div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" id="totalReviews">0</div>
+              <div class="stat-label">Total Reviews</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-number" id="pendingReviews">0</div>
+              <div class="stat-label">Pending Reviews</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-number" id="averageRating">0.0</div>
+              <div class="stat-label">Average Rating</div>
+              <div class="avg-stars" id="averageStars">☆☆☆☆☆</div>
+            </div>
+          </div>
+
           <button class="btn btn-blue" onclick="loadReviews()">Refresh</button>
         </div>
 
@@ -204,28 +306,81 @@
 
   <script>
     let supabase;
-    let session;
-    let businessId;
+    let session = null;
+    let businessId = null;
 
     async function init() {
-      const res = await fetch("/client-config");
-      const cfg = await res.json();
-      supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      const loginBtn = document.getElementById("loginBtn");
+      const loginStatus = document.getElementById("loginStatus");
+
+      try {
+        loginBtn.disabled = true;
+        loginStatus.textContent = "Loading login system...";
+
+        const res = await fetch("/client-config");
+        if (!res.ok) {
+          throw new Error("Could not load client config");
+        }
+
+        const cfg = await res.json();
+
+        if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+          throw new Error("Missing Supabase config");
+        }
+
+        supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+        loginBtn.disabled = false;
+        loginStatus.textContent = "";
+
+        document.getElementById("password").addEventListener("keydown", function(e) {
+          if (e.key === "Enter") {
+            adminLogin();
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        loginStatus.textContent = "Login system failed to load: " + err.message;
+      }
     }
 
     async function adminLogin() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
+      const loginStatus = document.getElementById("loginStatus");
+      const loginBtn = document.getElementById("loginBtn");
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (error) {
-        alert(error.message);
+      if (!supabase) {
+        loginStatus.textContent = "Login system is not ready yet.";
         return;
       }
 
-      session = data.session;
-      await loadProfile();
+      if (!email || !password) {
+        loginStatus.textContent = "Enter your email and password.";
+        return;
+      }
+
+      try {
+        loginBtn.disabled = true;
+        loginStatus.textContent = "Signing in...";
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+          loginStatus.textContent = error.message;
+          loginBtn.disabled = false;
+          return;
+        }
+
+        session = data.session;
+        loginStatus.textContent = "";
+        await loadProfile();
+      } catch (err) {
+        console.error(err);
+        loginStatus.textContent = "Login failed: " + err.message;
+      } finally {
+        loginBtn.disabled = false;
+      }
     }
 
     async function loadProfile() {
@@ -245,7 +400,9 @@
       const data = await res.json();
       businessId = data.businessId;
 
+      document.getElementById("businessIdLabel").textContent = "Business ID: " + businessId;
       document.getElementById("loginCard").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.remove("hidden");
 
       if (data.mustResetPassword) {
         document.getElementById("resetCard").classList.remove("hidden");
@@ -254,28 +411,31 @@
       } else {
         document.getElementById("resetCard").classList.add("hidden");
         document.getElementById("dashboard").classList.remove("hidden");
-        loadReviews();
+        await loadReviews();
       }
     }
 
     async function resetPassword() {
       const pw1 = document.getElementById("newPassword").value;
       const pw2 = document.getElementById("confirmPassword").value;
+      const resetStatus = document.getElementById("resetStatus");
 
       if (!pw1 || !pw2) {
-        alert("Please enter the new password twice.");
+        resetStatus.textContent = "Please enter the new password twice.";
         return;
       }
 
       if (pw1 !== pw2) {
-        alert("Passwords do not match");
+        resetStatus.textContent = "Passwords do not match.";
         return;
       }
+
+      resetStatus.textContent = "Saving new password...";
 
       const { error } = await supabase.auth.updateUser({ password: pw1 });
 
       if (error) {
-        alert(error.message);
+        resetStatus.textContent = error.message;
         return;
       }
 
@@ -288,26 +448,44 @@
 
       if (!res.ok) {
         const err = await res.text();
-        alert("Could not save password reset status: " + err);
+        resetStatus.textContent = "Could not save password reset status: " + err;
         return;
       }
 
+      resetStatus.textContent = "";
       document.getElementById("resetCard").classList.add("hidden");
       document.getElementById("dashboard").classList.remove("hidden");
 
       await loadProfile();
     }
 
+    function renderAverageStars(avg) {
+      const rounded = Math.round(avg);
+      return "★".repeat(rounded) + "☆".repeat(5 - rounded);
+    }
+
     async function loadReviews() {
       const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId));
       const data = await res.json();
-
       const el = document.getElementById("reviews");
 
       if (!Array.isArray(data) || !data.length) {
+        document.getElementById("totalReviews").textContent = "0";
+        document.getElementById("pendingReviews").textContent = "0";
+        document.getElementById("averageRating").textContent = "0.0";
+        document.getElementById("averageStars").textContent = "☆☆☆☆☆";
         el.innerHTML = `<div class="empty">No reviews found.</div>`;
         return;
       }
+
+      const total = data.length;
+      const pending = data.filter(r => !r.approved).length;
+      const avg = data.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total;
+
+      document.getElementById("totalReviews").textContent = total;
+      document.getElementById("pendingReviews").textContent = pending;
+      document.getElementById("averageRating").textContent = avg.toFixed(1);
+      document.getElementById("averageStars").textContent = renderAverageStars(avg);
 
       el.innerHTML = data.map(r => `
         <div class="review">
@@ -318,7 +496,7 @@
           </div>
           <div class="review-text">${r.text || ""}</div>
           ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
-          <button class="btn btn-green" onclick="approve(${r.id})">Approve</button>
+          ${!r.approved ? `<button class="btn btn-green" onclick="approve(${r.id})">Approve</button>` : ""}
           <button class="btn btn-red" onclick="del(${r.id})">Delete</button>
         </div>
       `).join("");
@@ -340,7 +518,7 @@
         return;
       }
 
-      loadReviews();
+      await loadReviews();
     }
 
     async function del(id) {
@@ -357,7 +535,29 @@
         return;
       }
 
-      loadReviews();
+      await loadReviews();
+    }
+
+    async function logout() {
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+
+      session = null;
+      businessId = null;
+
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("newPassword").value = "";
+      document.getElementById("confirmPassword").value = "";
+      document.getElementById("loginStatus").textContent = "";
+      document.getElementById("resetStatus").textContent = "";
+
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
+      document.getElementById("resetCard").classList.add("hidden");
+      document.getElementById("dashboard").classList.add("hidden");
+      document.getElementById("reviews").innerHTML = "";
     }
 
     init();
