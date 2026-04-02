@@ -68,10 +68,12 @@ app.get("/", (req, res) => {
 });
 
 app.get("/admin", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "admin.html"));
 });
 
 app.get("/reset-password", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "reset-password.html"));
 });
 
@@ -80,6 +82,7 @@ app.get("/test-123", (req, res) => {
 });
 
 app.get("/client-config", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   res.json({
     supabaseUrl: SUPABASE_URL,
     supabaseAnonKey: SUPABASE_ANON_KEY
