@@ -28,14 +28,18 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
+
   if (!auth.startsWith("Bearer ")) {
     throw new Error("Missing bearer token");
   }
+
   const token = auth.replace("Bearer ", "").trim();
   const { data, error } = await supabaseAdmin.auth.getUser(token);
+
   if (error || !data?.user) {
     throw new Error("Invalid auth token");
   }
+
   return data.user;
 }
 
@@ -48,7 +52,15 @@ async function getAdminProfileByEmail(email) {
 
   if (error) throw error;
   if (!data || !data.length) throw new Error("Admin profile not found");
+
   return data[0];
+}
+
+function prettyBusinessName(businessId) {
+  if (!businessId) return "Your Business";
+  return businessId
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 app.get("/", (req, res) => {
@@ -65,6 +77,13 @@ app.get("/reset-password", (req, res) => {
 
 app.get("/test-123", (req, res) => {
   res.send("new code is live");
+});
+
+app.get("/client-config", (req, res) => {
+  res.json({
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnonKey: SUPABASE_ANON_KEY
+  });
 });
 
 app.get("/cloudinary-signature", (req, res) => {
@@ -85,13 +104,6 @@ app.get("/cloudinary-signature", (req, res) => {
     console.error("GET /cloudinary-signature error:", err);
     res.status(500).send("Signature error");
   }
-});
-
-app.get("/client-config", async (req, res) => {
-  res.json({
-    supabaseUrl: SUPABASE_URL,
-    supabaseAnonKey: SUPABASE_ANON_KEY
-  });
 });
 
 app.post("/admin-me", async (req, res) => {
@@ -197,27 +209,63 @@ app.post("/reviews", async (req, res) => {
 
     const { data: admins, error: adminErr } = await supabase
       .from("admin_users")
-      .select("notifications_enabled,notification_email")
+      .select("notifications_enabled,notification_email,business_id")
       .eq("business_id", businessId)
       .limit(1);
 
     if (!adminErr && admins && admins.length) {
       const admin = admins[0];
+
       if (admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
         try {
+          const businessName = prettyBusinessName(businessId);
+
           await resend.emails.send({
             from: RESEND_FROM,
             to: [admin.notification_email],
-            subject: "New review submitted",
+            subject: `New review for ${businessName}`,
             html: `
-              <div style="font-family:Arial,sans-serif;line-height:1.5;">
-                <h2>New review submitted</h2>
-                <p><strong>Business ID:</strong> ${businessId}</p>
-                <p><strong>Name:</strong> ${payload.name}</p>
-                <p><strong>Rating:</strong> ${payload.rating} / 5</p>
-                <p><strong>Message:</strong><br>${payload.text || "(no text)"}</p>
-                <p><strong>Image:</strong> ${payload.image ? "Yes" : "No"}</p>
-                <p>Status: Pending spam screening</p>
+              <div style="margin:0;padding:0;background:#f3f7ff;">
+                <div style="max-width:640px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
+                  
+                  <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
+                    
+                    <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
+                    
+                    <div style="padding:24px;">
+                      <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
+                      <div style="font-size:14px;color:#64748b;margin-bottom:20px;">New review notification</div>
+
+                      <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;box-shadow:0 14px 28px rgba(15,23,42,0.08);">
+                        <h2 style="margin:0 0 14px;font-size:24px;color:#1e3a8a;">New Review Submitted</h2>
+
+                        <p style="margin:0 0 14px;line-height:1.6;">
+                          A new review has been submitted for <strong>${businessName}</strong> and is awaiting approval.
+                        </p>
+
+                        <p style="margin:0 0 8px;"><strong>Business ID:</strong> ${businessId}</p>
+                        <p style="margin:0 0 8px;"><strong>Name:</strong> ${payload.name}</p>
+                        <p style="margin:0 0 8px;"><strong>Rating:</strong> ${payload.rating} / 5</p>
+                        <p style="margin:0 0 8px;"><strong>Image Included:</strong> ${payload.image ? "Yes" : "No"}</p>
+
+                        <div style="margin-top:16px;margin-bottom:16px;padding:14px 16px;background:#f9fbff;border:1px solid #dbe7fb;border-radius:16px;">
+                          <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:8px;">Review Message</div>
+                          <div style="line-height:1.6;color:#334155;">${payload.text || "(no text)"}</div>
+                        </div>
+
+                        <a href="https://final-widget.onrender.com/admin"
+                           style="display:inline-block;padding:12px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
+                          Review & Approve
+                        </a>
+
+                        <p style="margin-top:16px;font-size:13px;color:#64748b;">
+                          Log in to approve, reject, or delete this review.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             `
           });
@@ -227,10 +275,10 @@ app.post("/reviews", async (req, res) => {
       }
     }
 
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
     console.error("POST /reviews server error:", err);
-    return res.status(500).send("Server error");
+    res.status(500).send("Server error");
   }
 });
 
@@ -250,10 +298,10 @@ app.put("/reviews/:id", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
     console.error("PUT /reviews/:id server error:", err);
-    return res.status(401).send(err.message || "Unauthorized");
+    res.status(401).send(err.message || "Unauthorized");
   }
 });
 
@@ -273,10 +321,10 @@ app.delete("/reviews/:id", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
     console.error("DELETE /reviews/:id server error:", err);
-    return res.status(401).send(err.message || "Unauthorized");
+    res.status(401).send(err.message || "Unauthorized");
   }
 });
 
