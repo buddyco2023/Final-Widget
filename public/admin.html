@@ -90,39 +90,18 @@
       margin-top: 8px;
     }
 
-    .btn-blue {
-      background: #2563eb;
-      color: white;
-    }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-red { background: #dc2626; color: white; }
+    .btn-gray { background: #64748b; color: white; }
 
-    .btn-green {
-      background: #16a34a;
-      color: white;
-    }
-
-    .btn-orange {
-      background: #f59e0b;
-      color: white;
-    }
-
-    .btn-red {
-      background: #dc2626;
-      color: white;
-    }
-
-    .btn-gray {
-      background: #64748b;
-      color: white;
-    }
-
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
 
     .status-box {
       margin-top: 10px;
       font-size: 14px;
       color: #475569;
+      white-space: pre-wrap;
     }
 
     .stats-grid {
@@ -156,11 +135,6 @@
       font-size: 22px;
       color: #ffd84d;
       letter-spacing: 2px;
-      text-shadow:
-        0 1px 0 #fff8cc,
-        0 2px 0 #f7c948,
-        0 3px 4px rgba(0,0,0,0.18),
-        0 0 10px rgba(255,216,77,0.35);
       margin-top: 4px;
     }
 
@@ -183,11 +157,6 @@
       font-size: 22px;
       letter-spacing: 2px;
       color: #ffd84d;
-      text-shadow:
-        0 1px 0 #fff8cc,
-        0 2px 0 #f7c948,
-        0 3px 4px rgba(0,0,0,0.18),
-        0 0 10px rgba(255,216,77,0.35);
     }
 
     .review-status {
@@ -219,7 +188,6 @@
       display: block;
       border-radius: 16px;
       margin-top: 12px;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
     }
 
     .empty {
@@ -228,7 +196,6 @@
       padding: 24px;
       color: #64748b;
       text-align: center;
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
       border: 1px solid #e5eefc;
     }
 
@@ -305,33 +272,40 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    let supabase;
+    let supabase = null;
     let session = null;
     let businessId = null;
 
+    function setLoginStatus(message) {
+      document.getElementById("loginStatus").textContent = message;
+    }
+
     async function init() {
-      const loginBtn = document.getElementById("loginBtn");
-      const loginStatus = document.getElementById("loginStatus");
-
       try {
+        const loginBtn = document.getElementById("loginBtn");
         loginBtn.disabled = true;
-        loginStatus.textContent = "Loading login system...";
+        setLoginStatus("Loading login system...");
 
-        const res = await fetch("/client-config");
+        if (!window.supabase || !window.supabase.createClient) {
+          throw new Error("Supabase library did not load");
+        }
+
+        const res = await fetch("/client-config?ts=" + Date.now(), { cache: "no-store" });
+
         if (!res.ok) {
-          throw new Error("Could not load client config");
+          throw new Error("Could not load /client-config");
         }
 
         const cfg = await res.json();
 
         if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
-          throw new Error("Missing Supabase config");
+          throw new Error("Supabase config missing from /client-config");
         }
 
         supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
         loginBtn.disabled = false;
-        loginStatus.textContent = "";
+        setLoginStatus("Ready.");
 
         document.getElementById("password").addEventListener("keydown", function(e) {
           if (e.key === "Enter") {
@@ -339,45 +313,44 @@
           }
         });
       } catch (err) {
-        console.error(err);
-        loginStatus.textContent = "Login system failed to load: " + err.message;
+        console.error("INIT ERROR:", err);
+        setLoginStatus("Login system failed to load.\n" + err.message);
       }
     }
 
     async function adminLogin() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
-      const loginStatus = document.getElementById("loginStatus");
       const loginBtn = document.getElementById("loginBtn");
 
       if (!supabase) {
-        loginStatus.textContent = "Login system is not ready yet.";
+        setLoginStatus("Login system is not ready.");
         return;
       }
 
       if (!email || !password) {
-        loginStatus.textContent = "Enter your email and password.";
+        setLoginStatus("Enter your email and password.");
         return;
       }
 
       try {
         loginBtn.disabled = true;
-        loginStatus.textContent = "Signing in...";
+        setLoginStatus("Signing in...");
 
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-          loginStatus.textContent = error.message;
+          setLoginStatus("Login failed: " + error.message);
           loginBtn.disabled = false;
           return;
         }
 
         session = data.session;
-        loginStatus.textContent = "";
+        setLoginStatus("");
         await loadProfile();
       } catch (err) {
-        console.error(err);
-        loginStatus.textContent = "Login failed: " + err.message;
+        console.error("LOGIN ERROR:", err);
+        setLoginStatus("Login failed: " + err.message);
       } finally {
         loginBtn.disabled = false;
       }
@@ -393,7 +366,7 @@
 
       if (!res.ok) {
         const err = await res.text();
-        alert(err);
+        alert("Profile error: " + err);
         return;
       }
 
@@ -550,7 +523,6 @@
       document.getElementById("password").value = "";
       document.getElementById("newPassword").value = "";
       document.getElementById("confirmPassword").value = "";
-      document.getElementById("loginStatus").textContent = "";
       document.getElementById("resetStatus").textContent = "";
 
       document.getElementById("logoutBtn").classList.add("hidden");
@@ -558,6 +530,7 @@
       document.getElementById("resetCard").classList.add("hidden");
       document.getElementById("dashboard").classList.add("hidden");
       document.getElementById("reviews").innerHTML = "";
+      setLoginStatus("Ready.");
     }
 
     init();
