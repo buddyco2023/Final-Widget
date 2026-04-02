@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AppLogix Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(#eef5ff, #ffffff);
+      color: #1f2937;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .hidden { display: none; }
+
+    .status {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .review {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+
+    .stars {
+      color: gold;
+      font-size: 20px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .stat {
+      flex: 1;
+      text-align: center;
+      background: #f3f6ff;
+      padding: 10px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <div class="card" id="loginCard">
+    <h2>AppLogix Admin</h2>
+
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+
+    <button onclick="login()">Login</button>
+
+    <div id="status" class="status">Initializing...</div>
+  </div>
+
+  <div class="card hidden" id="dashboard">
+    <h2>Dashboard</h2>
+
+    <div class="stats">
+      <div class="stat">
+        <div id="total">0</div>
+        <small>Total</small>
+      </div>
+
+      <div class="stat">
+        <div id="pending">0</div>
+        <small>Pending</small>
+      </div>
+
+      <div class="stat">
+        <div id="avg">0.0</div>
+        <small>Avg</small>
+        <div id="avgStars">☆☆☆☆☆</div>
+      </div>
+    </div>
+
+    <button onclick="loadReviews()">Refresh</button>
+    <button onclick="logout()">Logout</button>
+
+    <div id="reviews"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+let supabase = null;
+let session = null;
+let businessId = null;
+
+function setStatus(msg) {
+  document.getElementById("status").textContent = msg;
+}
+
+async function init() {
+  try {
+    setStatus("Loading config...");
+
+    const res = await fetch("/client-config?ts=" + Date.now());
+    const cfg = await res.json();
+
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      throw new Error("Missing config");
+    }
+
+    supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+    setStatus("Ready.");
+  } catch (err) {
+    setStatus("Error: " + err.message);
+  }
+}
+
+async function login() {
+  if (!supabase) {
+    setStatus("System not ready");
+    return;
+  }
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  setStatus("Logging in...");
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    setStatus(error.message);
+    return;
+  }
+
+  session = data.session;
+
+  await loadProfile();
+}
+
+async function loadProfile() {
+  const res = await fetch("/admin-me", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + session.access_token
+    }
+  });
+
+  const data = await res.json();
+
+  businessId = data.businessId;
+
+  document.getElementById("loginCard").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+
+  loadReviews();
+}
+
+function stars(n) {
+  return "★".repeat(n) + "☆".repeat(5-n);
+}
+
+async function loadReviews() {
+  const res = await fetch("/reviews?businessId=" + businessId);
+  const data = await res.json();
+
+  const total = data.length;
+  const pending = data.filter(r => !r.approved).length;
+  const avg = total ? data.reduce((s,r)=>s+r.rating,0)/total : 0;
+
+  document.getElementById("total").textContent = total;
+  document.getElementById("pending").textContent = pending;
+  document.getElementById("avg").textContent = avg.toFixed(1);
+  document.getElementById("avgStars").textContent = stars(Math.round(avg));
+
+  document.getElementById("reviews").innerHTML = data.map(r => `
+    <div class="review">
+      <strong>${r.name}</strong><br>
+      <div class="stars">${stars(r.rating)}</div>
+      ${r.text}<br>
+      ${r.image ? `<img src="${r.image}" width="100%">` : ""}
+      <button onclick="approve(${r.id})">Approve</button>
+      <button onclick="del(${r.id})">Delete</button>
+    </div>
+  `).join("");
+}
+
+async function approve(id) {
+  await fetch("/reviews/"+id, {
+    method:"PUT",
+    headers:{
+      "Authorization":"Bearer "+session.access_token,
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({approved:true})
+  });
+  loadReviews();
+}
+
+async function del(id) {
+  await fetch("/reviews/"+id, {
+    method:"DELETE",
+    headers:{
+      "Authorization":"Bearer "+session.access_token
+    }
+  });
+  loadReviews();
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  location.reload();
+}
+
+init();
+</script>
+
+</body>
+</html>
