@@ -87,6 +87,11 @@ app.get("/import", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "import.html"));
 });
 
+app.get("/review/:businessId", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "public", "review-page.html"));
+});
+
 app.get("/reset-password", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "reset-password.html"));
