@@ -33,6 +33,7 @@
       margin-bottom: 10px;
       border-radius: 10px;
       border: 1px solid #ccc;
+      font-size: 16px;
     }
 
     button {
@@ -45,6 +46,7 @@
       font-weight: bold;
       cursor: pointer;
       margin-top: 8px;
+      font-size: 16px;
     }
 
     .btn-green {
@@ -179,7 +181,7 @@
 
     <button id="loginBtn" onclick="login()">Login</button>
 
-    <div id="status" class="status">Admin3 page loaded. Starting script...</div>
+    <div id="status" class="status">Loading Supabase library...</div>
   </div>
 
   <div class="card hidden" id="resetCard">
@@ -226,6 +228,8 @@
 
 </div>
 
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <script>
 let supabase = null;
 let session = null;
@@ -245,36 +249,17 @@ function renderAverageStars(avg) {
   return "★".repeat(rounded) + "☆".repeat(5 - rounded);
 }
 
-function loadSupabaseScript(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("Failed to load " + src));
-    document.head.appendChild(s);
-  });
-}
-
 async function init() {
   try {
-    setStatus("Loading Supabase library...");
-
-    try {
-      await loadSupabaseScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2");
-    } catch (e1) {
-      setStatus("Primary CDN failed. Trying fallback...");
-      await loadSupabaseScript("https://unpkg.com/@supabase/supabase-js@2");
-    }
+    setStatus("Loading config...");
 
     if (!window.supabase || !window.supabase.createClient) {
-      throw new Error("Supabase library loaded incorrectly");
+      throw new Error("Supabase failed to load");
     }
-
-    setStatus("Loading config...");
 
     const res = await fetch("/client-config?ts=" + Date.now(), { cache: "no-store" });
     if (!res.ok) {
-      throw new Error("Could not load /client-config");
+      throw new Error("Could not load config");
     }
 
     const cfg = await res.json();
