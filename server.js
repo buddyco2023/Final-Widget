@@ -77,6 +77,11 @@ app.get("/admin2", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin2.html"));
 });
 
+app.get("/admin3", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "public", "admin3.html"));
+});
+
 app.get("/reset-password", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "reset-password.html"));
