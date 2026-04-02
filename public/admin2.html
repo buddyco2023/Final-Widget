@@ -28,6 +28,7 @@
 
     input {
       width: 100%;
+      box-sizing: border-box;
       padding: 12px;
       margin-bottom: 10px;
       border-radius: 10px;
@@ -43,39 +44,126 @@
       color: white;
       font-weight: bold;
       cursor: pointer;
+      margin-top: 8px;
     }
 
-    .hidden { display: none; }
+    .btn-green {
+      background: #16a34a;
+    }
+
+    .btn-red {
+      background: #dc2626;
+    }
+
+    .btn-gray {
+      background: #64748b;
+    }
+
+    .hidden {
+      display: none;
+    }
 
     .status {
       margin-top: 10px;
       font-size: 14px;
-    }
-
-    .review {
-      border: 1px solid #ddd;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 10px;
-    }
-
-    .stars {
-      color: gold;
-      font-size: 20px;
+      color: #475569;
+      white-space: pre-wrap;
     }
 
     .stats {
       display: flex;
       gap: 10px;
       margin-bottom: 15px;
+      flex-wrap: wrap;
     }
 
     .stat {
       flex: 1;
+      min-width: 120px;
       text-align: center;
       background: #f3f6ff;
-      padding: 10px;
+      padding: 12px;
       border-radius: 10px;
+    }
+
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .avg-stars {
+      color: gold;
+      font-size: 20px;
+      margin-top: 4px;
+      letter-spacing: 2px;
+    }
+
+    .review {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+
+    .review-name {
+      font-weight: 800;
+      margin-bottom: 8px;
+      font-size: 18px;
+    }
+
+    .stars {
+      color: gold;
+      font-size: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .review-status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .status-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .review-text {
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    .review img {
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #ddd;
     }
   </style>
 </head>
@@ -89,34 +177,49 @@
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
 
-    <button onclick="login()">Login</button>
+    <button id="loginBtn" onclick="login()">Login</button>
 
     <div id="status" class="status">Initializing...</div>
   </div>
 
+  <div class="card hidden" id="resetCard">
+    <h2>Set New Password</h2>
+    <div class="status" style="margin-bottom:12px;">
+      After saving this password, manually set <strong>must_reset_password = false</strong> in Supabase for this user.
+    </div>
+
+    <input id="newPassword" type="password" placeholder="New password">
+    <input id="confirmPassword" type="password" placeholder="Confirm password">
+
+    <button onclick="saveNewPassword()">Save New Password</button>
+
+    <div id="resetStatus" class="status"></div>
+  </div>
+
   <div class="card hidden" id="dashboard">
     <h2>Dashboard</h2>
+    <div id="businessLabel" class="status"></div>
 
     <div class="stats">
       <div class="stat">
-        <div id="total">0</div>
-        <small>Total</small>
+        <div class="stat-number" id="total">0</div>
+        <div class="stat-label">Total</div>
       </div>
 
       <div class="stat">
-        <div id="pending">0</div>
-        <small>Pending</small>
+        <div class="stat-number" id="pending">0</div>
+        <div class="stat-label">Pending</div>
       </div>
 
       <div class="stat">
-        <div id="avg">0.0</div>
-        <small>Avg</small>
-        <div id="avgStars">☆☆☆☆☆</div>
+        <div class="stat-number" id="avg">0.0</div>
+        <div class="stat-label">Average</div>
+        <div class="avg-stars" id="avgStars">☆☆☆☆☆</div>
       </div>
     </div>
 
     <button onclick="loadReviews()">Refresh</button>
-    <button onclick="logout()">Logout</button>
+    <button class="btn-gray" onclick="logout()">Logout</button>
 
     <div id="reviews"></div>
   </div>
@@ -130,16 +233,34 @@ let supabase = null;
 let session = null;
 let businessId = null;
 
-function setStatus(msg) {
-  document.getElementById("status").textContent = msg;
+function setStatus(message) {
+  document.getElementById("status").textContent = message;
+}
+
+function renderStars(n) {
+  const safe = Math.max(0, Math.min(5, Number(n) || 0));
+  return "★".repeat(safe) + "☆".repeat(5 - safe);
+}
+
+function renderAverageStars(avg) {
+  const rounded = Math.round(avg);
+  return "★".repeat(rounded) + "☆".repeat(5 - rounded);
 }
 
 async function init() {
   try {
     setStatus("Loading config...");
 
-    const res = await fetch("/client-config?ts=" + Date.now());
+    const res = await fetch("/client-config?ts=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error("Could not load /client-config");
+    }
+
     const cfg = await res.json();
+
+    if (!window.supabase || !window.supabase.createClient) {
+      throw new Error("Supabase library did not load");
+    }
 
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
       throw new Error("Missing config");
@@ -148,7 +269,14 @@ async function init() {
     supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
 
     setStatus("Ready.");
+
+    document.getElementById("password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        login();
+      }
+    });
   } catch (err) {
+    console.error(err);
     setStatus("Error: " + err.message);
   }
 }
@@ -159,8 +287,13 @@ async function login() {
     return;
   }
 
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    setStatus("Enter your email and password.");
+    return;
+  }
 
   setStatus("Logging in...");
 
@@ -172,7 +305,6 @@ async function login() {
   }
 
   session = data.session;
-
   await loadProfile();
 }
 
@@ -184,70 +316,139 @@ async function loadProfile() {
     }
   });
 
-  const data = await res.json();
+  if (!res.ok) {
+    const err = await res.text();
+    setStatus("Profile error: " + err);
+    return;
+  }
 
+  const data = await res.json();
   businessId = data.businessId;
 
+  document.getElementById("businessLabel").textContent = "Business ID: " + businessId;
   document.getElementById("loginCard").classList.add("hidden");
-  document.getElementById("dashboard").classList.remove("hidden");
 
-  loadReviews();
+  if (data.mustResetPassword) {
+    document.getElementById("resetCard").classList.remove("hidden");
+    document.getElementById("dashboard").classList.add("hidden");
+    document.getElementById("reviews").innerHTML = "";
+  } else {
+    document.getElementById("resetCard").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+    await loadReviews();
+  }
 }
 
-function stars(n) {
-  return "★".repeat(n) + "☆".repeat(5-n);
+async function saveNewPassword() {
+  const pw1 = document.getElementById("newPassword").value;
+  const pw2 = document.getElementById("confirmPassword").value;
+  const resetStatus = document.getElementById("resetStatus");
+
+  if (!pw1 || !pw2) {
+    resetStatus.textContent = "Please enter the new password twice.";
+    return;
+  }
+
+  if (pw1 !== pw2) {
+    resetStatus.textContent = "Passwords do not match.";
+    return;
+  }
+
+  resetStatus.textContent = "Saving...";
+
+  const { error } = await supabase.auth.updateUser({ password: pw1 });
+
+  if (error) {
+    resetStatus.textContent = error.message;
+    return;
+  }
+
+  resetStatus.textContent = "Password saved. Now manually set must_reset_password = false in Supabase, then log in again.";
+
+  setTimeout(async () => {
+    await logout();
+  }, 1500);
 }
 
 async function loadReviews() {
-  const res = await fetch("/reviews?businessId=" + businessId);
+  const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId));
   const data = await res.json();
 
-  const total = data.length;
-  const pending = data.filter(r => !r.approved).length;
-  const avg = total ? data.reduce((s,r)=>s+r.rating,0)/total : 0;
+  const total = Array.isArray(data) ? data.length : 0;
+  const pending = Array.isArray(data) ? data.filter(r => !r.approved).length : 0;
+  const avg = total ? data.reduce((s, r) => s + (Number(r.rating) || 0), 0) / total : 0;
 
   document.getElementById("total").textContent = total;
   document.getElementById("pending").textContent = pending;
   document.getElementById("avg").textContent = avg.toFixed(1);
-  document.getElementById("avgStars").textContent = stars(Math.round(avg));
+  document.getElementById("avgStars").textContent = renderAverageStars(avg);
 
-  document.getElementById("reviews").innerHTML = data.map(r => `
+  const reviewsEl = document.getElementById("reviews");
+
+  if (!Array.isArray(data) || !data.length) {
+    reviewsEl.innerHTML = `<div class="empty">No reviews found.</div>`;
+    return;
+  }
+
+  reviewsEl.innerHTML = data.map(r => `
     <div class="review">
-      <strong>${r.name}</strong><br>
-      <div class="stars">${stars(r.rating)}</div>
-      ${r.text}<br>
-      ${r.image ? `<img src="${r.image}" width="100%">` : ""}
-      <button onclick="approve(${r.id})">Approve</button>
-      <button onclick="del(${r.id})">Delete</button>
+      <div class="review-name">${r.name || "Anonymous"}</div>
+      <div class="stars">${renderStars(r.rating)}</div>
+      <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
+        ${r.approved ? "Approved" : "Pending"}
+      </div>
+      <div class="review-text">${r.text || ""}</div>
+      ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
+      ${!r.approved ? `<button class="btn-green" onclick="approve(${r.id})">Approve</button>` : ""}
+      <button class="btn-red" onclick="del(${r.id})">Delete</button>
     </div>
   `).join("");
 }
 
 async function approve(id) {
-  await fetch("/reviews/"+id, {
-    method:"PUT",
-    headers:{
-      "Authorization":"Bearer "+session.access_token,
-      "Content-Type":"application/json"
+  await fetch("/reviews/" + id, {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " + session.access_token,
+      "Content-Type": "application/json"
     },
-    body: JSON.stringify({approved:true})
+    body: JSON.stringify({ approved: true })
   });
+
   loadReviews();
 }
 
 async function del(id) {
-  await fetch("/reviews/"+id, {
-    method:"DELETE",
-    headers:{
-      "Authorization":"Bearer "+session.access_token
+  await fetch("/reviews/" + id, {
+    method: "DELETE",
+    headers: {
+      "Authorization": "Bearer " + session.access_token
     }
   });
+
   loadReviews();
 }
 
 async function logout() {
-  await supabase.auth.signOut();
-  location.reload();
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
+
+  session = null;
+  businessId = null;
+
+  document.getElementById("email").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("resetStatus").textContent = "";
+
+  document.getElementById("loginCard").classList.remove("hidden");
+  document.getElementById("resetCard").classList.add("hidden");
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("reviews").innerHTML = "";
+
+  setStatus("Ready.");
 }
 
 init();
