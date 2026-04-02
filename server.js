@@ -82,6 +82,11 @@ app.get("/admin3", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin3.html"));
 });
 
+app.get("/import", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "public", "import.html"));
+});
+
 app.get("/reset-password", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "reset-password.html"));
@@ -208,7 +213,8 @@ app.post("/reviews", async (req, res) => {
       rating: parsedRating,
       image: image,
       approved: false,
-      business_id: businessId
+      business_id: businessId,
+      source: "widget"
     };
 
     const { error } = await supabase
@@ -289,6 +295,59 @@ app.post("/reviews", async (req, res) => {
   } catch (err) {
     console.error("POST /reviews server error:", err);
     res.status(500).send("Server error");
+  }
+});
+
+app.post("/import-google-review", async (req, res) => {
+  try {
+    const user = await getUserFromBearer(req);
+    await getAdminProfileByEmail(user.email);
+
+    const name = (req.body.name || "").trim();
+    const text = (req.body.text || "").trim();
+    const image = (req.body.image || "").trim() || null;
+    const businessId = (req.body.businessId || "").trim();
+    const parsedRating = parseInt(req.body.rating, 10);
+
+    if (!name) {
+      return res.status(400).send("Missing reviewer name");
+    }
+
+    if (!text) {
+      return res.status(400).send("Missing review text");
+    }
+
+    if (!businessId) {
+      return res.status(400).send("Missing businessId");
+    }
+
+    if (!parsedRating || Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return res.status(400).send("Invalid rating");
+    }
+
+    const payload = {
+      name,
+      text,
+      rating: parsedRating,
+      image,
+      approved: true,
+      business_id: businessId,
+      source: "google"
+    };
+
+    const { error } = await supabaseAdmin
+      .from("reviews")
+      .insert([payload]);
+
+    if (error) {
+      console.error("POST /import-google-review error:", error);
+      return res.status(500).send(error.message);
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("POST /import-google-review server error:", err);
+    res.status(401).send(err.message || "Unauthorized");
   }
 });
 
