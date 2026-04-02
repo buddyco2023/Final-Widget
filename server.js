@@ -44,7 +44,7 @@ async function getUserFromBearer(req) {
 }
 
 async function getAdminProfileByEmail(email) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("admin_users")
     .select("email,business_id,must_reset_password,notifications_enabled,notification_email")
     .eq("email", email)
@@ -129,7 +129,7 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("admin_users")
       .update({ must_reset_password: false })
       .eq("email", user.email);
@@ -207,7 +207,7 @@ app.post("/reviews", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    const { data: admins, error: adminErr } = await supabase
+    const { data: admins, error: adminErr } = await supabaseAdmin
       .from("admin_users")
       .select("notifications_enabled,notification_email,business_id")
       .eq("business_id", businessId)
@@ -227,11 +227,9 @@ app.post("/reviews", async (req, res) => {
             html: `
               <div style="margin:0;padding:0;background:#f3f7ff;">
                 <div style="max-width:640px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
-                  
                   <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
-                    
                     <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
-                    
+
                     <div style="padding:24px;">
                       <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
                       <div style="font-size:14px;color:#64748b;margin-bottom:20px;">New review notification</div>
@@ -264,7 +262,6 @@ app.post("/reviews", async (req, res) => {
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             `
