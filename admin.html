@@ -1,40 +1,266 @@
-<h2>Admin Panel</h2>
-<input id="token" placeholder="Admin Token">
-<div id="admin"></div>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AppLogix Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="manifest" href="/manifest.json" />
 
-<script>
-const API2 = "https://review-widget.onrender.com"; // REPLACE with your Render URL
+  <style>
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
+      color: #1f2937;
+    }
 
-async function loadAdmin(){
-  const token = document.getElementById("token").value;
-  const res = await fetch(API2+"/admin/reviews", { headers: { Authorization: token }});
-  const data = await res.json();
-  const container = document.getElementById("admin");
-  container.innerHTML="";
-  data.forEach(r=>{
-    container.innerHTML+=`
-      <div>
-        <b>${r.name}</b> (${r.rating}★)
-        <p>${r.text}</p>
-        ${r.image ? `<img src="${r.image}" width="100">` : ""}
-        <br>
-        <button onclick="approve(${r.id})">Approve</button>
-        <button onclick="del(${r.id})">Delete</button>
-      </div><hr>`;
-  });
-}
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px;
+    }
 
-async function approve(id){
-  const token = document.getElementById("token").value;
-  await fetch(API2+"/admin/approve/"+id, { method:"POST", headers:{Authorization:token} });
-  loadAdmin();
-}
+    .panel {
+      background: #ffffff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+      border: 1px solid #e5eefc;
+    }
 
-async function del(id){
-  const token = document.getElementById("token").value;
-  await fetch(API2+"/admin/delete/"+id, { method:"DELETE", headers:{Authorization:token} });
-  loadAdmin();
-}
+    .topbar {
+      height: 58px;
+      background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
+    }
 
-loadAdmin();
-</script>
+    .content {
+      padding: 20px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+    }
+
+    .brand-name {
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .sub {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e4eefc;
+      margin-bottom: 18px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid #cfdcf3;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-orange { background: #f59e0b; color: white; }
+    .btn-red { background: #dc2626; color: white; }
+
+    .hidden { display: none; }
+
+    .review {
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid #e4eefc;
+    }
+
+    .review-name { font-weight: bold; }
+    .review-stars { color: #ffd84d; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="topbar"></div>
+
+      <div class="content">
+
+        <div class="brand-row">
+          <h1 class="brand-name">AppLogix</h1>
+        </div>
+
+        <div class="sub">Business admin dashboard</div>
+
+        <!-- LOGIN -->
+        <div class="card" id="loginCard">
+          <input id="email" class="input" type="text" placeholder="Email" />
+          <input id="password" class="input" type="password" placeholder="Password" />
+          <button class="btn btn-blue" onclick="adminLogin()">Login</button>
+        </div>
+
+        <!-- FORCE RESET -->
+        <div class="card hidden" id="resetCard">
+          <div class="sub">Set a new password</div>
+          <input id="newPassword" class="input" type="password" placeholder="New password" />
+          <input id="confirmPassword" class="input" type="password" placeholder="Confirm password" />
+          <button class="btn btn-blue" onclick="resetPassword()">Save</button>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div class="card hidden" id="dashboard">
+          <button class="btn btn-blue" onclick="loadReviews()">Refresh</button>
+        </div>
+
+        <div id="reviews"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    let supabase;
+    let session;
+    let businessId;
+
+    async function init() {
+      const res = await fetch("/client-config");
+      const cfg = await res.json();
+      supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    }
+
+    async function adminLogin() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      session = data.session;
+      loadProfile();
+    }
+
+    async function loadProfile() {
+      const res = await fetch("/admin-me", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + session.access_token
+        }
+      });
+
+      const data = await res.json();
+      businessId = data.businessId;
+
+      document.getElementById("loginCard").classList.add("hidden");
+
+      if (data.mustResetPassword) {
+        document.getElementById("resetCard").classList.remove("hidden");
+      } else {
+        document.getElementById("dashboard").classList.remove("hidden");
+        loadReviews();
+      }
+    }
+
+    async function resetPassword() {
+      const pw1 = document.getElementById("newPassword").value;
+      const pw2 = document.getElementById("confirmPassword").value;
+
+      if (pw1 !== pw2) {
+        alert("Passwords do not match");
+        return;
+      }
+
+      await supabase.auth.updateUser({ password: pw1 });
+
+      await fetch("/admin-mark-password-reset-complete", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + session.access_token
+        }
+      });
+
+      document.getElementById("resetCard").classList.add("hidden");
+      document.getElementById("dashboard").classList.remove("hidden");
+
+      loadReviews();
+    }
+
+    async function loadReviews() {
+      const res = await fetch("/reviews?businessId=" + businessId);
+      const data = await res.json();
+
+      const el = document.getElementById("reviews");
+
+      el.innerHTML = data.map(r => `
+        <div class="review">
+          <div class="review-name">${r.name}</div>
+          <div class="review-stars">${"★".repeat(r.rating)}</div>
+          <div>${r.text}</div>
+          <button class="btn btn-green" onclick="approve(${r.id})">Approve</button>
+          <button class="btn btn-red" onclick="del(${r.id})">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    async function approve(id) {
+      await fetch("/reviews/" + id, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + session.access_token
+        },
+        body: JSON.stringify({ approved: true })
+      });
+
+      loadReviews();
+    }
+
+    async function del(id) {
+      await fetch("/reviews/" + id, {
+        method: "DELETE",
+        headers: {
+          "Authorization": "Bearer " + session.access_token
+        }
+      });
+
+      loadReviews();
+    }
+
+    init();
+  </script>
+</body>
+</html>
