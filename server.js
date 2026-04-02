@@ -3,22 +3,53 @@ const cors = require("cors");
 const crypto = require("crypto");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
+const { Resend } = require("resend");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+app.use(express.static(path.join(__dirname, "public")));
+
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://guisalxfmvdkiwizxlgi.supabase.co";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "REPLACE_ME";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "REPLACE_ME";
 
 const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
 const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
 
-const supabase = createClient(
-  "https://guisalxfmvdkiwizxlgi.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aXNhbHhmbXZka2l3aXp4bGdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNzI1ODUsImV4cCI6MjA4OTk0ODU4NX0.M65BNqLBYxuDU1-cL7GjTrvCoQwxo8hgf2MKznpwQ14"
-);
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const RESEND_FROM = process.env.RESEND_FROM || "";
 
-app.use(express.static(path.join(__dirname, "public")));
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+
+async function getUserFromBearer(req) {
+  const auth = req.headers.authorization || "";
+  if (!auth.startsWith("Bearer ")) {
+    throw new Error("Missing bearer token");
+  }
+  const token = auth.replace("Bearer ", "").trim();
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data?.user) {
+    throw new Error("Invalid auth token");
+  }
+  return data.user;
+}
+
+async function getAdminProfileByEmail(email) {
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("email,business_id,must_reset_password,notifications_enabled,notification_email")
+    .eq("email", email)
+    .limit(1);
+
+  if (error) throw error;
+  if (!data || !data.length) throw new Error("Admin profile not found");
+  return data[0];
+}
 
 app.get("/", (req, res) => {
   res.send("API running");
@@ -26,6 +57,10 @@ app.get("/", (req, res) => {
 
 app.get("/admin", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+app.get("/reset-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "reset-password.html"));
 });
 
 app.get("/test-123", (req, res) => {
@@ -52,39 +87,50 @@ app.get("/cloudinary-signature", (req, res) => {
   }
 });
 
-app.post("/admin-login", async (req, res) => {
+app.get("/client-config", async (req, res) => {
+  res.json({
+    supabaseUrl: SUPABASE_URL,
+    supabaseAnonKey: SUPABASE_ANON_KEY
+  });
+});
+
+app.post("/admin-me", async (req, res) => {
   try {
-    const email = (req.body.email || "").trim();
-    const password = (req.body.password || "").trim();
+    const user = await getUserFromBearer(req);
+    const profile = await getAdminProfileByEmail(user.email);
 
-    if (!email || !password) {
-      return res.status(400).send("Missing login details");
-    }
+    res.json({
+      success: true,
+      email: profile.email,
+      businessId: profile.business_id,
+      mustResetPassword: !!profile.must_reset_password,
+      notificationsEnabled: !!profile.notifications_enabled,
+      notificationEmail: profile.notification_email || ""
+    });
+  } catch (err) {
+    console.error("POST /admin-me error:", err);
+    res.status(401).send(err.message || "Unauthorized");
+  }
+});
 
-    const { data, error } = await supabase
+app.post("/admin-mark-password-reset-complete", async (req, res) => {
+  try {
+    const user = await getUserFromBearer(req);
+
+    const { error } = await supabase
       .from("admin_users")
-      .select("id, email, password, business_id")
-      .eq("email", email)
-      .eq("password", password)
-      .limit(1);
+      .update({ must_reset_password: false })
+      .eq("email", user.email);
 
     if (error) {
-      console.error("POST /admin-login error:", error);
+      console.error("POST /admin-mark-password-reset-complete error:", error);
       return res.status(500).send(error.message);
     }
 
-    if (!data || data.length === 0) {
-      return res.status(401).send("Invalid login");
-    }
-
-    return res.json({
-      success: true,
-      email: data[0].email,
-      businessId: data[0].business_id
-    });
+    res.json({ success: true });
   } catch (err) {
-    console.error("POST /admin-login server error:", err);
-    return res.status(500).send("Server error");
+    console.error("POST /admin-mark-password-reset-complete server error:", err);
+    res.status(401).send(err.message || "Unauthorized");
   }
 });
 
@@ -108,10 +154,10 @@ app.get("/reviews", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
-    return res.json(data || []);
+    res.json(data || []);
   } catch (err) {
     console.error("GET /reviews server error:", err);
-    return res.status(500).send("Server error");
+    res.status(500).send("Server error");
   }
 });
 
@@ -149,6 +195,38 @@ app.post("/reviews", async (req, res) => {
       return res.status(500).send(error.message);
     }
 
+    const { data: admins, error: adminErr } = await supabase
+      .from("admin_users")
+      .select("notifications_enabled,notification_email")
+      .eq("business_id", businessId)
+      .limit(1);
+
+    if (!adminErr && admins && admins.length) {
+      const admin = admins[0];
+      if (admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
+        try {
+          await resend.emails.send({
+            from: RESEND_FROM,
+            to: [admin.notification_email],
+            subject: "New review submitted",
+            html: `
+              <div style="font-family:Arial,sans-serif;line-height:1.5;">
+                <h2>New review submitted</h2>
+                <p><strong>Business ID:</strong> ${businessId}</p>
+                <p><strong>Name:</strong> ${payload.name}</p>
+                <p><strong>Rating:</strong> ${payload.rating} / 5</p>
+                <p><strong>Message:</strong><br>${payload.text || "(no text)"}</p>
+                <p><strong>Image:</strong> ${payload.image ? "Yes" : "No"}</p>
+                <p>Status: Pending spam screening</p>
+              </div>
+            `
+          });
+        } catch (emailErr) {
+          console.error("Resend notification error:", emailErr);
+        }
+      }
+    }
+
     return res.json({ success: true });
   } catch (err) {
     console.error("POST /reviews server error:", err);
@@ -158,19 +236,14 @@ app.post("/reviews", async (req, res) => {
 
 app.put("/reviews/:id", async (req, res) => {
   try {
-    const id = req.params.id;
-    const approved = !!req.body.approved;
-    const businessId = (req.body.businessId || "").trim();
-
-    if (!businessId) {
-      return res.status(400).send("Missing businessId");
-    }
+    const user = await getUserFromBearer(req);
+    const profile = await getAdminProfileByEmail(user.email);
 
     const { error } = await supabase
       .from("reviews")
-      .update({ approved })
-      .eq("id", id)
-      .eq("business_id", businessId);
+      .update({ approved: !!req.body.approved })
+      .eq("id", req.params.id)
+      .eq("business_id", profile.business_id);
 
     if (error) {
       console.error("PUT /reviews/:id error:", error);
@@ -180,24 +253,20 @@ app.put("/reviews/:id", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error("PUT /reviews/:id server error:", err);
-    return res.status(500).send("Server error");
+    return res.status(401).send(err.message || "Unauthorized");
   }
 });
 
 app.delete("/reviews/:id", async (req, res) => {
   try {
-    const id = req.params.id;
-    const businessId = (req.body.businessId || "").trim();
-
-    if (!businessId) {
-      return res.status(400).send("Missing businessId");
-    }
+    const user = await getUserFromBearer(req);
+    const profile = await getAdminProfileByEmail(user.email);
 
     const { error } = await supabase
       .from("reviews")
       .delete()
-      .eq("id", id)
-      .eq("business_id", businessId);
+      .eq("id", req.params.id)
+      .eq("business_id", profile.business_id);
 
     if (error) {
       console.error("DELETE /reviews/:id error:", error);
@@ -207,7 +276,7 @@ app.delete("/reviews/:id", async (req, res) => {
     return res.json({ success: true });
   } catch (err) {
     console.error("DELETE /reviews/:id server error:", err);
-    return res.status(500).send("Server error");
+    return res.status(401).send(err.message || "Unauthorized");
   }
 });
 
