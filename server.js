@@ -14,6 +14,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://guisalxfmvdkiwizxlgi.supabase.co";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "REPLACE_ME";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "REPLACE_ME";
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
 const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
@@ -61,6 +62,44 @@ function prettyBusinessName(businessId) {
   return businessId
     .replace(/[-_]+/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function buildWidgetCode(payload) {
+  return `<div id="applogix-review-widget"></div>
+
+<script>
+/* =========================
+   CLIENT CONFIG
+========================= */
+const ARW_API = "https://final-widget.onrender.com";
+const BUSINESS_ID = "${payload.businessId}";
+
+const BRAND_NAME = "${payload.brandName || payload.businessName}";
+const BRAND_PRIMARY = "${payload.brandPrimary || "#2563eb"}";
+const BRAND_SECONDARY = "${payload.brandSecondary || "#4ea3ff"}";
+const BRAND_ACCENT_GOLD = "#ffd84d";
+
+const BRAND_LOGO_URL = "${payload.brandLogoUrl || ""}";
+const SHOW_POWERED_BY = true;
+const POWERED_BY_NAME = "AppLogix";
+/* ========================= */
+</script>
+
+<script src="https://final-widget.onrender.com/widget.js"></script>`;
+}
+
+function requireAdminToken(req, res, next) {
+  const token = req.headers["x-admin-token"] || "";
+
+  if (!ADMIN_TOKEN) {
+    return res.status(500).send("ADMIN_TOKEN is not configured on the server.");
+  }
+
+  if (token !== ADMIN_TOKEN) {
+    return res.status(401).send("Invalid admin token.");
+  }
+
+  next();
 }
 
 app.get("/", (req, res) => {
@@ -171,6 +210,185 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
   } catch (err) {
     console.error("POST /admin-mark-password-reset-complete server error:", err);
     res.status(401).send(err.message || "Unauthorized");
+  }
+});
+
+app.post("/create-client", requireAdminToken, async (req, res) => {
+  try {
+    const businessName = (req.body.businessName || "").trim();
+    const businessId = (req.body.businessId || "").trim();
+    const clientEmail = (req.body.clientEmail || "").trim().toLowerCase();
+    const tempPassword = (req.body.tempPassword || "").trim();
+    const planTier = (req.body.planTier || "").trim().toLowerCase();
+
+    const notificationsEnabled = !!req.body.notificationsEnabled;
+    const notificationEmail = (req.body.notificationEmail || clientEmail || "").trim().toLowerCase();
+    const brandingEnabled = !!req.body.brandingEnabled;
+    const googleImportEnabled = !!req.body.googleImportEnabled;
+
+    const brandName = (req.body.brandName || businessName || "").trim();
+    const brandPrimary = (req.body.brandPrimary || "#2563eb").trim();
+    const brandSecondary = (req.body.brandSecondary || "#4ea3ff").trim();
+    const brandLogoUrl = (req.body.brandLogoUrl || "").trim();
+
+    const active = req.body.active !== false;
+    const setupFeePaid = !!req.body.setupFeePaid;
+
+    if (!businessName) return res.status(400).send("Missing business name.");
+    if (!businessId) return res.status(400).send("Missing business ID.");
+    if (!clientEmail) return res.status(400).send("Missing client email.");
+    if (!tempPassword) return res.status(400).send("Missing temporary password.");
+    if (!planTier) return res.status(400).send("Missing plan tier.");
+
+    const allowedPlans = ["starter", "growth", "pro", "premium"];
+    if (!allowedPlans.includes(planTier)) {
+      return res.status(400).send("Invalid plan tier.");
+    }
+
+    const { data: existingAuthUsers, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
+    if (listErr) {
+      console.error("Auth user list error:", listErr);
+      return res.status(500).send(listErr.message);
+    }
+
+    const emailExists = (existingAuthUsers?.users || []).some(
+      (u) => (u.email || "").toLowerCase() === clientEmail
+    );
+
+    if (emailExists) {
+      return res.status(400).send("A Supabase auth user already exists with that email.");
+    }
+
+    const { data: existingAdmins, error: existingAdminErr } = await supabaseAdmin
+      .from("admin_users")
+      .select("email,business_id")
+      .or(`email.eq.${clientEmail},business_id.eq.${businessId}`);
+
+    if (existingAdminErr) {
+      console.error("Existing admin check error:", existingAdminErr);
+      return res.status(500).send(existingAdminErr.message);
+    }
+
+    if (existingAdmins && existingAdmins.length) {
+      return res.status(400).send("An admin row already exists with that email or business ID.");
+    }
+
+    const { data: authData, error: createUserErr } = await supabaseAdmin.auth.admin.createUser({
+      email: clientEmail,
+      password: tempPassword,
+      email_confirm: true
+    });
+
+    if (createUserErr) {
+      console.error("Auth create user error:", createUserErr);
+      return res.status(500).send(createUserErr.message);
+    }
+
+    const rowPayload = {
+      email: clientEmail,
+      business_id: businessId,
+      must_reset_password: true,
+      notifications_enabled: notificationsEnabled,
+      notification_email: notificationEmail,
+      plan_tier: planTier,
+      branding_enabled: brandingEnabled,
+      google_import_enabled: googleImportEnabled,
+      brand_name: brandName,
+      brand_primary: brandPrimary,
+      brand_secondary: brandSecondary,
+      brand_logo_url: brandLogoUrl,
+      active: active,
+      setup_fee_paid: setupFeePaid,
+      first_password_reset_at: null
+    };
+
+    const { error: insertErr } = await supabaseAdmin
+      .from("admin_users")
+      .insert([rowPayload]);
+
+    if (insertErr) {
+      console.error("Insert admin_users error:", insertErr);
+
+      try {
+        if (authData?.user?.id) {
+          await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+        }
+      } catch (rollbackErr) {
+        console.error("Rollback auth user delete failed:", rollbackErr);
+      }
+
+      return res.status(500).send(insertErr.message);
+    }
+
+    const widgetCode = buildWidgetCode({
+      businessName,
+      businessId,
+      brandName,
+      brandPrimary,
+      brandSecondary,
+      brandLogoUrl
+    });
+
+    if (resend && RESEND_FROM) {
+      try {
+        await resend.emails.send({
+          from: RESEND_FROM,
+          to: [clientEmail],
+          subject: `Welcome to AppLogix - ${businessName}`,
+          html: `
+            <div style="margin:0;padding:0;background:#f3f7ff;">
+              <div style="max-width:700px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
+                <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
+                  <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
+
+                  <div style="padding:24px;">
+                    <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
+                    <div style="font-size:14px;color:#64748b;margin-bottom:20px;">Your review system is ready</div>
+
+                    <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;">
+                      <h2 style="margin:0 0 14px;font-size:24px;color:#1e3a8a;">Welcome, ${businessName}</h2>
+
+                      <p style="margin:0 0 10px;line-height:1.6;">
+                        Your AppLogix account has been created.
+                      </p>
+
+                      <p style="margin:0 0 8px;"><strong>Dashboard:</strong> <a href="https://final-widget.onrender.com/admin3">https://final-widget.onrender.com/admin3</a></p>
+                      <p style="margin:0 0 8px;"><strong>Login Email:</strong> ${clientEmail}</p>
+                      <p style="margin:0 0 8px;"><strong>Temporary Password:</strong> ${tempPassword}</p>
+                      <p style="margin:0 0 8px;"><strong>Business ID:</strong> ${businessId}</p>
+
+                      <p style="margin:16px 0 8px;line-height:1.6;">
+                        On your first login, you will be asked to set a new password.
+                      </p>
+
+                      <div style="margin-top:16px;padding:14px 16px;background:#0f172a;color:#e2e8f0;border-radius:16px;white-space:pre-wrap;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:1.5;">${widgetCode.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error("Welcome email error:", emailErr);
+      }
+    }
+
+    res.json({
+      success: true,
+      businessName,
+      businessId,
+      clientEmail,
+      tempPassword,
+      planTier,
+      notificationsEnabled,
+      brandingEnabled,
+      googleImportEnabled,
+      widgetCode
+    });
+  } catch (err) {
+    console.error("POST /create-client server error:", err);
+    res.status(500).send(err.message || "Server error");
   }
 });
 
