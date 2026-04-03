@@ -109,6 +109,13 @@
       font-weight: 700;
     }
 
+    .hint {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: -6px;
+      margin-bottom: 12px;
+    }
+
     .btn {
       border: none;
       border-radius: 16px;
@@ -208,7 +215,7 @@
             <input id="clientEmail" class="input" type="email" placeholder="Client email" />
             <input id="tempPassword" class="input" type="text" placeholder="Temporary password" value="AppLogix" />
 
-            <select id="planTier" class="select">
+            <select id="planTier" class="select" onchange="applyPlanTierFeatures()">
               <option value="">Select plan tier</option>
               <option value="starter">Starter</option>
               <option value="growth">Growth</option>
@@ -222,6 +229,7 @@
 
         <div class="card">
           <div class="section-title">Plan Features & Billing</div>
+          <div class="hint">These features auto-fill from the selected tier. You can review them before creating the client.</div>
           <div class="grid">
             <div class="checkbox-row"><input id="notificationsEnabled" type="checkbox" /><label for="notificationsEnabled">Notifications enabled</label></div>
             <div class="checkbox-row"><input id="brandingEnabled" type="checkbox" /><label for="brandingEnabled">Branding enabled</label></div>
@@ -264,8 +272,8 @@
       return value
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\\s-]/g, "")
-        .replace(/\\s+/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "")
         .replace(/-+/g, "");
     }
 
@@ -280,6 +288,32 @@
 
       if (!brandNameInput.value) {
         brandNameInput.value = businessName;
+      }
+    }
+
+    function applyPlanTierFeatures() {
+      const plan = document.getElementById("planTier").value;
+
+      const notificationsEnabled = document.getElementById("notificationsEnabled");
+      const brandingEnabled = document.getElementById("brandingEnabled");
+      const googleImportEnabled = document.getElementById("googleImportEnabled");
+
+      if (plan === "starter") {
+        notificationsEnabled.checked = false;
+        brandingEnabled.checked = false;
+        googleImportEnabled.checked = false;
+      } else if (plan === "growth") {
+        notificationsEnabled.checked = true;
+        brandingEnabled.checked = false;
+        googleImportEnabled.checked = false;
+      } else if (plan === "pro") {
+        notificationsEnabled.checked = true;
+        brandingEnabled.checked = true;
+        googleImportEnabled.checked = false;
+      } else if (plan === "premium") {
+        notificationsEnabled.checked = true;
+        brandingEnabled.checked = true;
+        googleImportEnabled.checked = true;
       }
     }
 
