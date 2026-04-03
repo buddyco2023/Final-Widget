@@ -11,6 +11,7 @@
   const brandLogoUrl = typeof BRAND_LOGO_URL !== "undefined" ? BRAND_LOGO_URL : "";
   const showPoweredBy = typeof SHOW_POWERED_BY !== "undefined" ? SHOW_POWERED_BY : true;
   const poweredByName = typeof POWERED_BY_NAME !== "undefined" ? POWERED_BY_NAME : "AppLogix";
+  const googleImportEnabled = typeof GOOGLE_IMPORT_ENABLED !== "undefined" ? GOOGLE_IMPORT_ENABLED : false;
 
   let selectedRating = 0;
   let allReviews = [];
@@ -457,7 +458,7 @@
             <div class="arw-filter-bar">
               <button class="arw-filter-btn active" id="arw-filter-all" type="button">All</button>
               <button class="arw-filter-btn" id="arw-filter-widget" type="button">Website Reviews</button>
-              <button class="arw-filter-btn" id="arw-filter-google" type="button">Google Reviews</button>
+              ${googleImportEnabled ? `<button class="arw-filter-btn" id="arw-filter-google" type="button">Google Reviews</button>` : ``}
             </div>
           </div>
 
@@ -547,7 +548,9 @@
 
     if (filterAll) filterAll.addEventListener("click", function () { setFilter("all"); });
     if (filterWidget) filterWidget.addEventListener("click", function () { setFilter("widget"); });
-    if (filterGoogle) filterGoogle.addEventListener("click", function () { setFilter("google"); });
+    if (googleImportEnabled && filterGoogle) {
+      filterGoogle.addEventListener("click", function () { setFilter("google"); });
+    }
     if (submitBtn) submitBtn.addEventListener("click", submitReview);
   }
 
@@ -572,6 +575,10 @@
   }
 
   function setFilter(filter) {
+    if (filter === "google" && !googleImportEnabled) {
+      return;
+    }
+
     activeFilter = filter;
 
     const allBtn = root.querySelector("#arw-filter-all");
