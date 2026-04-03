@@ -120,6 +120,7 @@
       background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
       color: #ffffff;
       box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+      margin-bottom: 10px;
     }
 
     .status {
@@ -160,6 +161,7 @@
 
     .copy-btn {
       margin-top: 10px;
+      margin-right: 8px;
       border: none;
       border-radius: 12px;
       padding: 10px 14px;
@@ -168,6 +170,10 @@
       cursor: pointer;
       background: #16a34a;
       color: white;
+    }
+
+    .copy-btn.secondary {
+      background: #2563eb;
     }
 
     @media (max-width: 700px) {
@@ -246,6 +252,7 @@
 
             <div class="codebox" id="widgetCodeBox"></div>
             <button class="copy-btn" onclick="copyWidgetCode()">Copy Widget Code</button>
+            <button class="copy-btn secondary" onclick="copyWelcomeEmail()">Copy Welcome Email</button>
           </div>
         </div>
       </div>
@@ -257,8 +264,8 @@
       return value
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9\\s-]/g, "")
+        .replace(/\\s+/g, "")
         .replace(/-+/g, "");
     }
 
@@ -281,6 +288,59 @@
         this.dataset.editedManually = "true";
       });
     });
+
+    function buildWelcomeEmail(data) {
+      return `Subject: Welcome to AppLogix — Your Review System is Ready
+
+Hi ${data.businessName},
+
+Welcome to AppLogix — your review system is now fully set up and ready to go.
+
+Here are your login details:
+
+Dashboard:
+https://final-widget.onrender.com/admin3
+
+Email:
+${data.clientEmail}
+
+Temporary Password:
+${data.tempPassword}
+
+Business ID:
+${data.businessId}
+
+---
+
+What to do next
+
+1. Log in using the link above
+2. You will be prompted to set a new password
+3. Once logged in, you can:
+   - Approve or delete reviews
+   - Upload customer images
+   - Manage your review content
+
+---
+
+Install your review widget
+
+Copy and paste the code below into your website where you want reviews to appear:
+
+${data.widgetCode}
+
+---
+
+What happens next
+
+- New reviews will appear in your dashboard
+- You can approve them before they go live
+- Your system is fully active and ready to collect reviews
+
+If you need help with installation or customization, just reply to this email and I’ll take care of it.
+
+— AppLogix`;
+    }
 
     async function createClient() {
       const status = document.getElementById("status");
@@ -355,6 +415,7 @@
 
         widgetCodeBox.textContent = data.widgetCode;
         window.__latestWidgetCode = data.widgetCode;
+        window.__latestWelcomeEmail = buildWelcomeEmail(data);
       } catch (e) {
         status.textContent = "Create failed: " + (e.message || "Unknown error");
         successBox.style.display = "none";
@@ -366,7 +427,16 @@
       if (!text) return;
 
       navigator.clipboard.writeText(text)
-        .then(() => alert("Copied"))
+        .then(() => alert("Widget code copied."))
+        .catch(() => alert("Could not copy automatically. Please copy manually."));
+    }
+
+    function copyWelcomeEmail() {
+      const text = window.__latestWelcomeEmail || "";
+      if (!text) return;
+
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Welcome email copied."))
         .catch(() => alert("Could not copy automatically. Please copy manually."));
     }
   </script>
