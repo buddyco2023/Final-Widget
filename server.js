@@ -3,7 +3,6 @@ const cors = require("cors");
 const crypto = require("crypto");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
-const { Resend } = require("resend");
 
 const app = express();
 
@@ -20,12 +19,8 @@ const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
 const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const RESEND_FROM = process.env.RESEND_FROM || "";
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
@@ -329,50 +324,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       brandLogoUrl
     });
 
-    if (resend && RESEND_FROM) {
-      try {
-        await resend.emails.send({
-          from: RESEND_FROM,
-          to: [clientEmail],
-          subject: `Welcome to AppLogix - ${businessName}`,
-          html: `
-            <div style="margin:0;padding:0;background:#f3f7ff;">
-              <div style="max-width:700px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
-                <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
-                  <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
-
-                  <div style="padding:24px;">
-                    <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
-                    <div style="font-size:14px;color:#64748b;margin-bottom:20px;">Your review system is ready</div>
-
-                    <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;">
-                      <h2 style="margin:0 0 14px;font-size:24px;color:#1e3a8a;">Welcome, ${businessName}</h2>
-
-                      <p style="margin:0 0 10px;line-height:1.6;">
-                        Your AppLogix account has been created.
-                      </p>
-
-                      <p style="margin:0 0 8px;"><strong>Dashboard:</strong> <a href="https://final-widget.onrender.com/admin3">https://final-widget.onrender.com/admin3</a></p>
-                      <p style="margin:0 0 8px;"><strong>Login Email:</strong> ${clientEmail}</p>
-                      <p style="margin:0 0 8px;"><strong>Temporary Password:</strong> ${tempPassword}</p>
-                      <p style="margin:0 0 8px;"><strong>Business ID:</strong> ${businessId}</p>
-
-                      <p style="margin:16px 0 8px;line-height:1.6;">
-                        On your first login, you will be asked to set a new password.
-                      </p>
-
-                      <div style="margin-top:16px;padding:14px 16px;background:#0f172a;color:#e2e8f0;border-radius:16px;white-space:pre-wrap;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:1.5;">${widgetCode.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `
-        });
-      } catch (emailErr) {
-        console.error("Welcome email error:", emailErr);
-      }
-    }
+    console.log("Client created:", clientEmail);
 
     res.json({
       success: true,
@@ -463,59 +415,8 @@ app.post("/reviews", async (req, res) => {
     if (!adminErr && admins && admins.length) {
       const admin = admins[0];
 
-      if (admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
-        try {
-          const businessName = prettyBusinessName(businessId);
-
-          await resend.emails.send({
-            from: RESEND_FROM,
-            to: [admin.notification_email],
-            subject: `New review for ${businessName}`,
-            html: `
-              <div style="margin:0;padding:0;background:#f3f7ff;">
-                <div style="max-width:640px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
-                  <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
-                    <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
-
-                    <div style="padding:24px;">
-                      <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
-                      <div style="font-size:14px;color:#64748b;margin-bottom:20px;">New review notification</div>
-
-                      <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;box-shadow:0 14px 28px rgba(15,23,42,0.08);">
-                        <h2 style="margin:0 0 14px;font-size:24px;color:#1e3a8a;">New Review Submitted</h2>
-
-                        <p style="margin:0 0 14px;line-height:1.6;">
-                          A new review has been submitted for <strong>${businessName}</strong> and is awaiting approval.
-                        </p>
-
-                        <p style="margin:0 0 8px;"><strong>Business ID:</strong> ${businessId}</p>
-                        <p style="margin:0 0 8px;"><strong>Name:</strong> ${payload.name}</p>
-                        <p style="margin:0 0 8px;"><strong>Rating:</strong> ${payload.rating} / 5</p>
-                        <p style="margin:0 0 8px;"><strong>Image Included:</strong> ${payload.image ? "Yes" : "No"}</p>
-
-                        <div style="margin-top:16px;margin-bottom:16px;padding:14px 16px;background:#f9fbff;border:1px solid #dbe7fb;border-radius:16px;">
-                          <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:8px;">Review Message</div>
-                          <div style="line-height:1.6;color:#334155;">${payload.text || "(no text)"}</div>
-                        </div>
-
-                        <a href="https://final-widget.onrender.com/admin3"
-                           style="display:inline-block;padding:12px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
-                          Review & Approve
-                        </a>
-
-                        <p style="margin-top:16px;font-size:13px;color:#64748b;">
-                          Log in to approve or delete this review.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            `
-          });
-        } catch (emailErr) {
-          console.error("Resend notification error:", emailErr);
-        }
+      if (admin.notifications_enabled && admin.notification_email) {
+        console.log("New review notification target:", admin.notification_email);
       }
     }
 
