@@ -250,8 +250,8 @@
       return value
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\\s-]/g, "")
-        .replace(/\\s+/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "")
         .replace(/-+/g, "");
     }
 
@@ -278,10 +278,6 @@
     function buildWidgetCode(formData) {
       return `<div id="applogix-review-widget"></div>
 
-<style>
-  /* Client config is below in the script block */
-</style>
-
 <script>
 /* =========================
    CLIENT CONFIG
@@ -298,12 +294,12 @@ const BRAND_LOGO_URL = "${formData.brandLogoUrl || ""}";
 const SHOW_POWERED_BY = true;
 const POWERED_BY_NAME = "AppLogix";
 /* ========================= */
-</script>
+<\/script>
 
-<script src="https://final-widget.onrender.com/widget.js"></script>`;
+<script src="https://final-widget.onrender.com/widget.js"><\/script>`;
     }
 
-    async function createClient() {
+    function createClient() {
       const status = document.getElementById("status");
       const successBox = document.getElementById("successBox");
       const successSummary = document.getElementById("successSummary");
@@ -328,40 +324,36 @@ const POWERED_BY_NAME = "AppLogix";
       };
 
       if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.tempPassword || !payload.planTier) {
-        status.textContent = "Please complete business name, business ID, client email, temporary password, and plan tier.";
+        status.textContent = "Please complete required fields.";
         successBox.style.display = "none";
         return;
       }
 
-      status.textContent = "Ready for Step 3. This page is built. Next we will connect it to the backend route.";
+      status.textContent = "Preview only — backend comes in Step 3.";
       successBox.style.display = "block";
 
       const widgetCode = buildWidgetCode(payload);
 
       successSummary.textContent =
-        "Preview only for now.\\n" +
-        "Business Name: " + payload.businessName + "\\n" +
-        "Business ID: " + payload.businessId + "\\n" +
-        "Email: " + payload.clientEmail + "\\n" +
-        "Plan: " + payload.planTier + "\\n" +
-        "Notifications: " + (payload.notificationsEnabled ? "Enabled" : "Disabled") + "\\n" +
-        "Branding: " + (payload.brandingEnabled ? "Enabled" : "Disabled") + "\\n" +
+        "Business: " + payload.businessName + "\n" +
+        "Business ID: " + payload.businessId + "\n" +
+        "Email: " + payload.clientEmail + "\n" +
+        "Plan: " + payload.planTier + "\n" +
+        "Notifications: " + (payload.notificationsEnabled ? "Enabled" : "Disabled") + "\n" +
+        "Branding: " + (payload.brandingEnabled ? "Enabled" : "Disabled") + "\n" +
         "Google Import: " + (payload.googleImportEnabled ? "Enabled" : "Disabled");
 
       widgetCodeBox.textContent = widgetCode;
       window.__latestWidgetCode = widgetCode;
     }
 
-    async function copyWidgetCode() {
+    function copyWidgetCode() {
       const text = window.__latestWidgetCode || "";
       if (!text) return;
 
-      try {
-        await navigator.clipboard.writeText(text);
-        alert("Widget code copied.");
-      } catch (e) {
-        alert("Could not copy automatically. Please copy manually.");
-      }
+      navigator.clipboard.writeText(text)
+        .then(() => alert("Copied"))
+        .catch(() => alert("Could not copy automatically. Please copy manually."));
     }
   </script>
 </body>
