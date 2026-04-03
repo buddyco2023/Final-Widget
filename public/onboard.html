@@ -187,6 +187,13 @@
         <div class="sub">Create a new client account, save plan settings, and generate ready-to-use branded widget code.</div>
 
         <div class="card">
+          <div class="section-title">Internal Access</div>
+          <div class="grid">
+            <input id="adminToken" class="input full" type="password" placeholder="Admin token" />
+          </div>
+        </div>
+
+        <div class="card">
           <div class="section-title">Client Details</div>
           <div class="grid">
             <input id="businessName" class="input" type="text" placeholder="Business name" oninput="generateBusinessId()" />
@@ -275,31 +282,7 @@
       });
     });
 
-    function buildWidgetCode(formData) {
-      return `<div id="applogix-review-widget"></div>
-
-<script>
-/* =========================
-   CLIENT CONFIG
-========================= */
-const ARW_API = "https://final-widget.onrender.com";
-const BUSINESS_ID = "${formData.businessId}";
-
-const BRAND_NAME = "${formData.brandName || formData.businessName}";
-const BRAND_PRIMARY = "${formData.brandPrimary || "#2563eb"}";
-const BRAND_SECONDARY = "${formData.brandSecondary || "#4ea3ff"}";
-const BRAND_ACCENT_GOLD = "#ffd84d";
-
-const BRAND_LOGO_URL = "${formData.brandLogoUrl || ""}";
-const SHOW_POWERED_BY = true;
-const POWERED_BY_NAME = "AppLogix";
-/* ========================= */
-<\/script>
-
-<script src="https://final-widget.onrender.com/widget.js"><\/script>`;
-    }
-
-    function createClient() {
+    async function createClient() {
       const status = document.getElementById("status");
       const successBox = document.getElementById("successBox");
       const successSummary = document.getElementById("successSummary");
@@ -323,28 +306,59 @@ const POWERED_BY_NAME = "AppLogix";
         setupFeePaid: document.getElementById("setupFeePaid").checked
       };
 
+      const adminToken = document.getElementById("adminToken").value.trim();
+
+      if (!adminToken) {
+        status.textContent = "Please enter your admin token.";
+        successBox.style.display = "none";
+        return;
+      }
+
       if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.tempPassword || !payload.planTier) {
         status.textContent = "Please complete required fields.";
         successBox.style.display = "none";
         return;
       }
 
-      status.textContent = "Preview only — backend comes in Step 3.";
-      successBox.style.display = "block";
+      status.textContent = "Creating client...";
+      successBox.style.display = "none";
 
-      const widgetCode = buildWidgetCode(payload);
+      try {
+        const res = await fetch("/create-client", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": adminToken
+          },
+          body: JSON.stringify(payload)
+        });
 
-      successSummary.textContent =
-        "Business: " + payload.businessName + "\n" +
-        "Business ID: " + payload.businessId + "\n" +
-        "Email: " + payload.clientEmail + "\n" +
-        "Plan: " + payload.planTier + "\n" +
-        "Notifications: " + (payload.notificationsEnabled ? "Enabled" : "Disabled") + "\n" +
-        "Branding: " + (payload.brandingEnabled ? "Enabled" : "Disabled") + "\n" +
-        "Google Import: " + (payload.googleImportEnabled ? "Enabled" : "Disabled");
+        if (!res.ok) {
+          const errText = await res.text();
+          status.textContent = "Create failed: " + errText;
+          successBox.style.display = "none";
+          return;
+        }
 
-      widgetCodeBox.textContent = widgetCode;
-      window.__latestWidgetCode = widgetCode;
+        const data = await res.json();
+
+        status.textContent = "Client created successfully.";
+        successBox.style.display = "block";
+
+        successSummary.textContent =
+          "Business: " + data.businessName + "\n" +
+          "Business ID: " + data.businessId + "\n" +
+          "Email: " + data.clientEmail + "\n" +
+          "Temporary Password: " + data.tempPassword + "\n" +
+          "Plan: " + data.planTier + "\n" +
+          "Dashboard: https://final-widget.onrender.com/admin3";
+
+        widgetCodeBox.textContent = data.widgetCode;
+        window.__latestWidgetCode = data.widgetCode;
+      } catch (e) {
+        status.textContent = "Create failed: " + (e.message || "Unknown error");
+        successBox.style.display = "none";
+      }
     }
 
     function copyWidgetCode() {
