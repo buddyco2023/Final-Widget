@@ -3,6 +3,7 @@ const cors = require("cors");
 const crypto = require("crypto");
 const path = require("path");
 const { createClient } = require("@supabase/supabase-js");
+const { Resend } = require("resend");
 
 const app = express();
 
@@ -19,8 +20,12 @@ const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
 const CLOUDINARY_API_KEY = "949256172383417";
 const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
+const RESEND_FROM = process.env.RESEND_FROM || "";
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
@@ -50,6 +55,13 @@ async function getAdminProfileByEmail(email) {
   if (!data || !data.length) throw new Error("Admin profile not found");
 
   return data[0];
+}
+
+function prettyBusinessName(businessId) {
+  if (!businessId) return "Your Business";
+  return businessId
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function buildWidgetCode(payload) {
@@ -410,8 +422,68 @@ app.post("/reviews", async (req, res) => {
     if (!adminErr && admins && admins.length) {
       const admin = admins[0];
 
-      if (admin.notifications_enabled && admin.notification_email) {
-        console.log("New review notification target:", admin.notification_email);
+      if (admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
+        try {
+          const businessName = prettyBusinessName(businessId);
+
+          await resend.emails.send({
+            from: RESEND_FROM,
+            to: [admin.notification_email],
+            subject: `New review for ${businessName}`,
+            html: `
+              <div style="margin:0;padding:0;background:#f3f7ff;">
+                <div style="max-width:640px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
+                  <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
+                    <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
+
+                    <div style="padding:24px;">
+                      <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
+                      <div style="font-size:14px;color:#64748b;margin-bottom:20px;">New review notification</div>
+
+                      <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;box-shadow:0 14px 28px rgba(15,23,42,0.08);">
+                        <h2 style="margin:0 0 14px;font-size:24px;color:#1e3a8a;">New Review Submitted</h2>
+
+                        <p style="margin:0 0 14px;line-height:1.6;">
+                          A new review has been submitted for <strong>${businessName}</strong> and is awaiting approval.
+                        </p>
+
+                        <p style="margin:0 0 8px;"><strong>Business ID:</strong> ${businessId}</p>
+                        <p style="margin:0 0 8px;"><strong>Name:</strong> ${payload.name}</p>
+                        <p style="margin:0 0 8px;"><strong>Rating:</strong> ${payload.rating} / 5</p>
+                        <p style="margin:0 0 8px;"><strong>Image Included:</strong> ${payload.image ? "Yes" : "No"}</p>
+
+                        <div style="margin-top:16px;margin-bottom:16px;padding:14px 16px;background:#f9fbff;border:1px solid #dbe7fb;border-radius:16px;">
+                          <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:8px;">Review Message</div>
+                          <div style="line-height:1.6;color:#334155;">${(payload.text || "(no text)").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                        </div>
+
+                        <a href="https://final-widget.onrender.com/admin3"
+                           style="display:inline-block;padding:12px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
+                          Review & Approve
+                        </a>
+
+                        <p style="margin-top:16px;font-size:13px;color:#64748b;">
+                          Log in to approve or delete this review.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+          });
+
+          console.log("Review notification sent to:", admin.notification_email);
+        } catch (emailErr) {
+          console.error("Review notification email error:", emailErr);
+        }
+      } else {
+        console.log("Review notification skipped:", {
+          notifications_enabled: admin.notifications_enabled,
+          notification_email: admin.notification_email,
+          resend_configured: !!resend,
+          resend_from: !!RESEND_FROM
+        });
       }
     }
 
