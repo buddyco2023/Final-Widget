@@ -273,7 +273,7 @@
         <div class="card hidden" id="resetCard">
           <div class="sub">Set a new password</div>
           <div class="status-box" style="margin-bottom:12px;">
-            After saving this password, manually set <strong>must_reset_password = false</strong> in Supabase for this user.
+            Choose a new password to activate your account.
           </div>
           <input id="newPassword" class="input" type="password" placeholder="New password">
           <input id="confirmPassword" class="input" type="password" placeholder="Confirm password">
@@ -446,11 +446,24 @@
         return;
       }
 
-      resetStatus.textContent = "Password saved. Now manually set must_reset_password = false in Supabase, then log in again.";
+      const markRes = await fetch("/admin-mark-password-reset-complete", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + session.access_token
+        }
+      });
+
+      if (!markRes.ok) {
+        const errText = await markRes.text();
+        resetStatus.textContent = "Password changed, but account activation update failed: " + errText;
+        return;
+      }
+
+      resetStatus.textContent = "Password saved. Your account is now active.";
 
       setTimeout(async () => {
         await logout();
-      }, 1500);
+      }, 1200);
     };
 
     window.loadReviews = async function () {
