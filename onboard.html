@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AppLogix Client Onboarding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
+      color: #1f2937;
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .panel {
+      background: #ffffff;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
+      border: 1px solid #e5eefc;
+    }
+
+    .topbar {
+      height: 58px;
+      background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
+    }
+
+    .content {
+      padding: 22px;
+    }
+
+    .title {
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 0 6px;
+      color: #1f2937;
+    }
+
+    .sub {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+      border: 1px solid #e4eefc;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin: 0 0 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    .input,
+    .select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+      font-size: 15px;
+      color: #1f2937;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+      min-height: 50px;
+      box-sizing: border-box;
+    }
+
+    .checkbox-row input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+    }
+
+    .checkbox-row label {
+      font-size: 14px;
+      color: #334155;
+      font-weight: 700;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      width: 100%;
+      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #475569;
+      white-space: pre-wrap;
+    }
+
+    .success-box {
+      display: none;
+      margin-top: 14px;
+      background: #f8fbff;
+      border: 1px solid #dbe7fb;
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .success-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #166534;
+      margin: 0 0 10px;
+    }
+
+    .codebox {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 16px;
+      padding: 14px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      margin-top: 10px;
+    }
+
+    .copy-btn {
+      margin-top: 10px;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #16a34a;
+      color: white;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="topbar"></div>
+
+      <div class="content">
+        <h1 class="title">AppLogix Client Onboarding</h1>
+        <div class="sub">Create a new client account, save plan settings, and generate ready-to-use widget code.</div>
+
+        <div class="card">
+          <div class="section-title">Client Details</div>
+          <div class="grid">
+            <input id="businessName" class="input" type="text" placeholder="Business name" oninput="generateBusinessId()" />
+            <input id="businessId" class="input" type="text" placeholder="Business ID" />
+
+            <input id="clientEmail" class="input" type="email" placeholder="Client email" />
+            <input id="tempPassword" class="input" type="text" placeholder="Temporary password" value="AppLogix" />
+
+            <select id="planTier" class="select">
+              <option value="">Select plan tier</option>
+              <option value="starter">Starter</option>
+              <option value="growth">Growth</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
+            </select>
+
+            <input id="notificationEmail" class="input" type="email" placeholder="Notification email (usually same as client email)" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Plan Features & Billing</div>
+          <div class="grid">
+            <div class="checkbox-row"><input id="notificationsEnabled" type="checkbox" /><label for="notificationsEnabled">Notifications enabled</label></div>
+            <div class="checkbox-row"><input id="brandingEnabled" type="checkbox" /><label for="brandingEnabled">Branding enabled</label></div>
+            <div class="checkbox-row"><input id="googleImportEnabled" type="checkbox" /><label for="googleImportEnabled">Google import enabled</label></div>
+            <div class="checkbox-row"><input id="active" type="checkbox" checked /><label for="active">Account active</label></div>
+            <div class="checkbox-row full"><input id="setupFeePaid" type="checkbox" /><label for="setupFeePaid">Setup fee paid</label></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">Branding</div>
+          <div class="grid">
+            <input id="brandName" class="input" type="text" placeholder="Brand name (usually business name)" />
+            <input id="brandLogoUrl" class="input" type="text" placeholder="Brand logo URL (optional)" />
+
+            <input id="brandPrimary" class="input" type="text" placeholder="Brand primary color (example: #2563eb)" value="#2563eb" />
+            <input id="brandSecondary" class="input" type="text" placeholder="Brand secondary color (example: #4ea3ff)" value="#4ea3ff" />
+          </div>
+        </div>
+
+        <div class="card">
+          <button class="btn" onclick="createClient()">Create Client</button>
+          <div id="status" class="status">Ready.</div>
+
+          <div id="successBox" class="success-box">
+            <div class="success-title">Client created successfully</div>
+            <div id="successSummary" class="status"></div>
+
+            <div class="codebox" id="widgetCodeBox"></div>
+            <button class="copy-btn" onclick="copyWidgetCode()">Copy Widget Code</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function slugifyBusinessName(value) {
+      return value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "")
+        .replace(/-+/g, "");
+    }
+
+    function generateBusinessId() {
+      const businessName = document.getElementById("businessName").value;
+      const businessIdInput = document.getElementById("businessId");
+      const brandNameInput = document.getElementById("brandName");
+
+      if (!businessIdInput.dataset.editedManually) {
+        businessIdInput.value = slugifyBusinessName(businessName);
+      }
+
+      if (!brandNameInput.value) {
+        brandNameInput.value = businessName;
+      }
+    }
+
+    document.getElementById("businessId").addEventListener("input", function () {
+      this.dataset.editedManually = "true";
+    });
+
+    function buildWidgetCode(businessId) {
+      return `<div id="applogix-review-widget"></div>
+
+<script>
+const BUSINESS_ID = "${businessId}";
+</script>
+
+<script src="https://final-widget.onrender.com/widget.js"></script>`;
+    }
+
+    async function createClient() {
+      const status = document.getElementById("status");
+      const successBox = document.getElementById("successBox");
+      const successSummary = document.getElementById("successSummary");
+      const widgetCodeBox = document.getElementById("widgetCodeBox");
+
+      const payload = {
+        businessName: document.getElementById("businessName").value.trim(),
+        businessId: document.getElementById("businessId").value.trim(),
+        clientEmail: document.getElementById("clientEmail").value.trim(),
+        tempPassword: document.getElementById("tempPassword").value.trim(),
+        planTier: document.getElementById("planTier").value,
+        notificationsEnabled: document.getElementById("notificationsEnabled").checked,
+        notificationEmail: document.getElementById("notificationEmail").value.trim(),
+        brandingEnabled: document.getElementById("brandingEnabled").checked,
+        googleImportEnabled: document.getElementById("googleImportEnabled").checked,
+        brandName: document.getElementById("brandName").value.trim(),
+        brandPrimary: document.getElementById("brandPrimary").value.trim(),
+        brandSecondary: document.getElementById("brandSecondary").value.trim(),
+        brandLogoUrl: document.getElementById("brandLogoUrl").value.trim(),
+        active: document.getElementById("active").checked,
+        setupFeePaid: document.getElementById("setupFeePaid").checked
+      };
+
+      if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.tempPassword || !payload.planTier) {
+        status.textContent = "Please complete business name, business ID, client email, temporary password, and plan tier.";
+        successBox.style.display = "none";
+        return;
+      }
+
+      status.textContent = "Ready for Step 3. This page is built. Next we will connect it to the backend route.";
+      successBox.style.display = "block";
+
+      const widgetCode = buildWidgetCode(payload.businessId);
+
+      successSummary.textContent =
+        "Preview only for now.\n" +
+        "Business Name: " + payload.businessName + "\n" +
+        "Business ID: " + payload.businessId + "\n" +
+        "Email: " + payload.clientEmail + "\n" +
+        "Plan: " + payload.planTier + "\n" +
+        "Notifications: " + (payload.notificationsEnabled ? "Enabled" : "Disabled") + "\n" +
+        "Branding: " + (payload.brandingEnabled ? "Enabled" : "Disabled") + "\n" +
+        "Google Import: " + (payload.googleImportEnabled ? "Enabled" : "Disabled");
+
+      widgetCodeBox.textContent = widgetCode;
+      window.__latestWidgetCode = widgetCode;
+    }
+
+    async function copyWidgetCode() {
+      const text = window.__latestWidgetCode || "";
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        alert("Widget code copied.");
+      } catch (e) {
+        alert("Could not copy automatically. Please copy manually.");
+      }
+    }
+  </script>
+</body>
+</html>
