@@ -52,13 +52,6 @@ async function getAdminProfileByEmail(email) {
   return data[0];
 }
 
-function prettyBusinessName(businessId) {
-  if (!businessId) return "Your Business";
-  return businessId
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 function buildWidgetCode(payload) {
   return `<div id="applogix-review-widget"></div>
 
@@ -77,6 +70,7 @@ const BRAND_ACCENT_GOLD = "#ffd84d";
 const BRAND_LOGO_URL = "${payload.brandLogoUrl || ""}";
 const SHOW_POWERED_BY = true;
 const POWERED_BY_NAME = "AppLogix";
+const GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"};
 /* ========================= */
 </script>
 
@@ -321,7 +315,8 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       brandName,
       brandPrimary,
       brandSecondary,
-      brandLogoUrl
+      brandLogoUrl,
+      googleImportEnabled
     });
 
     console.log("Client created:", clientEmail);
