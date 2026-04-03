@@ -87,9 +87,9 @@ app.get("/import", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "import.html"));
 });
 
-app.get("/review/:businessId", (req, res) => {
+app.get("/onboard", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.sendFile(path.join(__dirname, "public", "review-page.html"));
+  res.sendFile(path.join(__dirname, "public", "onboard.html"));
 });
 
 app.get("/reset-password", (req, res) => {
@@ -152,9 +152,14 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
 
+    const updatePayload = {
+      must_reset_password: false,
+      first_password_reset_at: new Date().toISOString()
+    };
+
     const { error } = await supabaseAdmin
       .from("admin_users")
-      .update({ must_reset_password: false })
+      .update(updatePayload)
       .eq("email", user.email);
 
     if (error) {
