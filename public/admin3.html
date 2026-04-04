@@ -60,6 +60,7 @@
       border-radius: 12px;
       border: 1px solid #cfdcf3;
       margin-bottom: 10px;
+      box-sizing: border-box;
     }
 
     .btn {
@@ -86,7 +87,7 @@
 
     .hidden { display: none; }
 
-    .status { font-size: 14px; margin-top: 8px; }
+    .status { font-size: 14px; margin-top: 8px; white-space: pre-wrap; }
   </style>
 </head>
 
@@ -189,14 +190,14 @@ window.login = async function(){
 };
 
 window.loadReviews = async function(){
-  const res = await fetch("/reviews?businessId=" + businessId);
+  const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId));
   const data = await res.json();
 
   document.getElementById("reviews").innerHTML = data.map(r => `
     <div class="review">
-      <strong>${r.name}</strong><br/>
-      ${"★".repeat(r.rating)}<br/>
-      ${r.text}
+      <strong>${r.name || "Anonymous"}</strong><br/>
+      ${"★".repeat(Number(r.rating) || 0)}<br/>
+      ${r.text || ""}
       <div>
         ${!r.approved ? `<button class="btn btn-green" onclick="approve(${r.id})">Approve</button>` : ""}
         <button class="btn btn-red" onclick="removeReview(${r.id})">Delete</button>
