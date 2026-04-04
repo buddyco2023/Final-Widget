@@ -92,6 +92,12 @@
       color: #1f2937;
     }
 
+    .input[disabled],
+    .select[disabled] {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     .checkbox-row {
       display: flex;
       align-items: center;
@@ -108,6 +114,10 @@
       width: 18px;
       height: 18px;
       margin: 0;
+    }
+
+    .checkbox-row input[disabled] {
+      cursor: not-allowed;
     }
 
     .checkbox-row label {
@@ -221,7 +231,9 @@
               <option value="premium">Premium</option>
             </select>
           </div>
-          <div class="hint">Free and Basic do not include dashboard access. Pro and Premium include dashboard login.</div>
+          <div class="hint">
+            Free: optional website review URL. Basic / Pro / Premium: review page URL required.
+          </div>
         </div>
 
         <div class="card">
@@ -243,13 +255,32 @@
 
         <div class="card">
           <div class="section-title">Plan Features & Billing</div>
-          <div class="hint">Feature checkboxes auto-fill from the plan. You can review them before creating the client.</div>
+          <div class="hint">These are locked automatically by the selected plan.</div>
           <div class="grid">
-            <div class="checkbox-row"><input id="notificationsEnabled" type="checkbox" /><label for="notificationsEnabled">Notifications enabled</label></div>
-            <div class="checkbox-row"><input id="brandingEnabled" type="checkbox" /><label for="brandingEnabled">Branding enabled</label></div>
-            <div class="checkbox-row"><input id="googleImportEnabled" type="checkbox" /><label for="googleImportEnabled">Google import enabled</label></div>
-            <div class="checkbox-row"><input id="active" type="checkbox" checked /><label for="active">Account active</label></div>
-            <div class="checkbox-row full"><input id="setupFeePaid" type="checkbox" /><label for="setupFeePaid">Setup fee paid</label></div>
+            <div class="checkbox-row">
+              <input id="notificationsEnabled" type="checkbox" disabled />
+              <label for="notificationsEnabled">Notifications enabled</label>
+            </div>
+
+            <div class="checkbox-row">
+              <input id="brandingEnabled" type="checkbox" disabled />
+              <label for="brandingEnabled">Branding enabled</label>
+            </div>
+
+            <div class="checkbox-row">
+              <input id="googleImportEnabled" type="checkbox" disabled />
+              <label for="googleImportEnabled">Google import enabled</label>
+            </div>
+
+            <div class="checkbox-row">
+              <input id="active" type="checkbox" checked />
+              <label for="active">Account active</label>
+            </div>
+
+            <div class="checkbox-row full">
+              <input id="setupFeePaid" type="checkbox" />
+              <label for="setupFeePaid">Setup fee paid</label>
+            </div>
           </div>
         </div>
 
@@ -286,8 +317,8 @@
       return value
         .toLowerCase()
         .trim()
-        .replace(/[^a-z0-9\s-]/g, "")
-        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9\\s-]/g, "")
+        .replace(/\\s+/g, "")
         .replace(/-+/g, "");
     }
 
@@ -305,37 +336,55 @@
       }
     }
 
+    function setCheckbox(id, checked) {
+      document.getElementById(id).checked = checked;
+    }
+
+    function setDashboardFieldsVisible(show) {
+      document.querySelectorAll(".dashboard-only").forEach(el => {
+        el.classList.toggle("hidden", !show);
+      });
+    }
+
     function applyPlanTierFeatures() {
       const plan = document.getElementById("planTier").value;
-
-      const notificationsEnabled = document.getElementById("notificationsEnabled");
-      const brandingEnabled = document.getElementById("brandingEnabled");
-      const googleImportEnabled = document.getElementById("googleImportEnabled");
-
-      const dashboardFields = document.querySelectorAll(".dashboard-only");
+      const reviewPageUrl = document.getElementById("reviewPageUrl");
 
       if (plan === "free") {
-        notificationsEnabled.checked = false;
-        brandingEnabled.checked = false;
-        googleImportEnabled.checked = false;
-        dashboardFields.forEach(el => el.classList.add("hidden"));
+        setCheckbox("notificationsEnabled", false);
+        setCheckbox("brandingEnabled", false);
+        setCheckbox("googleImportEnabled", false);
+        setDashboardFieldsVisible(false);
+        reviewPageUrl.placeholder = "Review page URL (optional for Free)";
+        reviewPageUrl.removeAttribute("required");
       } else if (plan === "basic") {
-        notificationsEnabled.checked = false;
-        brandingEnabled.checked = false;
-        googleImportEnabled.checked = false;
-        dashboardFields.forEach(el => el.classList.add("hidden"));
+        setCheckbox("notificationsEnabled", false);
+        setCheckbox("brandingEnabled", false);
+        setCheckbox("googleImportEnabled", false);
+        setDashboardFieldsVisible(false);
+        reviewPageUrl.placeholder = "Review page URL (required)";
+        reviewPageUrl.setAttribute("required", "required");
       } else if (plan === "pro") {
-        notificationsEnabled.checked = true;
-        brandingEnabled.checked = false;
-        googleImportEnabled.checked = false;
-        dashboardFields.forEach(el => el.classList.remove("hidden"));
+        setCheckbox("notificationsEnabled", true);
+        setCheckbox("brandingEnabled", false);
+        setCheckbox("googleImportEnabled", false);
+        setDashboardFieldsVisible(true);
+        reviewPageUrl.placeholder = "Review page URL (required)";
+        reviewPageUrl.setAttribute("required", "required");
       } else if (plan === "premium") {
-        notificationsEnabled.checked = true;
-        brandingEnabled.checked = true;
-        googleImportEnabled.checked = true;
-        dashboardFields.forEach(el => el.classList.remove("hidden"));
+        setCheckbox("notificationsEnabled", true);
+        setCheckbox("brandingEnabled", true);
+        setCheckbox("googleImportEnabled", true);
+        setDashboardFieldsVisible(true);
+        reviewPageUrl.placeholder = "Review page URL (required)";
+        reviewPageUrl.setAttribute("required", "required");
       } else {
-        dashboardFields.forEach(el => el.classList.remove("hidden"));
+        setCheckbox("notificationsEnabled", false);
+        setCheckbox("brandingEnabled", false);
+        setCheckbox("googleImportEnabled", false);
+        setDashboardFieldsVisible(false);
+        reviewPageUrl.placeholder = "Review page URL";
+        reviewPageUrl.removeAttribute("required");
       }
     }
 
@@ -343,6 +392,8 @@
       document.getElementById("businessId").addEventListener("input", function () {
         this.dataset.editedManually = "true";
       });
+
+      applyPlanTierFeatures();
     });
 
     function buildWelcomeEmail(data) {
@@ -355,12 +406,15 @@
       const successSummary = document.getElementById("successSummary");
       const widgetCodeBox = document.getElementById("widgetCodeBox");
 
+      const planTier = document.getElementById("planTier").value;
+      const reviewPageUrl = document.getElementById("reviewPageUrl").value.trim();
+
       const payload = {
         businessName: document.getElementById("businessName").value.trim(),
         businessId: document.getElementById("businessId").value.trim(),
         clientEmail: document.getElementById("clientEmail").value.trim(),
         tempPassword: document.getElementById("tempPassword").value.trim(),
-        planTier: document.getElementById("planTier").value,
+        planTier: planTier,
         notificationEmail: document.getElementById("notificationEmail").value.trim(),
         notificationsEnabled: document.getElementById("notificationsEnabled").checked,
         brandingEnabled: document.getElementById("brandingEnabled").checked,
@@ -371,7 +425,7 @@
         brandLogoUrl: document.getElementById("brandLogoUrl").value.trim(),
         active: document.getElementById("active").checked,
         setupFeePaid: document.getElementById("setupFeePaid").checked,
-        reviewPageUrl: document.getElementById("reviewPageUrl").value.trim(),
+        reviewPageUrl: reviewPageUrl,
         partnerName: document.getElementById("partnerName").value.trim(),
         partnerEmail: document.getElementById("partnerEmail").value.trim()
       };
@@ -384,13 +438,19 @@
         return;
       }
 
-      if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.planTier || !payload.reviewPageUrl) {
+      if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.planTier) {
         status.textContent = "Please complete required fields.";
         successBox.style.display = "none";
         return;
       }
 
-      if ((payload.planTier === "pro" || payload.planTier === "premium") && !payload.tempPassword) {
+      if (planTier !== "free" && !reviewPageUrl) {
+        status.textContent = "Review page URL is required for Basic, Pro, and Premium.";
+        successBox.style.display = "none";
+        return;
+      }
+
+      if ((planTier === "pro" || planTier === "premium") && !payload.tempPassword) {
         status.textContent = "Temporary password is required for Pro and Premium.";
         successBox.style.display = "none";
         return;
@@ -426,7 +486,7 @@
           "Business ID: " + data.businessId + "\n" +
           "Email: " + data.clientEmail + "\n" +
           "Plan: " + data.planTier + "\n" +
-          "Review Page URL: " + data.reviewPageUrl + "\n";
+          "Review Page URL: " + (data.reviewPageUrl || "Not required for this plan") + "\n";
 
         if (data.dashboardIncluded) {
           summary +=
