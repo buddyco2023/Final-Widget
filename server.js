@@ -52,19 +52,19 @@ function buildWidgetCode(payload) {
   return `<div id="applogix-review-widget"></div>
 
 <script>
-const ARW_API = "${appUrl}";
-const BUSINESS_ID = "${payload.businessId}";
-const PLAN_TIER = "${payload.planTier || "free"}";
+window.ARW_API = "${appUrl}";
+window.BUSINESS_ID = "${payload.businessId}";
+window.PLAN_TIER = "${payload.planTier || "free"}";
 
-const BRAND_NAME = "${payload.brandName || payload.businessName}";
-const BRAND_PRIMARY = "${payload.brandPrimary || "#2563eb"}";
-const BRAND_SECONDARY = "${payload.brandSecondary || "#4ea3ff"}";
-const BRAND_ACCENT_GOLD = "#ffd84d";
+window.BRAND_NAME = "${payload.brandName || payload.businessName}";
+window.BRAND_PRIMARY = "${payload.brandPrimary || "#2563eb"}";
+window.BRAND_SECONDARY = "${payload.brandSecondary || "#4ea3ff"}";
+window.BRAND_ACCENT_GOLD = "#ffd84d";
 
-const BRAND_LOGO_URL = "${payload.brandLogoUrl || ""}";
-const SHOW_POWERED_BY = true;
-const POWERED_BY_NAME = "AppLogix";
-const GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"};
+window.BRAND_LOGO_URL = "${payload.brandLogoUrl || ""}";
+window.SHOW_POWERED_BY = true;
+window.POWERED_BY_NAME = "AppLogix";
+window.GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"};
 </script>
 
 <script src="${appUrl}/widget.js" defer></script>`;
