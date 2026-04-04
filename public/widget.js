@@ -4,7 +4,9 @@
 
   const apiUrl = typeof window.ARW_API !== "undefined" ? window.ARW_API : "";
   const businessId = typeof window.BUSINESS_ID !== "undefined" ? window.BUSINESS_ID : "";
-  const planTier = typeof window.PLAN_TIER !== "undefined" ? String(window.PLAN_TIER).toLowerCase() : "free";
+  const planTier = typeof window.PLAN_TIER !== "undefined"
+    ? String(window.PLAN_TIER).toLowerCase()
+    : "free";
 
   const brandName = typeof window.BRAND_NAME !== "undefined" ? window.BRAND_NAME : "Your Business";
   const brandPrimary = typeof window.BRAND_PRIMARY !== "undefined" ? window.BRAND_PRIMARY : "#2563eb";
