@@ -11,14 +11,14 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://guisalxfmvdkiwizxlgi.supabase.co";
+const SUPABASE_URL = process.env.SUPABASE_URL || "REPLACE_ME";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "REPLACE_ME";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "REPLACE_ME";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
-const CLOUDINARY_CLOUD_NAME = "drloe7yv4";
-const CLOUDINARY_API_KEY = "949256172383417";
-const CLOUDINARY_API_SECRET = "t4zTHsRXinGvwAiRsUfLgw14mo4";
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "REPLACE_ME";
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || "REPLACE_ME";
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || "REPLACE_ME";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const RESEND_FROM = process.env.RESEND_FROM || "";
@@ -36,51 +36,34 @@ const PAID_DASHBOARD_PLANS = [PLAN_PRO, PLAN_PREMIUM];
 
 function requireAdminToken(req, res, next) {
   const token = req.headers["x-admin-token"] || "";
-
-  if (!ADMIN_TOKEN) {
-    return res.status(500).send("ADMIN_TOKEN is not configured on the server.");
-  }
-
-  if (token !== ADMIN_TOKEN) {
-    return res.status(401).send("Invalid admin token.");
-  }
-
+  if (!ADMIN_TOKEN) return res.status(500).send("ADMIN_TOKEN is not configured on the server.");
+  if (token !== ADMIN_TOKEN) return res.status(401).send("Invalid admin token.");
   next();
 }
 
 function prettyBusinessName(businessId) {
   if (!businessId) return "Your Business";
-  return businessId
-    .replace(/[-_]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return businessId.replace(/[-_]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function buildWidgetCode(payload) {
   return `<div id="applogix-review-widget"></div>
 
 <script>
-/* =========================
-   CLIENT CONFIG
-========================= */
-const ARW_API = "https://final-widget.onrender.com";
+const ARW_API = "${process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com"}";
 const BUSINESS_ID = "${payload.businessId}";
-
 const BRAND_NAME = "${payload.brandName || payload.businessName}";
 const BRAND_PRIMARY = "${payload.brandPrimary || "#2563eb"}";
 const BRAND_SECONDARY = "${payload.brandSecondary || "#4ea3ff"}";
-const BRAND_ACCENT_GOLD = "#ffd84d";
-
 const BRAND_LOGO_URL = "${payload.brandLogoUrl || ""}";
-const SHOW_POWERED_BY = true;
-const POWERED_BY_NAME = "AppLogix";
 const GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"};
-/* ========================= */
 </script>
 
-<script src="https://final-widget.onrender.com/widget.js"></script>`;
+<script src="${process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com"}/widget.js" defer></script>`;
 }
 
 function buildWelcomeEmailText(data) {
+  const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
   const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(data.planTier);
 
   let text = `Subject: Welcome to AppLogix — Your Review System is Ready
@@ -102,7 +85,7 @@ ${data.reviewPageUrl || "(not required for this plan)"}
   if (isDashboardPlan) {
     text += `
 Dashboard:
-https://final-widget.onrender.com/admin3
+${appUrl}/admin3
 
 Email:
 ${data.clientEmail}
@@ -150,18 +133,12 @@ If you need help with setup or installation, reply to this email.
 
 async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
-
-  if (!auth.startsWith("Bearer ")) {
-    throw new Error("Missing bearer token");
-  }
+  if (!auth.startsWith("Bearer ")) throw new Error("Missing bearer token");
 
   const token = auth.replace("Bearer ", "").trim();
   const { data, error } = await supabaseAdmin.auth.getUser(token);
 
-  if (error || !data?.user) {
-    throw new Error("Invalid auth token");
-  }
-
+  if (error || !data?.user) throw new Error("Invalid auth token");
   return data.user;
 }
 
@@ -192,13 +169,10 @@ async function getAdminProfileByEmail(email) {
 
   if (error) throw error;
   if (!data || !data.length) throw new Error("Admin profile not found");
-
   return data[0];
 }
 
-app.get("/", (req, res) => {
-  res.send("API running");
-});
+app.get("/", (req, res) => res.send("API running"));
 
 app.get("/admin", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -228,10 +202,6 @@ app.get("/onboard", (req, res) => {
 app.get("/reset-password", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "reset-password.html"));
-});
-
-app.get("/test-123", (req, res) => {
-  res.send("new code is live");
 });
 
 app.get("/client-config", (req, res) => {
@@ -302,24 +272,19 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
       return res.status(403).send("This plan does not include dashboard access.");
     }
 
-    const updatePayload = {
-      must_reset_password: false,
-      first_password_reset_at: new Date().toISOString()
-    };
-
     const { error } = await supabaseAdmin
       .from("admin_users")
-      .update(updatePayload)
+      .update({
+        must_reset_password: false,
+        first_password_reset_at: new Date().toISOString()
+      })
       .eq("email", user.email);
 
-    if (error) {
-      console.error("POST /admin-mark-password-reset-complete error:", error);
-      return res.status(500).send(error.message);
-    }
+    if (error) return res.status(500).send(error.message);
 
     res.json({ success: true });
   } catch (err) {
-    console.error("POST /admin-mark-password-reset-complete server error:", err);
+    console.error("POST /admin-mark-password-reset-complete error:", err);
     res.status(401).send(err.message || "Unauthorized");
   }
 });
@@ -345,9 +310,7 @@ app.post("/send-review-link", async (req, res) => {
     const reviewerName = (req.body.reviewerName || "").trim();
     const businessName = profile.brand_name || prettyBusinessName(profile.business_id);
 
-    if (!reviewerEmail) {
-      return res.status(400).send("Reviewer email is required.");
-    }
+    if (!reviewerEmail) return res.status(400).send("Reviewer email is required.");
 
     const greeting = reviewerName ? `Hi ${reviewerName},` : `Hi,`;
 
@@ -356,33 +319,13 @@ app.post("/send-review-link", async (req, res) => {
       to: [reviewerEmail],
       subject: `We’d love your feedback for ${businessName}`,
       html: `
-        <div style="margin:0;padding:0;background:#f3f7ff;">
-          <div style="max-width:640px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
-            <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
-              <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
-
-              <div style="padding:24px;">
-                <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">${businessName}</div>
-                <div style="font-size:14px;color:#64748b;margin-bottom:20px;">Review request</div>
-
-                <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;">
-                  <p style="margin:0 0 14px;line-height:1.6;">${greeting}</p>
-
-                  <p style="margin:0 0 14px;line-height:1.6;">
-                    Thank you for your business. We’d really appreciate your feedback.
-                  </p>
-
-                  <a href="${profile.review_page_url}"
-                     style="display:inline-block;padding:12px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
-                    Leave a Review
-                  </a>
-
-                  <p style="margin-top:16px;font-size:13px;color:#64748b;">
-                    Reviews are submitted by customers, may be screened for spam, and are not verified by AppLogix.
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
+          <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
+            <h2 style="margin-top:0;">${businessName}</h2>
+            <p>${greeting}</p>
+            <p>Thank you for your business. We’d really appreciate your feedback.</p>
+            <p><a href="${profile.review_page_url}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
+            <p style="font-size:13px;color:#64748b;">Reviews are submitted by customers, may be screened for spam, and are not verified by AppLogix.</p>
           </div>
         </div>
       `
@@ -423,25 +366,16 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     if (!businessId) return res.status(400).send("Missing business ID.");
     if (!clientEmail) return res.status(400).send("Missing client email.");
     if (!planTier || !VALID_PLANS.includes(planTier)) return res.status(400).send("Invalid plan tier.");
-
     if (planTier !== PLAN_FREE && !reviewPageUrl) {
       return res.status(400).send("Review page URL is required for Basic, Pro, and Premium plans.");
     }
 
     const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(planTier);
-
     if (isDashboardPlan && !tempPassword) {
       return res.status(400).send("Temporary password is required for Pro and Premium plans.");
     }
 
-    if (planTier === PLAN_FREE) {
-      notificationsEnabled = false;
-      notificationEmail = "";
-      brandingEnabled = false;
-      googleImportEnabled = false;
-    }
-
-    if (planTier === PLAN_BASIC) {
+    if (planTier === PLAN_FREE || planTier === PLAN_BASIC) {
       notificationsEnabled = false;
       notificationEmail = "";
       brandingEnabled = false;
@@ -465,11 +399,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       .select("email,business_id")
       .or(`email.eq.${clientEmail},business_id.eq.${businessId}`);
 
-    if (existingAdminErr) {
-      console.error("Existing admin check error:", existingAdminErr);
-      return res.status(500).send(existingAdminErr.message);
-    }
-
+    if (existingAdminErr) return res.status(500).send(existingAdminErr.message);
     if (existingAdmins && existingAdmins.length) {
       return res.status(400).send("An admin row already exists with that email or business ID.");
     }
@@ -478,11 +408,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
 
     if (isDashboardPlan) {
       const { data: existingAuthUsers, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
-
-      if (listErr) {
-        console.error("Auth user list error:", listErr);
-        return res.status(500).send(listErr.message);
-      }
+      if (listErr) return res.status(500).send(listErr.message);
 
       const emailExists = (existingAuthUsers?.users || []).some(
         (u) => (u.email || "").toLowerCase() === clientEmail
@@ -499,7 +425,6 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       });
 
       if (createAuthResult.error) {
-        console.error("Auth create user error:", createAuthResult.error);
         return res.status(500).send(createAuthResult.error.message);
       }
 
@@ -527,21 +452,14 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       partner_email: partnerEmail || null
     };
 
-    const { error: insertErr } = await supabaseAdmin
-      .from("admin_users")
-      .insert([rowPayload]);
+    const { error: insertErr } = await supabaseAdmin.from("admin_users").insert([rowPayload]);
 
     if (insertErr) {
-      console.error("Insert admin_users error:", insertErr);
-
-      try {
-        if (authData?.user?.id) {
+      if (authData?.user?.id) {
+        try {
           await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-        }
-      } catch (rollbackErr) {
-        console.error("Rollback auth user delete failed:", rollbackErr);
+        } catch (_) {}
       }
-
       return res.status(500).send(insertErr.message);
     }
 
@@ -565,6 +483,8 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       reviewPageUrl
     });
 
+    const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
+
     res.json({
       success: true,
       businessName,
@@ -579,7 +499,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       widgetCode,
       welcomeEmail,
       dashboardIncluded: isDashboardPlan,
-      dashboardUrl: isDashboardPlan ? "https://final-widget.onrender.com/admin3" : ""
+      dashboardUrl: isDashboardPlan ? `${appUrl}/admin3` : ""
     });
   } catch (err) {
     console.error("POST /create-client server error:", err);
@@ -591,25 +511,15 @@ app.get("/reviews", async (req, res) => {
   try {
     const businessId = (req.query.businessId || "").trim();
 
-    let query = supabase
-      .from("reviews")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (businessId) {
-      query = query.eq("business_id", businessId);
-    }
+    let query = supabase.from("reviews").select("*").order("id", { ascending: false });
+    if (businessId) query = query.eq("business_id", businessId);
 
     const { data, error } = await query;
-
-    if (error) {
-      console.error("GET /reviews error:", error);
-      return res.status(500).send(error.message);
-    }
+    if (error) return res.status(500).send(error.message);
 
     res.json(data || []);
   } catch (err) {
-    console.error("GET /reviews server error:", err);
+    console.error("GET /reviews error:", err);
     res.status(500).send("Server error");
   }
 });
@@ -622,13 +532,8 @@ app.post("/reviews", async (req, res) => {
     const businessId = (req.body.businessId || "").trim();
     const parsedRating = parseInt(req.body.rating, 10);
 
-    if (!businessId) {
-      return res.status(400).send("Missing businessId");
-    }
-
-    if (!parsedRating || Number.isNaN(parsedRating)) {
-      return res.status(400).send("Invalid rating");
-    }
+    if (!businessId) return res.status(400).send("Missing businessId");
+    if (!parsedRating || Number.isNaN(parsedRating)) return res.status(400).send("Invalid rating");
 
     const { data: admins, error: adminLookupErr } = await supabaseAdmin
       .from("admin_users")
@@ -636,10 +541,7 @@ app.post("/reviews", async (req, res) => {
       .eq("business_id", businessId)
       .limit(1);
 
-    if (adminLookupErr) {
-      console.error("Admin lookup error:", adminLookupErr);
-      return res.status(500).send(adminLookupErr.message);
-    }
+    if (adminLookupErr) return res.status(500).send(adminLookupErr.message);
 
     const admin = admins && admins.length ? admins[0] : null;
     const planTier = (admin?.plan_tier || PLAN_FREE).toLowerCase();
@@ -649,69 +551,34 @@ app.post("/reviews", async (req, res) => {
       name: name || "Anonymous",
       text: text || "",
       rating: parsedRating,
-      image: image,
+      image,
       approved: autoApprove,
       business_id: businessId,
       source: "widget"
     };
 
-    const { error } = await supabase
-      .from("reviews")
-      .insert([payload]);
-
-    if (error) {
-      console.error("POST /reviews error:", error);
-      return res.status(500).send(error.message);
-    }
+    const { error } = await supabase.from("reviews").insert([payload]);
+    if (error) return res.status(500).send(error.message);
 
     if (admin && admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
       try {
         const businessName = prettyBusinessName(businessId);
+        const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
 
         await resend.emails.send({
           from: RESEND_FROM,
           to: [admin.notification_email],
           subject: autoApprove ? `New review for ${businessName}` : `New review awaiting approval for ${businessName}`,
           html: `
-            <div style="margin:0;padding:0;background:#f3f7ff;">
-              <div style="max-width:640px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;color:#1f2937;">
-                <div style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(15,23,42,0.10);border:1px solid #e5eefc;">
-                  <div style="height:58px;background:linear-gradient(90deg,#4ea3ff 0%,#2156d8 100%);"></div>
-
-                  <div style="padding:24px;">
-                    <div style="font-size:28px;font-weight:800;color:#1f2937;margin-bottom:6px;">AppLogix</div>
-                    <div style="font-size:14px;color:#64748b;margin-bottom:20px;">New review notification</div>
-
-                    <div style="background:linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);border:1px solid #e4eefc;border-radius:20px;padding:20px;">
-                      <h2 style="margin:0 0 14px;font-size:24px;color:#1e3a8a;">New Review Submitted</h2>
-
-                      <p style="margin:0 0 14px;line-height:1.6;">
-                        A new review has been submitted for <strong>${businessName}</strong>.
-                      </p>
-
-                      <p style="margin:0 0 8px;"><strong>Business ID:</strong> ${businessId}</p>
-                      <p style="margin:0 0 8px;"><strong>Name:</strong> ${payload.name}</p>
-                      <p style="margin:0 0 8px;"><strong>Rating:</strong> ${payload.rating} / 5</p>
-                      <p style="margin:0 0 8px;"><strong>Status:</strong> ${autoApprove ? "Published automatically" : "Pending approval"}</p>
-
-                      <div style="margin-top:16px;margin-bottom:16px;padding:14px 16px;background:#f9fbff;border:1px solid #dbe7fb;border-radius:16px;">
-                        <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:8px;">Review Message</div>
-                        <div style="line-height:1.6;color:#334155;">${(payload.text || "(no text)").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
-                      </div>
-
-                      ${!autoApprove ? `
-                        <a href="https://final-widget.onrender.com/admin3"
-                           style="display:inline-block;padding:12px 18px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:700;">
-                          Review & Approve
-                        </a>
-                      ` : ``}
-
-                      <p style="margin-top:16px;font-size:13px;color:#64748b;">
-                        Reviews are submitted by customers, may be screened for spam, and are not verified by AppLogix.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+            <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
+              <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
+                <h2 style="margin-top:0;">New Review Submitted</h2>
+                <p><strong>Business:</strong> ${businessName}</p>
+                <p><strong>Name:</strong> ${payload.name}</p>
+                <p><strong>Rating:</strong> ${payload.rating} / 5</p>
+                <p><strong>Status:</strong> ${autoApprove ? "Published automatically" : "Pending approval"}</p>
+                <p>${(payload.text || "(no text)").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                ${!autoApprove ? `<p><a href="${appUrl}/admin3">Review & Approve</a></p>` : ""}
               </div>
             </div>
           `
@@ -723,7 +590,7 @@ app.post("/reviews", async (req, res) => {
 
     res.json({ success: true, approved: autoApprove });
   } catch (err) {
-    console.error("POST /reviews server error:", err);
+    console.error("POST /reviews error:", err);
     res.status(500).send("Server error");
   }
 });
@@ -749,12 +616,9 @@ app.post("/import-google-review", async (req, res) => {
     if (!parsedRating || Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
       return res.status(400).send("Invalid rating");
     }
+    if (businessId !== profile.business_id) return res.status(403).send("Business mismatch.");
 
-    if (businessId !== profile.business_id) {
-      return res.status(403).send("Business mismatch.");
-    }
-
-    const payload = {
+    const { error } = await supabaseAdmin.from("reviews").insert([{
       name,
       text,
       rating: parsedRating,
@@ -762,20 +626,12 @@ app.post("/import-google-review", async (req, res) => {
       approved: true,
       business_id: businessId,
       source: "google"
-    };
+    }]);
 
-    const { error } = await supabaseAdmin
-      .from("reviews")
-      .insert([payload]);
-
-    if (error) {
-      console.error("POST /import-google-review error:", error);
-      return res.status(500).send(error.message);
-    }
-
+    if (error) return res.status(500).send(error.message);
     res.json({ success: true });
   } catch (err) {
-    console.error("POST /import-google-review server error:", err);
+    console.error("POST /import-google-review error:", err);
     res.status(401).send(err.message || "Unauthorized");
   }
 });
@@ -795,14 +651,10 @@ app.put("/reviews/:id", async (req, res) => {
       .eq("id", req.params.id)
       .eq("business_id", profile.business_id);
 
-    if (error) {
-      console.error("PUT /reviews/:id error:", error);
-      return res.status(500).send(error.message);
-    }
-
+    if (error) return res.status(500).send(error.message);
     res.json({ success: true });
   } catch (err) {
-    console.error("PUT /reviews/:id server error:", err);
+    console.error("PUT /reviews/:id error:", err);
     res.status(401).send(err.message || "Unauthorized");
   }
 });
@@ -822,14 +674,10 @@ app.delete("/reviews/:id", async (req, res) => {
       .eq("id", req.params.id)
       .eq("business_id", profile.business_id);
 
-    if (error) {
-      console.error("DELETE /reviews/:id error:", error);
-      return res.status(500).send(error.message);
-    }
-
+    if (error) return res.status(500).send(error.message);
     res.json({ success: true });
   } catch (err) {
-    console.error("DELETE /reviews/:id server error:", err);
+    console.error("DELETE /reviews/:id error:", err);
     res.status(401).send(err.message || "Unauthorized");
   }
 });
