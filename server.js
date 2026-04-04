@@ -16,9 +16,9 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "REPLACE_ME";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "REPLACE_ME";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
-const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "REPLACE_ME";
-const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || "REPLACE_ME";
-const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || "REPLACE_ME";
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "drloe7yv4";
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || "949256172383417";
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || "t4zTHsRXinGvwAiRsUfLgw14mo4";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const RESEND_FROM = process.env.RESEND_FROM || "";
@@ -47,19 +47,27 @@ function prettyBusinessName(businessId) {
 }
 
 function buildWidgetCode(payload) {
+  const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
+
   return `<div id="applogix-review-widget"></div>
 
 <script>
-const ARW_API = "${process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com"}";
+const ARW_API = "${appUrl}";
 const BUSINESS_ID = "${payload.businessId}";
+const PLAN_TIER = "${payload.planTier || "free"}";
+
 const BRAND_NAME = "${payload.brandName || payload.businessName}";
 const BRAND_PRIMARY = "${payload.brandPrimary || "#2563eb"}";
 const BRAND_SECONDARY = "${payload.brandSecondary || "#4ea3ff"}";
+const BRAND_ACCENT_GOLD = "#ffd84d";
+
 const BRAND_LOGO_URL = "${payload.brandLogoUrl || ""}";
+const SHOW_POWERED_BY = true;
+const POWERED_BY_NAME = "AppLogix";
 const GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"};
 </script>
 
-<script src="${process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com"}/widget.js" defer></script>`;
+<script src="${appUrl}/widget.js" defer></script>`;
 }
 
 function buildWelcomeEmailText(data) {
@@ -466,6 +474,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     const widgetCode = buildWidgetCode({
       businessName,
       businessId,
+      planTier,
       brandName,
       brandPrimary,
       brandSecondary,
