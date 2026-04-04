@@ -37,88 +37,56 @@
 
     .brand-row {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
+      align-items: center;
     }
 
     .brand-name {
-      font-size: 30px;
+      font-size: 28px;
       font-weight: 800;
-      color: #1f2937;
-      margin: 0;
-    }
-
-    .sub {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 16px;
     }
 
     .card {
-      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 18px;
       border: 1px solid #e4eefc;
-      margin-bottom: 18px;
+      margin-top: 14px;
     }
 
     .input {
       width: 100%;
-      box-sizing: border-box;
-      padding: 14px 16px;
-      border-radius: 16px;
+      padding: 12px;
+      border-radius: 12px;
       border: 1px solid #cfdcf3;
-      background: #f9fbff;
-      font-size: 16px;
-      color: #1f2937;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .btn {
+      padding: 12px;
+      border-radius: 12px;
       border: none;
-      border-radius: 16px;
-      padding: 13px 16px;
-      font-size: 15px;
       font-weight: 800;
       cursor: pointer;
       width: 100%;
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     .btn-blue { background: #2563eb; color: white; }
     .btn-green { background: #16a34a; color: white; }
-    .btn-orange { background: #f59e0b; color: white; }
     .btn-red { background: #dc2626; color: white; }
     .btn-gray { background: #64748b; color: white; }
 
+    .review {
+      border: 1px solid #e4eefc;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
     .hidden { display: none; }
 
-    .status-box {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #475569;
-      white-space: pre-wrap;
-    }
-
-    .review {
-      background: #ffffff;
-      border-radius: 18px;
-      padding: 16px;
-      margin-bottom: 16px;
-      border: 1px solid #e4eefc;
-    }
-
-    .review-name { font-weight: 800; }
-    .review-text { margin-top: 8px; }
-
-    .btn-row {
-      margin-top: 10px;
-      display: grid;
-      gap: 6px;
-    }
+    .status { font-size: 14px; margin-top: 8px; }
   </style>
 </head>
 
@@ -128,32 +96,37 @@
       <div class="topbar"></div>
 
       <div class="content">
+
         <div class="brand-row">
-          <h1 class="brand-name">AppLogix Admin</h1>
+          <div class="brand-name">AppLogix Admin</div>
           <button id="logoutBtn" class="btn btn-gray hidden" onclick="logout()">Logout</button>
         </div>
 
-        <div class="card" id="loginCard">
+        <div id="loginCard" class="card">
           <input id="email" class="input" placeholder="Email">
           <input id="password" class="input" type="password" placeholder="Password">
           <button class="btn btn-blue" onclick="login()">Login</button>
-          <div id="status" class="status-box"></div>
+          <div id="status" class="status"></div>
         </div>
 
-        <div class="card hidden" id="dashboard">
-          <div id="businessLabel"></div>
-          <button class="btn btn-blue" onclick="loadReviews()">Refresh</button>
-        </div>
+        <div id="dashboard" class="hidden">
 
-        <div class="card hidden" id="premiumInviteCard">
-          <h3>Send Review Link</h3>
-          <input id="reviewerName" class="input" placeholder="Name (optional)">
-          <input id="reviewerEmail" class="input" placeholder="Email">
-          <button class="btn btn-blue" onclick="sendInvite()">Send</button>
-          <div id="inviteStatus" class="status-box"></div>
-        </div>
+          <div class="card">
+            <div id="businessLabel"></div>
+            <button class="btn btn-blue" onclick="loadReviews()">Refresh Reviews</button>
+          </div>
 
-        <div id="reviews"></div>
+          <div id="premiumCard" class="card hidden">
+            <h3>Send Review Link</h3>
+            <input id="reviewerName" class="input" placeholder="Name (optional)">
+            <input id="reviewerEmail" class="input" placeholder="Email">
+            <button class="btn btn-blue" onclick="sendInvite()">Send Email</button>
+            <div id="inviteStatus" class="status"></div>
+          </div>
+
+          <div id="reviews"></div>
+
+        </div>
 
       </div>
     </div>
@@ -191,6 +164,11 @@ window.login = async function(){
     headers: { "Authorization": "Bearer " + session.access_token }
   });
 
+  if(!res.ok){
+    document.getElementById("status").textContent = await res.text();
+    return;
+  }
+
   const profile = await res.json();
 
   businessId = profile.businessId;
@@ -200,12 +178,15 @@ window.login = async function(){
   document.getElementById("dashboard").classList.remove("hidden");
   document.getElementById("logoutBtn").classList.remove("hidden");
 
+  document.getElementById("businessLabel").textContent =
+    "Business ID: " + businessId + " | Plan: " + planTier;
+
   if(planTier === "premium"){
-    document.getElementById("premiumInviteCard").classList.remove("hidden");
+    document.getElementById("premiumCard").classList.remove("hidden");
   }
 
   loadReviews();
-}
+};
 
 window.loadReviews = async function(){
   const res = await fetch("/reviews?businessId=" + businessId);
@@ -213,16 +194,16 @@ window.loadReviews = async function(){
 
   document.getElementById("reviews").innerHTML = data.map(r => `
     <div class="review">
-      <div class="review-name">${r.name}</div>
-      <div>${"★".repeat(r.rating)}</div>
-      <div class="review-text">${r.text}</div>
-      <div class="btn-row">
+      <strong>${r.name}</strong><br/>
+      ${"★".repeat(r.rating)}<br/>
+      ${r.text}
+      <div>
         ${!r.approved ? `<button class="btn btn-green" onclick="approve(${r.id})">Approve</button>` : ""}
         <button class="btn btn-red" onclick="removeReview(${r.id})">Delete</button>
       </div>
     </div>
   `).join("");
-}
+};
 
 window.approve = async function(id){
   await fetch("/reviews/"+id,{
@@ -234,7 +215,7 @@ window.approve = async function(id){
     body:JSON.stringify({approved:true})
   });
   loadReviews();
-}
+};
 
 window.removeReview = async function(id){
   await fetch("/reviews/"+id,{
@@ -242,7 +223,7 @@ window.removeReview = async function(id){
     headers:{ "Authorization":"Bearer "+session.access_token }
   });
   loadReviews();
-}
+};
 
 window.sendInvite = async function(){
   const email = document.getElementById("reviewerEmail").value;
@@ -258,15 +239,16 @@ window.sendInvite = async function(){
   });
 
   document.getElementById("inviteStatus").textContent =
-    res.ok ? "Sent" : await res.text();
-}
+    res.ok ? "Email sent successfully" : await res.text();
+};
 
 window.logout = async function(){
   await supabase.auth.signOut();
   location.reload();
-}
+};
 
 init();
 </script>
+
 </body>
 </html>
