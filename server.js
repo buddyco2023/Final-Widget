@@ -96,7 +96,7 @@ Business ID:
 ${data.businessId}
 
 Review Page URL:
-${data.reviewPageUrl || "(not provided)"}
+${data.reviewPageUrl || "(not required for this plan)"}
 `;
 
   if (isDashboardPlan) {
@@ -122,20 +122,20 @@ Copy and paste the code below into your website where you want reviews to appear
 ${data.widgetCode}
 
 ---
-
-What happens next
 `;
 
   if (isDashboardPlan) {
-    text += `
+    text += `What happens next
+
 - Log in to your dashboard
 - Approve or reject reviews
 - Manage review notifications
 `;
   } else {
-    text += `
+    text += `What happens next
+
 - Reviews will publish automatically
-- Your review page link can be shared directly
+- Your review link can be shared directly
 - Upgrade anytime for moderation and dashboard controls
 `;
   }
@@ -423,7 +423,10 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     if (!businessId) return res.status(400).send("Missing business ID.");
     if (!clientEmail) return res.status(400).send("Missing client email.");
     if (!planTier || !VALID_PLANS.includes(planTier)) return res.status(400).send("Invalid plan tier.");
-    if (!reviewPageUrl) return res.status(400).send("Missing review page URL.");
+
+    if (planTier !== PLAN_FREE && !reviewPageUrl) {
+      return res.status(400).send("Review page URL is required for Basic, Pro, and Premium plans.");
+    }
 
     const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(planTier);
 
@@ -520,9 +523,9 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       active: active,
       setup_fee_paid: setupFeePaid,
       first_password_reset_at: null,
-      review_page_url: reviewPageUrl,
-      partner_name: partnerName,
-      partner_email: partnerEmail
+      review_page_url: reviewPageUrl || null,
+      partner_name: partnerName || null,
+      partner_email: partnerEmail || null
     };
 
     const { error: insertErr } = await supabaseAdmin
@@ -573,7 +576,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       notificationsEnabled,
       brandingEnabled,
       googleImportEnabled,
-      reviewPageUrl,
+      reviewPageUrl: reviewPageUrl || "",
       widgetCode,
       welcomeEmail,
       dashboardIncluded: isDashboardPlan,
