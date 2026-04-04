@@ -12,7 +12,7 @@
     }
 
     .wrap {
-      max-width: 860px;
+      max-width: 920px;
       margin: 0 auto;
       padding: 18px;
     }
@@ -63,6 +63,13 @@
       margin: 0 0 14px;
     }
 
+    .hint {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: -4px;
+      margin-bottom: 12px;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -107,13 +114,6 @@
       font-size: 14px;
       color: #334155;
       font-weight: 700;
-    }
-
-    .hint {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: -6px;
-      margin-bottom: 12px;
     }
 
     .btn {
@@ -183,6 +183,10 @@
       background: #2563eb;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     @media (max-width: 700px) {
       .grid {
         grid-template-columns: 1fr;
@@ -197,7 +201,7 @@
 
       <div class="content">
         <h1 class="title">AppLogix Client Onboarding</h1>
-        <div class="sub">Create a new client account, save plan settings, and generate ready-to-use branded widget code.</div>
+        <div class="sub">Create clients, generate widget code, and produce the correct handoff based on plan.</div>
 
         <div class="card">
           <div class="section-title">Internal Access</div>
@@ -207,29 +211,39 @@
         </div>
 
         <div class="card">
+          <div class="section-title">Plan Selection</div>
+          <div class="grid">
+            <select id="planTier" class="select full" onchange="applyPlanTierFeatures()">
+              <option value="">Select plan tier</option>
+              <option value="free">Free</option>
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+          <div class="hint">Free and Basic do not include dashboard access. Pro and Premium include dashboard login.</div>
+        </div>
+
+        <div class="card">
           <div class="section-title">Client Details</div>
           <div class="grid">
             <input id="businessName" class="input" type="text" placeholder="Business name" oninput="generateBusinessId()" />
             <input id="businessId" class="input" type="text" placeholder="Business ID" />
 
             <input id="clientEmail" class="input" type="email" placeholder="Client email" />
-            <input id="tempPassword" class="input" type="text" placeholder="Temporary password" value="AppLogix" />
+            <input id="reviewPageUrl" class="input" type="text" placeholder="Review page URL (where widget lives on client site)" />
 
-            <select id="planTier" class="select" onchange="applyPlanTierFeatures()">
-              <option value="">Select plan tier</option>
-              <option value="starter">Starter</option>
-              <option value="growth">Growth</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
-            </select>
+            <input id="tempPassword" class="input dashboard-only" type="text" placeholder="Temporary password" value="AppLogix" />
+            <input id="notificationEmail" class="input dashboard-only" type="email" placeholder="Notification email" />
 
-            <input id="notificationEmail" class="input" type="email" placeholder="Notification email (usually same as client email)" />
+            <input id="partnerName" class="input" type="text" placeholder="Partner name (optional)" />
+            <input id="partnerEmail" class="input" type="email" placeholder="Partner email (optional)" />
           </div>
         </div>
 
         <div class="card">
           <div class="section-title">Plan Features & Billing</div>
-          <div class="hint">These features auto-fill from the selected tier. You can review them before creating the client.</div>
+          <div class="hint">Feature checkboxes auto-fill from the plan. You can review them before creating the client.</div>
           <div class="grid">
             <div class="checkbox-row"><input id="notificationsEnabled" type="checkbox" /><label for="notificationsEnabled">Notifications enabled</label></div>
             <div class="checkbox-row"><input id="brandingEnabled" type="checkbox" /><label for="brandingEnabled">Branding enabled</label></div>
@@ -245,8 +259,8 @@
             <input id="brandName" class="input" type="text" placeholder="Brand name (usually business name)" />
             <input id="brandLogoUrl" class="input" type="text" placeholder="Brand logo URL (optional)" />
 
-            <input id="brandPrimary" class="input" type="text" placeholder="Brand primary color (example: #2563eb)" value="#2563eb" />
-            <input id="brandSecondary" class="input" type="text" placeholder="Brand secondary color (example: #4ea3ff)" value="#4ea3ff" />
+            <input id="brandPrimary" class="input" type="text" placeholder="Brand primary color" value="#2563eb" />
+            <input id="brandSecondary" class="input" type="text" placeholder="Brand secondary color" value="#4ea3ff" />
           </div>
         </div>
 
@@ -298,22 +312,30 @@
       const brandingEnabled = document.getElementById("brandingEnabled");
       const googleImportEnabled = document.getElementById("googleImportEnabled");
 
-      if (plan === "starter") {
+      const dashboardFields = document.querySelectorAll(".dashboard-only");
+
+      if (plan === "free") {
         notificationsEnabled.checked = false;
         brandingEnabled.checked = false;
         googleImportEnabled.checked = false;
-      } else if (plan === "growth") {
+        dashboardFields.forEach(el => el.classList.add("hidden"));
+      } else if (plan === "basic") {
+        notificationsEnabled.checked = false;
+        brandingEnabled.checked = false;
+        googleImportEnabled.checked = false;
+        dashboardFields.forEach(el => el.classList.add("hidden"));
+      } else if (plan === "pro") {
         notificationsEnabled.checked = true;
         brandingEnabled.checked = false;
         googleImportEnabled.checked = false;
-      } else if (plan === "pro") {
-        notificationsEnabled.checked = true;
-        brandingEnabled.checked = true;
-        googleImportEnabled.checked = false;
+        dashboardFields.forEach(el => el.classList.remove("hidden"));
       } else if (plan === "premium") {
         notificationsEnabled.checked = true;
         brandingEnabled.checked = true;
         googleImportEnabled.checked = true;
+        dashboardFields.forEach(el => el.classList.remove("hidden"));
+      } else {
+        dashboardFields.forEach(el => el.classList.remove("hidden"));
       }
     }
 
@@ -324,56 +346,7 @@
     });
 
     function buildWelcomeEmail(data) {
-      return `Subject: Welcome to AppLogix — Your Review System is Ready
-
-Hi ${data.businessName},
-
-Welcome to AppLogix — your review system is now fully set up and ready to go.
-
-Here are your login details:
-
-Dashboard:
-https://final-widget.onrender.com/admin3
-
-Email:
-${data.clientEmail}
-
-Temporary Password:
-${data.tempPassword}
-
-Business ID:
-${data.businessId}
-
----
-
-What to do next
-
-1. Log in using the link above
-2. You will be prompted to set a new password
-3. Once logged in, you can:
-   - Approve or delete reviews
-   - Upload customer images
-   - Manage your review content
-
----
-
-Install your review widget
-
-Copy and paste the code below into your website where you want reviews to appear:
-
-${data.widgetCode}
-
----
-
-What happens next
-
-- New reviews will appear in your dashboard
-- You can approve them before they go live
-- Your system is fully active and ready to collect reviews
-
-If you need help with installation or customization, just reply to this email and I’ll take care of it.
-
-— AppLogix`;
+      return data.welcomeEmail || "";
     }
 
     async function createClient() {
@@ -388,8 +361,8 @@ If you need help with installation or customization, just reply to this email an
         clientEmail: document.getElementById("clientEmail").value.trim(),
         tempPassword: document.getElementById("tempPassword").value.trim(),
         planTier: document.getElementById("planTier").value,
-        notificationsEnabled: document.getElementById("notificationsEnabled").checked,
         notificationEmail: document.getElementById("notificationEmail").value.trim(),
+        notificationsEnabled: document.getElementById("notificationsEnabled").checked,
         brandingEnabled: document.getElementById("brandingEnabled").checked,
         googleImportEnabled: document.getElementById("googleImportEnabled").checked,
         brandName: document.getElementById("brandName").value.trim(),
@@ -397,7 +370,10 @@ If you need help with installation or customization, just reply to this email an
         brandSecondary: document.getElementById("brandSecondary").value.trim(),
         brandLogoUrl: document.getElementById("brandLogoUrl").value.trim(),
         active: document.getElementById("active").checked,
-        setupFeePaid: document.getElementById("setupFeePaid").checked
+        setupFeePaid: document.getElementById("setupFeePaid").checked,
+        reviewPageUrl: document.getElementById("reviewPageUrl").value.trim(),
+        partnerName: document.getElementById("partnerName").value.trim(),
+        partnerEmail: document.getElementById("partnerEmail").value.trim()
       };
 
       const adminToken = document.getElementById("adminToken").value.trim();
@@ -408,8 +384,14 @@ If you need help with installation or customization, just reply to this email an
         return;
       }
 
-      if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.tempPassword || !payload.planTier) {
+      if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.planTier || !payload.reviewPageUrl) {
         status.textContent = "Please complete required fields.";
+        successBox.style.display = "none";
+        return;
+      }
+
+      if ((payload.planTier === "pro" || payload.planTier === "premium") && !payload.tempPassword) {
+        status.textContent = "Temporary password is required for Pro and Premium.";
         successBox.style.display = "none";
         return;
       }
@@ -439,15 +421,24 @@ If you need help with installation or customization, just reply to this email an
         status.textContent = "Client created successfully.";
         successBox.style.display = "block";
 
-        successSummary.textContent =
+        let summary =
           "Business: " + data.businessName + "\n" +
           "Business ID: " + data.businessId + "\n" +
           "Email: " + data.clientEmail + "\n" +
-          "Temporary Password: " + data.tempPassword + "\n" +
           "Plan: " + data.planTier + "\n" +
-          "Dashboard: https://final-widget.onrender.com/admin3";
+          "Review Page URL: " + data.reviewPageUrl + "\n";
 
+        if (data.dashboardIncluded) {
+          summary +=
+            "Dashboard: " + data.dashboardUrl + "\n" +
+            "Temporary Password: " + data.tempPassword;
+        } else {
+          summary += "Dashboard: Not included for this plan";
+        }
+
+        successSummary.textContent = summary;
         widgetCodeBox.textContent = data.widgetCode;
+
         window.__latestWidgetCode = data.widgetCode;
         window.__latestWelcomeEmail = buildWelcomeEmail(data);
       } catch (e) {
