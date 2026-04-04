@@ -37,57 +37,205 @@
 
     .brand-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
     }
 
     .brand-name {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 800;
+      color: #1f2937;
+      margin: 0;
+    }
+
+    .sub {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 16px;
     }
 
     .card {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 18px;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
       border: 1px solid #e4eefc;
-      margin-top: 14px;
+      margin-bottom: 18px;
     }
 
     .input {
       width: 100%;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #cfdcf3;
-      margin-bottom: 10px;
       box-sizing: border-box;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+      font-size: 16px;
+      color: #1f2937;
+      margin-bottom: 12px;
     }
 
     .btn {
-      padding: 12px;
-      border-radius: 12px;
       border: none;
+      border-radius: 16px;
+      padding: 13px 16px;
+      font-size: 15px;
       font-weight: 800;
       cursor: pointer;
       width: 100%;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
-    .btn-blue { background: #2563eb; color: white; }
-    .btn-green { background: #16a34a; color: white; }
-    .btn-red { background: #dc2626; color: white; }
-    .btn-gray { background: #64748b; color: white; }
+    .btn-blue {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-green {
+      background: #16a34a;
+      color: white;
+    }
+
+    .btn-red {
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-gray {
+      background: #64748b;
+      color: white;
+    }
+
+    .btn-orange {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .status-box {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #475569;
+      white-space: pre-wrap;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      background: #f8fbff;
+      border: 1px solid #dbe7fb;
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .avg-stars {
+      font-size: 22px;
+      color: #ffd84d;
+      letter-spacing: 2px;
+      margin-top: 4px;
+    }
 
     .review {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
       border: 1px solid #e4eefc;
-      border-radius: 14px;
-      padding: 12px;
+    }
+
+    .review-name {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .review-stars {
+      margin-bottom: 10px;
+      font-size: 20px;
+      letter-spacing: 2px;
+      color: #f59e0b;
+    }
+
+    .review-status {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .status-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .review-text {
+      line-height: 1.6;
+      color: #334155;
+      margin-bottom: 10px;
+    }
+
+    .review img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+      margin-top: 12px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+    }
+
+    .btn-row {
+      display: grid;
+      gap: 8px;
       margin-top: 12px;
     }
 
-    .hidden { display: none; }
+    .empty {
+      border: 1px solid #e4eefc;
+      border-radius: 18px;
+      padding: 18px;
+      color: #64748b;
+      background: #fff;
+    }
 
-    .status { font-size: 14px; margin-top: 8px; white-space: pre-wrap; }
+    @media (max-width: 700px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 
@@ -97,38 +245,64 @@
       <div class="topbar"></div>
 
       <div class="content">
-
         <div class="brand-row">
-          <div class="brand-name">AppLogix Admin</div>
-          <button id="logoutBtn" class="btn btn-gray hidden" onclick="logout()">Logout</button>
+          <h1 class="brand-name">AppLogix Admin</h1>
+          <button id="logoutBtn" class="btn btn-gray hidden" style="width:auto; margin-top:0;" onclick="logout()">Logout</button>
         </div>
 
-        <div id="loginCard" class="card">
-          <input id="email" class="input" placeholder="Email">
+        <div class="sub">Business admin dashboard</div>
+
+        <div class="card" id="loginCard">
+          <input id="email" class="input" type="text" placeholder="Email">
           <input id="password" class="input" type="password" placeholder="Password">
           <button class="btn btn-blue" onclick="login()">Login</button>
-          <div id="status" class="status"></div>
+          <div id="status" class="status-box">Ready.</div>
         </div>
 
-        <div id="dashboard" class="hidden">
-
-          <div class="card">
-            <div id="businessLabel"></div>
-            <button class="btn btn-blue" onclick="loadReviews()">Refresh Reviews</button>
+        <div class="card hidden" id="resetCard">
+          <div class="sub">Set a new password</div>
+          <div class="status-box" style="margin-bottom:12px;">
+            This account requires a password reset before dashboard access.
           </div>
-
-          <div id="premiumCard" class="card hidden">
-            <h3>Send Review Link</h3>
-            <input id="reviewerName" class="input" placeholder="Name (optional)">
-            <input id="reviewerEmail" class="input" placeholder="Email">
-            <button class="btn btn-blue" onclick="sendInvite()">Send Email</button>
-            <div id="inviteStatus" class="status"></div>
-          </div>
-
-          <div id="reviews"></div>
-
+          <input id="newPassword" class="input" type="password" placeholder="New password">
+          <input id="confirmPassword" class="input" type="password" placeholder="Confirm password">
+          <button class="btn btn-blue" onclick="saveNewPassword()">Save New Password</button>
+          <div id="resetStatus" class="status-box"></div>
         </div>
 
+        <div class="card hidden" id="dashboardCard">
+          <div class="sub" id="businessLabel"></div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number" id="totalReviews">0</div>
+              <div class="stat-label">Total Reviews</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-number" id="pendingReviews">0</div>
+              <div class="stat-label">Pending Reviews</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-number" id="averageRating">0.0</div>
+              <div class="stat-label">Average Rating</div>
+              <div class="avg-stars" id="averageStars">☆☆☆☆☆</div>
+            </div>
+          </div>
+
+          <button class="btn btn-blue" onclick="loadReviews()">Refresh Reviews</button>
+        </div>
+
+        <div class="card hidden" id="premiumInviteCard">
+          <div class="sub">Send Review Link</div>
+          <input id="reviewerName" class="input" placeholder="Name (optional)">
+          <input id="reviewerEmail" class="input" placeholder="Email">
+          <button class="btn btn-blue" onclick="sendInvite()">Send Email</button>
+          <div id="inviteStatus" class="status-box"></div>
+        </div>
+
+        <div id="reviews"></div>
       </div>
     </div>
   </div>
@@ -137,119 +311,194 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 let supabase;
-let session;
-let businessId;
-let planTier;
+let session = null;
+let businessId = null;
+let planTier = null;
 
-async function init(){
+function stars(n) {
+  const val = Math.max(0, Math.min(5, Number(n) || 0));
+  return "★".repeat(val) + "☆".repeat(5 - val);
+}
+
+function avgStars(avg) {
+  const rounded = Math.round(Number(avg) || 0);
+  return "★".repeat(rounded) + "☆".repeat(5 - rounded);
+}
+
+async function init() {
   const res = await fetch("/client-config");
   const cfg = await res.json();
   supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+
+  document.getElementById("password").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") login();
+  });
 }
 
-window.login = async function(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+window.login = async function () {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const status = document.getElementById("status");
+
+  if (!email || !password) {
+    status.textContent = "Enter your email and password.";
+    return;
+  }
+
+  status.textContent = "Logging in...";
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if(error){
-    document.getElementById("status").textContent = error.message;
+  if (error) {
+    status.textContent = error.message;
     return;
   }
 
   session = data.session;
+  await loadProfile();
+};
+
+async function loadProfile() {
+  const status = document.getElementById("status");
 
   const res = await fetch("/admin-me", {
     method: "POST",
     headers: { "Authorization": "Bearer " + session.access_token }
   });
 
-  if(!res.ok){
-    document.getElementById("status").textContent = await res.text();
+  if (!res.ok) {
+    status.textContent = await res.text();
     return;
   }
 
   const profile = await res.json();
 
   businessId = profile.businessId;
-  planTier = profile.planTier;
+  planTier = (profile.planTier || "").toLowerCase();
 
   document.getElementById("loginCard").classList.add("hidden");
-  document.getElementById("dashboard").classList.remove("hidden");
   document.getElementById("logoutBtn").classList.remove("hidden");
 
+  if (profile.mustResetPassword) {
+    document.getElementById("resetCard").classList.remove("hidden");
+    document.getElementById("dashboardCard").classList.add("hidden");
+    document.getElementById("premiumInviteCard").classList.add("hidden");
+    document.getElementById("reviews").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("resetCard").classList.add("hidden");
+  document.getElementById("dashboardCard").classList.remove("hidden");
   document.getElementById("businessLabel").textContent =
     "Business ID: " + businessId + " | Plan: " + planTier;
 
-  if(planTier === "premium"){
-    document.getElementById("premiumCard").classList.remove("hidden");
+  if (planTier === "premium") {
+    document.getElementById("premiumInviteCard").classList.remove("hidden");
+  } else {
+    document.getElementById("premiumInviteCard").classList.add("hidden");
   }
 
-  loadReviews();
+  await loadReviews();
+}
+
+window.saveNewPassword = async function () {
+  const pw1 = document.getElementById("newPassword").value;
+  const pw2 = document.getElementById("confirmPassword").value;
+  const resetStatus = document.getElementById("resetStatus");
+
+  if (!pw1 || !pw2) {
+    resetStatus.textContent = "Please enter the new password twice.";
+    return;
+  }
+
+  if (pw1 !== pw2) {
+    resetStatus.textContent = "Passwords do not match.";
+    return;
+  }
+
+  resetStatus.textContent = "Saving...";
+
+  const { error } = await supabase.auth.updateUser({ password: pw1 });
+
+  if (error) {
+    resetStatus.textContent = error.message;
+    return;
+  }
+
+  const markRes = await fetch("/admin-mark-password-reset-complete", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + session.access_token }
+  });
+
+  if (!markRes.ok) {
+    resetStatus.textContent = await markRes.text();
+    return;
+  }
+
+  resetStatus.textContent = "Password saved. Please log in again.";
+
+  setTimeout(async () => {
+    await logout();
+  }, 1200);
 };
 
-window.loadReviews = async function(){
+window.loadReviews = async function () {
+  if (!businessId) return;
+
   const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId));
   const data = await res.json();
 
-  document.getElementById("reviews").innerHTML = data.map(r => `
+  const total = Array.isArray(data) ? data.length : 0;
+  const pending = Array.isArray(data) ? data.filter(r => !r.approved).length : 0;
+  const avg = total
+    ? data.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total
+    : 0;
+
+  document.getElementById("totalReviews").textContent = total;
+  document.getElementById("pendingReviews").textContent = pending;
+  document.getElementById("averageRating").textContent = avg.toFixed(1);
+  document.getElementById("averageStars").textContent = avgStars(avg);
+
+  const reviewsEl = document.getElementById("reviews");
+
+  if (!Array.isArray(data) || !data.length) {
+    reviewsEl.innerHTML = '<div class="empty">No reviews found.</div>';
+    return;
+  }
+
+  reviewsEl.innerHTML = data.map(r => `
     <div class="review">
-      <strong>${r.name || "Anonymous"}</strong><br/>
-      ${"★".repeat(Number(r.rating) || 0)}<br/>
-      ${r.text || ""}
-      <div>
-        ${!r.approved ? `<button class="btn btn-green" onclick="approve(${r.id})">Approve</button>` : ""}
+      <div class="review-name">${r.name || "Anonymous"}</div>
+      <div class="review-stars">${stars(r.rating)}</div>
+      <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
+        ${r.approved ? "Approved" : "Pending"}
+      </div>
+      <div class="review-text">${r.text || ""}</div>
+      ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
+      <div class="btn-row">
+        ${!r.approved ? `<button class="btn btn-green" onclick="approveReview(${r.id})">Approve</button>` : ""}
+        ${r.approved ? `<button class="btn btn-orange" onclick="markPending(${r.id})">Mark Pending</button>` : ""}
         <button class="btn btn-red" onclick="removeReview(${r.id})">Delete</button>
       </div>
     </div>
   `).join("");
 };
 
-window.approve = async function(id){
-  await fetch("/reviews/"+id,{
-    method:"PUT",
-    headers:{
-      "Authorization":"Bearer "+session.access_token,
-      "Content-Type":"application/json"
+window.approveReview = async function (id) {
+  await fetch("/reviews/" + id, {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " + session.access_token,
+      "Content-Type": "application/json"
     },
-    body:JSON.stringify({approved:true})
-  });
-  loadReviews();
-};
-
-window.removeReview = async function(id){
-  await fetch("/reviews/"+id,{
-    method:"DELETE",
-    headers:{ "Authorization":"Bearer "+session.access_token }
-  });
-  loadReviews();
-};
-
-window.sendInvite = async function(){
-  const email = document.getElementById("reviewerEmail").value;
-  const name = document.getElementById("reviewerName").value;
-
-  const res = await fetch("/send-review-link",{
-    method:"POST",
-    headers:{
-      "Authorization":"Bearer "+session.access_token,
-      "Content-Type":"application/json"
-    },
-    body:JSON.stringify({ reviewerEmail:email, reviewerName:name })
+    body: JSON.stringify({ approved: true })
   });
 
-  document.getElementById("inviteStatus").textContent =
-    res.ok ? "Email sent successfully" : await res.text();
+  await loadReviews();
 };
 
-window.logout = async function(){
-  await supabase.auth.signOut();
-  location.reload();
-};
-
-init();
-</script>
-
-</body>
-</html>
+window.markPending = async function (id) {
+  await fetch("/reviews/" + id, {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " +
