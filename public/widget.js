@@ -2,43 +2,24 @@
   const root = document.getElementById("applogix-review-widget");
   if (!root) return;
 
-  const API = typeof ARW_API !== "undefined" ? ARW_API : "";
-  const BUSINESS_ID = typeof BUSINESS_ID !== "undefined" ? BUSINESS_ID : "";
-  const PLAN_TIER = typeof window.PLAN_TIER !== "undefined"
-    ? window.PLAN_TIER
-    : (typeof PLAN_TIER !== "undefined" ? PLAN_TIER : "free");
+  const apiUrl = typeof window.ARW_API !== "undefined" ? window.ARW_API : "";
+  const businessId = typeof window.BUSINESS_ID !== "undefined" ? window.BUSINESS_ID : "";
+  const planTier = typeof window.PLAN_TIER !== "undefined" ? String(window.PLAN_TIER).toLowerCase() : "free";
 
-  const BRAND_NAME = typeof window.BRAND_NAME !== "undefined"
-    ? window.BRAND_NAME
-    : (typeof BRAND_NAME !== "undefined" ? BRAND_NAME : "Your Business");
+  const brandName = typeof window.BRAND_NAME !== "undefined" ? window.BRAND_NAME : "Your Business";
+  const brandPrimary = typeof window.BRAND_PRIMARY !== "undefined" ? window.BRAND_PRIMARY : "#2563eb";
+  const brandSecondary = typeof window.BRAND_SECONDARY !== "undefined" ? window.BRAND_SECONDARY : "#4ea3ff";
+  const brandLogoUrl = typeof window.BRAND_LOGO_URL !== "undefined" ? window.BRAND_LOGO_URL : "";
+  const showPoweredBy = typeof window.SHOW_POWERED_BY !== "undefined" ? window.SHOW_POWERED_BY : true;
+  const poweredByName = typeof window.POWERED_BY_NAME !== "undefined" ? window.POWERED_BY_NAME : "AppLogix";
 
-  const BRAND_PRIMARY = typeof window.BRAND_PRIMARY !== "undefined"
-    ? window.BRAND_PRIMARY
-    : (typeof BRAND_PRIMARY !== "undefined" ? BRAND_PRIMARY : "#2563eb");
-
-  const BRAND_SECONDARY = typeof window.BRAND_SECONDARY !== "undefined"
-    ? window.BRAND_SECONDARY
-    : (typeof BRAND_SECONDARY !== "undefined" ? BRAND_SECONDARY : "#4ea3ff");
-
-  const BRAND_LOGO_URL = typeof window.BRAND_LOGO_URL !== "undefined"
-    ? window.BRAND_LOGO_URL
-    : (typeof BRAND_LOGO_URL !== "undefined" ? BRAND_LOGO_URL : "");
-
-  const SHOW_POWERED_BY = typeof window.SHOW_POWERED_BY !== "undefined"
-    ? window.SHOW_POWERED_BY
-    : true;
-
-  const POWERED_BY_NAME = typeof window.POWERED_BY_NAME !== "undefined"
-    ? window.POWERED_BY_NAME
-    : "AppLogix";
-
-  const CACHE_KEY = "arw_reviews_" + BUSINESS_ID;
-  const CACHE_TTL_MS = 1000 * 60 * 5;
+  const cacheKey = "arw_reviews_" + businessId;
+  const cacheTtlMs = 1000 * 60 * 5;
 
   let selectedRating = 0;
 
   function canUploadImages() {
-    return PLAN_TIER !== "free";
+    return planTier !== "free";
   }
 
   function escapeHtml(value) {
@@ -61,11 +42,11 @@
 
   function getCachedReviews() {
     try {
-      const raw = localStorage.getItem(CACHE_KEY);
+      const raw = localStorage.getItem(cacheKey);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || !parsed.timestamp || !Array.isArray(parsed.data)) return null;
-      if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return null;
+      if (Date.now() - parsed.timestamp > cacheTtlMs) return null;
       return parsed.data;
     } catch (_) {
       return null;
@@ -75,7 +56,7 @@
   function setCachedReviews(reviews) {
     try {
       localStorage.setItem(
-        CACHE_KEY,
+        cacheKey,
         JSON.stringify({
           timestamp: Date.now(),
           data: reviews || []
@@ -107,7 +88,7 @@
 
       .arw-topbar {
         height: 58px;
-        background: linear-gradient(90deg, ${BRAND_SECONDARY} 0%, ${BRAND_PRIMARY} 100%);
+        background: linear-gradient(90deg, ${brandSecondary} 0%, ${brandPrimary} 100%);
       }
 
       .arw-content {
@@ -283,7 +264,7 @@
         border: none;
         border-radius: 16px;
         padding: 15px 18px;
-        background: linear-gradient(180deg, ${BRAND_SECONDARY} 0%, ${BRAND_PRIMARY} 100%);
+        background: linear-gradient(180deg, ${brandSecondary} 0%, ${brandPrimary} 100%);
         color: #ffffff;
         font-size: 16px;
         font-weight: 800;
@@ -366,13 +347,13 @@
   }
 
   function renderShell() {
-    const logoHtml = BRAND_LOGO_URL
-      ? `<img class="arw-logo" src="${escapeHtml(BRAND_LOGO_URL)}" alt="${escapeHtml(BRAND_NAME)} logo">`
+    const logoHtml = brandLogoUrl
+      ? `<img class="arw-logo" src="${escapeHtml(brandLogoUrl)}" alt="${escapeHtml(brandName)} logo">`
       : `<svg class="arw-logo" viewBox="0 0 64 64" aria-hidden="true">
           <defs>
             <linearGradient id="arwGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="${escapeHtml(BRAND_SECONDARY)}"></stop>
-              <stop offset="100%" stop-color="${escapeHtml(BRAND_PRIMARY)}"></stop>
+              <stop offset="0%" stop-color="${escapeHtml(brandSecondary)}"></stop>
+              <stop offset="100%" stop-color="${escapeHtml(brandPrimary)}"></stop>
             </linearGradient>
           </defs>
           <polygon points="23,7 39,28 18,35" fill="url(#arwGrad1)"></polygon>
@@ -427,11 +408,11 @@
         </div>
 
         <div class="arw-footer">
-          ${SHOW_POWERED_BY ? `
+          ${showPoweredBy ? `
             <span class="arw-powered">Powered by:</span>
             <div class="arw-brand">
               ${logoHtml}
-              <span class="arw-brand-text">${escapeHtml(POWERED_BY_NAME)}</span>
+              <span class="arw-brand-text">${escapeHtml(poweredByName)}</span>
             </div>
           ` : ``}
         </div>
@@ -456,9 +437,7 @@
 
     if (!canUploadImages()) {
       const fileInput = document.getElementById("arw-image");
-      if (fileInput) {
-        fileInput.style.display = "none";
-      }
+      if (fileInput) fileInput.style.display = "none";
 
       const note = document.getElementById("arw-note");
       if (note) {
@@ -478,7 +457,7 @@
   }
 
   async function uploadToCloudinary(file) {
-    const signRes = await fetch(API + "/cloudinary-signature", { cache: "no-store" });
+    const signRes = await fetch(apiUrl + "/cloudinary-signature", { cache: "no-store" });
     if (!signRes.ok) throw new Error("Could not prepare image upload");
 
     const signData = await signRes.json();
@@ -529,7 +508,7 @@
         imageUrl = await uploadToCloudinary(file);
       }
 
-      const res = await fetch(API + "/reviews", {
+      const res = await fetch(apiUrl + "/reviews", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -539,7 +518,7 @@
           text,
           rating: selectedRating,
           image: imageUrl,
-          businessId: BUSINESS_ID
+          businessId: businessId
         })
       });
 
@@ -575,12 +554,12 @@
     const approved = Array.isArray(reviews) ? reviews.filter(r => r.approved === true) : [];
     const list = document.getElementById("arw-list");
     const avgNumber = document.getElementById("arw-average-number");
-    const avgStars = document.getElementById("arw-average-stars");
+    const avgStarsEl = document.getElementById("arw-average-stars");
     const reviewCount = document.getElementById("arw-review-count");
 
     if (!approved.length) {
       avgNumber.textContent = "0.0";
-      avgStars.textContent = "☆☆☆☆☆";
+      avgStarsEl.textContent = "☆☆☆☆☆";
       reviewCount.textContent = "0 reviews";
       list.innerHTML = `<div class="arw-empty">No approved reviews yet.</div>`;
       return;
@@ -590,7 +569,7 @@
     const avg = approved.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total;
 
     avgNumber.textContent = avg.toFixed(1);
-    avgStars.textContent = renderAverageStars(avg);
+    avgStarsEl.textContent = renderAverageStars(avg);
     reviewCount.textContent = total === 1 ? "1 review" : total + " reviews";
 
     list.innerHTML = approved.map(r => `
@@ -613,7 +592,7 @@
 
     try {
       const res = await fetch(
-        API + "/reviews?businessId=" + encodeURIComponent(BUSINESS_ID),
+        apiUrl + "/reviews?businessId=" + encodeURIComponent(businessId),
         { cache: "no-store" }
       );
 
