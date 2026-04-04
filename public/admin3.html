@@ -3,7 +3,6 @@
 <head>
   <title>AppLogix Admin Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
   <style>
     body {
       margin: 0;
@@ -88,30 +87,11 @@
       margin-top: 8px;
     }
 
-    .btn-blue {
-      background: #2563eb;
-      color: white;
-    }
-
-    .btn-green {
-      background: #16a34a;
-      color: white;
-    }
-
-    .btn-red {
-      background: #dc2626;
-      color: white;
-    }
-
-    .btn-gray {
-      background: #64748b;
-      color: white;
-    }
-
-    .btn-orange {
-      background: #f59e0b;
-      color: white;
-    }
+    .btn-blue { background: #2563eb; color: white; }
+    .btn-green { background: #16a34a; color: white; }
+    .btn-red { background: #dc2626; color: white; }
+    .btn-gray { background: #64748b; color: white; }
+    .btn-orange { background: #f59e0b; color: white; }
 
     .hidden {
       display: none;
@@ -256,7 +236,7 @@
           <input id="email" class="input" type="text" placeholder="Email">
           <input id="password" class="input" type="password" placeholder="Password">
           <button class="btn btn-blue" onclick="login()">Login</button>
-          <div id="status" class="status-box">Ready.</div>
+          <div id="status" class="status-box">Loading...</div>
         </div>
 
         <div class="card hidden" id="resetCard">
@@ -310,10 +290,14 @@
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-let supabase;
+let supabase = null;
 let session = null;
 let businessId = null;
 let planTier = null;
+
+function setStatus(message) {
+  document.getElementById("status").textContent = message;
+}
 
 function stars(n) {
   const val = Math.max(0, Math.min(5, Number(n) || 0));
@@ -326,162 +310,228 @@ function avgStars(avg) {
 }
 
 async function init() {
-  const res = await fetch("/client-config");
-  const cfg = await res.json();
-  supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+  try {
+    setStatus("Loading config...");
 
-  document.getElementById("password").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") login();
-  });
+    const res = await fetch("/client-config", { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error("Could not load client config");
+    }
+
+    const cfg = await res.json();
+
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
+      throw new Error("Missing Supabase config");
+    }
+
+    if (cfg.supabaseUrl === "REPLACE_ME" || cfg.supabaseAnonKey === "REPLACE_ME") {
+      throw new Error("Supabase config is still set to REPLACE_ME in the server environment.");
+    }
+
+    supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    setStatus("Ready.");
+
+    document.getElementById("password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") login();
+    });
+  } catch (err) {
+    console.error("init error:", err);
+    setStatus("Init error: " + (err.message || "Unknown error"));
+  }
 }
 
 window.login = async function () {
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const status = document.getElementById("status");
+  try {
+    if (!supabase) {
+      setStatus("Supabase is not initialized.");
+      return;
+    }
 
-  if (!email || !password) {
-    status.textContent = "Enter your email and password.";
-    return;
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+
+    if (!email || !password) {
+      setStatus("Enter your email and password.");
+      return;
+    }
+
+    setStatus("Logging in...");
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      setStatus("Login error: " + error.message);
+      return;
+    }
+
+    if (!data || !data.session) {
+      setStatus("Login failed: no session returned.");
+      return;
+    }
+
+    session = data.session;
+    await loadProfile();
+  } catch (err) {
+    console.error("login error:", err);
+    setStatus("Login exception: " + (err.message || "Unknown error"));
   }
-
-  status.textContent = "Logging in...";
-
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    status.textContent = error.message;
-    return;
-  }
-
-  session = data.session;
-  await loadProfile();
 };
 
 async function loadProfile() {
-  const status = document.getElementById("status");
+  try {
+    setStatus("Loading profile...");
 
-  const res = await fetch("/admin-me", {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + session.access_token }
-  });
+    const res = await fetch("/admin-me", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + session.access_token
+      }
+    });
 
-  if (!res.ok) {
-    status.textContent = await res.text();
-    return;
+    if (!res.ok) {
+      const txt = await res.text();
+      setStatus("Profile error: " + txt);
+      return;
+    }
+
+    const profile = await res.json();
+
+    businessId = profile.businessId;
+    planTier = (profile.planTier || "").toLowerCase();
+
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("logoutBtn").classList.remove("hidden");
+
+    if (profile.mustResetPassword) {
+      document.getElementById("resetCard").classList.remove("hidden");
+      document.getElementById("dashboardCard").classList.add("hidden");
+      document.getElementById("premiumInviteCard").classList.add("hidden");
+      document.getElementById("reviews").innerHTML = "";
+      return;
+    }
+
+    document.getElementById("resetCard").classList.add("hidden");
+    document.getElementById("dashboardCard").classList.remove("hidden");
+    document.getElementById("businessLabel").textContent =
+      "Business ID: " + businessId + " | Plan: " + planTier;
+
+    if (planTier === "premium") {
+      document.getElementById("premiumInviteCard").classList.remove("hidden");
+    } else {
+      document.getElementById("premiumInviteCard").classList.add("hidden");
+    }
+
+    await loadReviews();
+  } catch (err) {
+    console.error("loadProfile error:", err);
+    setStatus("Profile exception: " + (err.message || "Unknown error"));
   }
-
-  const profile = await res.json();
-
-  businessId = profile.businessId;
-  planTier = (profile.planTier || "").toLowerCase();
-
-  document.getElementById("loginCard").classList.add("hidden");
-  document.getElementById("logoutBtn").classList.remove("hidden");
-
-  if (profile.mustResetPassword) {
-    document.getElementById("resetCard").classList.remove("hidden");
-    document.getElementById("dashboardCard").classList.add("hidden");
-    document.getElementById("premiumInviteCard").classList.add("hidden");
-    document.getElementById("reviews").innerHTML = "";
-    return;
-  }
-
-  document.getElementById("resetCard").classList.add("hidden");
-  document.getElementById("dashboardCard").classList.remove("hidden");
-  document.getElementById("businessLabel").textContent =
-    "Business ID: " + businessId + " | Plan: " + planTier;
-
-  if (planTier === "premium") {
-    document.getElementById("premiumInviteCard").classList.remove("hidden");
-  } else {
-    document.getElementById("premiumInviteCard").classList.add("hidden");
-  }
-
-  await loadReviews();
 }
 
 window.saveNewPassword = async function () {
-  const pw1 = document.getElementById("newPassword").value;
-  const pw2 = document.getElementById("confirmPassword").value;
-  const resetStatus = document.getElementById("resetStatus");
+  try {
+    const pw1 = document.getElementById("newPassword").value;
+    const pw2 = document.getElementById("confirmPassword").value;
+    const resetStatus = document.getElementById("resetStatus");
 
-  if (!pw1 || !pw2) {
-    resetStatus.textContent = "Please enter the new password twice.";
-    return;
+    if (!pw1 || !pw2) {
+      resetStatus.textContent = "Please enter the new password twice.";
+      return;
+    }
+
+    if (pw1 !== pw2) {
+      resetStatus.textContent = "Passwords do not match.";
+      return;
+    }
+
+    resetStatus.textContent = "Saving...";
+
+    const { error } = await supabase.auth.updateUser({ password: pw1 });
+
+    if (error) {
+      resetStatus.textContent = "Password update error: " + error.message;
+      return;
+    }
+
+    const markRes = await fetch("/admin-mark-password-reset-complete", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + session.access_token
+      }
+    });
+
+    if (!markRes.ok) {
+      resetStatus.textContent = "Server error: " + await markRes.text();
+      return;
+    }
+
+    resetStatus.textContent = "Password saved. Please log in again.";
+
+    setTimeout(async () => {
+      await logout();
+    }, 1200);
+  } catch (err) {
+    console.error("saveNewPassword error:", err);
+    document.getElementById("resetStatus").textContent =
+      "Password reset exception: " + (err.message || "Unknown error");
   }
-
-  if (pw1 !== pw2) {
-    resetStatus.textContent = "Passwords do not match.";
-    return;
-  }
-
-  resetStatus.textContent = "Saving...";
-
-  const { error } = await supabase.auth.updateUser({ password: pw1 });
-
-  if (error) {
-    resetStatus.textContent = error.message;
-    return;
-  }
-
-  const markRes = await fetch("/admin-mark-password-reset-complete", {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + session.access_token }
-  });
-
-  if (!markRes.ok) {
-    resetStatus.textContent = await markRes.text();
-    return;
-  }
-
-  resetStatus.textContent = "Password saved. Please log in again.";
-
-  setTimeout(async () => {
-    await logout();
-  }, 1200);
 };
 
 window.loadReviews = async function () {
-  if (!businessId) return;
+  try {
+    if (!businessId) return;
 
-  const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId));
-  const data = await res.json();
+    const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId), {
+      cache: "no-store"
+    });
 
-  const total = Array.isArray(data) ? data.length : 0;
-  const pending = Array.isArray(data) ? data.filter(r => !r.approved).length : 0;
-  const avg = total
-    ? data.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total
-    : 0;
+    if (!res.ok) {
+      document.getElementById("reviews").innerHTML =
+        '<div class="empty">Could not load reviews.</div>';
+      return;
+    }
 
-  document.getElementById("totalReviews").textContent = total;
-  document.getElementById("pendingReviews").textContent = pending;
-  document.getElementById("averageRating").textContent = avg.toFixed(1);
-  document.getElementById("averageStars").textContent = avgStars(avg);
+    const data = await res.json();
 
-  const reviewsEl = document.getElementById("reviews");
+    const total = Array.isArray(data) ? data.length : 0;
+    const pending = Array.isArray(data) ? data.filter(r => !r.approved).length : 0;
+    const avg = total
+      ? data.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total
+      : 0;
 
-  if (!Array.isArray(data) || !data.length) {
-    reviewsEl.innerHTML = '<div class="empty">No reviews found.</div>';
-    return;
+    document.getElementById("totalReviews").textContent = total;
+    document.getElementById("pendingReviews").textContent = pending;
+    document.getElementById("averageRating").textContent = avg.toFixed(1);
+    document.getElementById("averageStars").textContent = avgStars(avg);
+
+    const reviewsEl = document.getElementById("reviews");
+
+    if (!Array.isArray(data) || !data.length) {
+      reviewsEl.innerHTML = '<div class="empty">No reviews found.</div>';
+      return;
+    }
+
+    reviewsEl.innerHTML = data.map(r => `
+      <div class="review">
+        <div class="review-name">${r.name || "Anonymous"}</div>
+        <div class="review-stars">${stars(r.rating)}</div>
+        <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
+          ${r.approved ? "Approved" : "Pending"}
+        </div>
+        <div class="review-text">${r.text || ""}</div>
+        ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
+        <div class="btn-row">
+          ${!r.approved ? `<button class="btn btn-green" onclick="approveReview(${r.id})">Approve</button>` : ""}
+          ${r.approved ? `<button class="btn btn-orange" onclick="markPending(${r.id})">Mark Pending</button>` : ""}
+          <button class="btn btn-red" onclick="removeReview(${r.id})">Delete</button>
+        </div>
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error("loadReviews error:", err);
+    document.getElementById("reviews").innerHTML =
+      '<div class="empty">Review load exception.</div>';
   }
-
-  reviewsEl.innerHTML = data.map(r => `
-    <div class="review">
-      <div class="review-name">${r.name || "Anonymous"}</div>
-      <div class="review-stars">${stars(r.rating)}</div>
-      <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
-        ${r.approved ? "Approved" : "Pending"}
-      </div>
-      <div class="review-text">${r.text || ""}</div>
-      ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
-      <div class="btn-row">
-        ${!r.approved ? `<button class="btn btn-green" onclick="approveReview(${r.id})">Approve</button>` : ""}
-        ${r.approved ? `<button class="btn btn-orange" onclick="markPending(${r.id})">Mark Pending</button>` : ""}
-        <button class="btn btn-red" onclick="removeReview(${r.id})">Delete</button>
-      </div>
-    </div>
-  `).join("");
 };
 
 window.approveReview = async function (id) {
@@ -501,4 +551,60 @@ window.markPending = async function (id) {
   await fetch("/reviews/" + id, {
     method: "PUT",
     headers: {
-      "Authorization": "Bearer " +
+      "Authorization": "Bearer " + session.access_token,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ approved: false })
+  });
+
+  await loadReviews();
+};
+
+window.removeReview = async function (id) {
+  await fetch("/reviews/" + id, {
+    method: "DELETE",
+    headers: {
+      "Authorization": "Bearer " + session.access_token
+    }
+  });
+
+  await loadReviews();
+};
+
+window.sendInvite = async function () {
+  try {
+    const reviewerEmail = document.getElementById("reviewerEmail").value.trim();
+    const reviewerName = document.getElementById("reviewerName").value.trim();
+    const inviteStatus = document.getElementById("inviteStatus");
+
+    if (!reviewerEmail) {
+      inviteStatus.textContent = "Reviewer email is required.";
+      return;
+    }
+
+    inviteStatus.textContent = "Sending...";
+
+    const res = await fetch("/send-review-link", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + session.access_token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        reviewerEmail,
+        reviewerName
+      })
+    });
+
+    if (!res.ok) {
+      inviteStatus.textContent = await res.text();
+      return;
+    }
+
+    inviteStatus.textContent = "Email sent successfully.";
+    document.getElementById("reviewerEmail").value = "";
+    document.getElementById("reviewerName").value = "";
+  } catch (err) {
+    console.error("sendInvite error:", err);
+    document.getElementById("inviteStatus").textContent =
+      "Invite exception
