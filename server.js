@@ -508,7 +508,6 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
 
     const rowPayload = {
       email: clientEmail,
-      password: null,
       business_id: businessId,
       must_reset_password: isDashboardPlan,
       notifications_enabled: notificationsEnabled,
