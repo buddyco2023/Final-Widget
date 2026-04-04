@@ -56,6 +56,15 @@
     .btn.gray {
       background: #64748b;
     }
+    .btn.green {
+      background: #16a34a;
+    }
+    .btn.orange {
+      background: #f59e0b;
+    }
+    .btn.red {
+      background: #dc2626;
+    }
     .status {
       margin-top: 12px;
       font-size: 14px;
@@ -74,6 +83,71 @@
     .review strong {
       display: block;
       margin-bottom: 6px;
+      font-size: 18px;
+    }
+    .review-stars {
+      color: #f59e0b;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .review-status {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .status-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .review-text {
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .review-image {
+      width: 100%;
+      border-radius: 14px;
+      display: block;
+      margin: 10px 0 14px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    }
+    .review-actions {
+      display: grid;
+      gap: 8px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .stat-card {
+      background: #f8fbff;
+      border: 1px solid #dbe7fb;
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: #64748b;
+    }
+    @media (max-width: 700px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -102,6 +176,22 @@
 
     <div id="dashboardCard" class="card hidden">
       <div id="businessLabel" class="sub"></div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalReviews">0</div>
+          <div class="stat-label">Total Reviews</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="pendingReviews">0</div>
+          <div class="stat-label">Pending Reviews</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="averageRating">0.0</div>
+          <div class="stat-label">Average Rating</div>
+        </div>
+      </div>
+
       <button class="btn" onclick="loadReviews()">Refresh Reviews</button>
     </div>
 
@@ -127,6 +217,11 @@
     function setStatus(message) {
       document.getElementById("status").textContent = message;
       console.log(message);
+    }
+
+    function stars(n) {
+      const val = Math.max(0, Math.min(5, Number(n) || 0));
+      return "★".repeat(val) + "☆".repeat(5 - val);
     }
 
     async function init() {
@@ -305,6 +400,16 @@
 
       const data = await res.json();
 
+      const total = Array.isArray(data) ? data.length : 0;
+      const pending = Array.isArray(data) ? data.filter(r => !r.approved).length : 0;
+      const avg = total
+        ? data.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / total
+        : 0;
+
+      document.getElementById("totalReviews").textContent = total;
+      document.getElementById("pendingReviews").textContent = pending;
+      document.getElementById("averageRating").textContent = avg.toFixed(1);
+
       if (!Array.isArray(data) || !data.length) {
         document.getElementById("reviews").innerHTML = "<div class='card'>No reviews found.</div>";
         return;
@@ -313,11 +418,17 @@
       document.getElementById("reviews").innerHTML = data.map(r => `
         <div class="review">
           <strong>${r.name || "Anonymous"}</strong>
-          <div>${"★".repeat(Number(r.rating) || 0)}</div>
-          <div>${r.text || ""}</div>
-          <div style="margin-top:8px;">Status: ${r.approved ? "Approved" : "Pending"}</div>
-          ${!r.approved ? `<button class="btn" onclick="approveReview(${r.id})">Approve</button>` : ""}
-          <button class="btn gray" onclick="removeReview(${r.id})">Delete</button>
+          <div class="review-stars">${stars(r.rating)}</div>
+          <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
+            ${r.approved ? "Approved" : "Pending"}
+          </div>
+          <div class="review-text">${r.text || ""}</div>
+          ${r.image ? `<img class="review-image" src="${r.image}" alt="Submitted review image" />` : ""}
+          <div class="review-actions">
+            ${!r.approved ? `<button class="btn green" onclick="approveReview(${r.id})">Approve</button>` : ""}
+            ${r.approved ? `<button class="btn orange" onclick="markPending(${r.id})">Mark Pending</button>` : ""}
+            <button class="btn red" onclick="removeReview(${r.id})">Delete</button>
+          </div>
         </div>
       `).join("");
     };
@@ -330,6 +441,18 @@
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ approved: true })
+      });
+      await loadReviews();
+    };
+
+    window.markPending = async function (id) {
+      await fetch("/reviews/" + id, {
+        method: "PUT",
+        headers: {
+          "Authorization": "Bearer " + session.access_token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ approved: false })
       });
       await loadReviews();
     };
