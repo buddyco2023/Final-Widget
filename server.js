@@ -520,7 +520,11 @@ app.get("/reviews", async (req, res) => {
   try {
     const businessId = (req.query.businessId || "").trim();
 
-    let query = supabase.from("reviews").select("*").order("id", { ascending: false });
+    let query = supabaseAdmin
+      .from("reviews")
+      .select("*")
+      .order("id", { ascending: false });
+
     if (businessId) query = query.eq("business_id", businessId);
 
     const { data, error } = await query;
@@ -566,7 +570,7 @@ app.post("/reviews", async (req, res) => {
       source: "widget"
     };
 
-    const { error } = await supabase.from("reviews").insert([payload]);
+    const { error } = await supabaseAdmin.from("reviews").insert([payload]);
     if (error) return res.status(500).send(error.message);
 
     if (admin && admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
@@ -654,7 +658,7 @@ app.put("/reviews/:id", async (req, res) => {
       return res.status(403).send("This plan does not include dashboard access.");
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("reviews")
       .update({ approved: !!req.body.approved })
       .eq("id", req.params.id)
@@ -677,7 +681,7 @@ app.delete("/reviews/:id", async (req, res) => {
       return res.status(403).send("This plan does not include dashboard access.");
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("reviews")
       .delete()
       .eq("id", req.params.id)
