@@ -520,15 +520,38 @@ app.get("/reviews", async (req, res) => {
   try {
     const businessId = (req.query.businessId || "").trim();
 
+    const rawLimit = parseInt(req.query.limit, 10);
+    const rawOffset = parseInt(req.query.offset, 10);
+    const rawRating = parseInt(req.query.rating, 10);
+    const withImages = String(req.query.withImages || "").toLowerCase() === "true";
+
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 10;
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
+
     let query = supabaseAdmin
       .from("reviews")
-      .select("*")
-      .order("id", { ascending: false });
+      .select("id,name,text,rating,image,approved,business_id,created_at")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
 
-    if (businessId) query = query.eq("business_id", businessId);
+    if (businessId) {
+      query = query.eq("business_id", businessId);
+    }
+
+    if (Number.isFinite(rawRating) && rawRating >= 1 && rawRating <= 5) {
+      query = query.eq("rating", rawRating);
+    }
+
+    if (withImages) {
+      query = query.not("image", "is", null).neq("image", "");
+    }
 
     const { data, error } = await query;
-    if (error) return res.status(500).send(error.message);
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res.status(500).send(error.message);
+    }
 
     res.json(data || []);
   } catch (err) {
