@@ -16,12 +16,13 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "REPLACE_ME";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "REPLACE_ME";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 
-const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "drloe7yv4";
-const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || "949256172383417";
-const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || "t4zTHsRXinGvwAiRsUfLgw14mo4";
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "";
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || "";
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET || "";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const RESEND_FROM = process.env.RESEND_FROM || "";
+const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -36,23 +37,27 @@ const PAID_DASHBOARD_PLANS = [PLAN_PRO, PLAN_PREMIUM];
 
 function requireAdminToken(req, res, next) {
   const token = req.headers["x-admin-token"] || "";
-  if (!ADMIN_TOKEN) return res.status(500).send("ADMIN_TOKEN is not configured on the server.");
-  if (token !== ADMIN_TOKEN) return res.status(401).send("Invalid admin token.");
+  if (!ADMIN_TOKEN) {
+    return res.status(500).send("ADMIN_TOKEN is not configured on the server.");
+  }
+  if (token !== ADMIN_TOKEN) {
+    return res.status(401).send("Invalid admin token.");
+  }
   next();
 }
 
 function prettyBusinessName(businessId) {
   if (!businessId) return "Your Business";
-  return businessId.replace(/[-_]+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  return businessId
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function buildWidgetCode(payload) {
-  const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
-
   return `<div id="applogix-review-widget"></div>
 
 <script>
-window.ARW_API = "${appUrl}";
+window.ARW_API = "${PUBLIC_APP_URL}";
 window.BUSINESS_ID = "${payload.businessId}";
 window.PLAN_TIER = "${payload.planTier || "free"}";
 
@@ -67,11 +72,10 @@ window.POWERED_BY_NAME = "AppLogix";
 window.GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"};
 </script>
 
-<script src="${appUrl}/widget.js" defer></script>`;
+<script src="${PUBLIC_APP_URL}/widget.js" defer></script>`;
 }
 
 function buildWelcomeEmailText(data) {
-  const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
   const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(data.planTier);
 
   let text = `Subject: Welcome to AppLogix — Your Review System is Ready
@@ -93,7 +97,7 @@ ${data.reviewPageUrl || "(not required for this plan)"}
   if (isDashboardPlan) {
     text += `
 Dashboard:
-${appUrl}/admin3
+${PUBLIC_APP_URL}/admin3
 
 Email:
 ${data.clientEmail}
@@ -141,12 +145,17 @@ If you need help with setup or installation, reply to this email.
 
 async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
-  if (!auth.startsWith("Bearer ")) throw new Error("Missing bearer token");
+  if (!auth.startsWith("Bearer ")) {
+    throw new Error("Missing bearer token");
+  }
 
   const token = auth.replace("Bearer ", "").trim();
   const { data, error } = await supabaseAdmin.auth.getUser(token);
 
-  if (error || !data?.user) throw new Error("Invalid auth token");
+  if (error || !data?.user) {
+    throw new Error("Invalid auth token");
+  }
+
   return data.user;
 }
 
@@ -177,10 +186,13 @@ async function getAdminProfileByEmail(email) {
 
   if (error) throw error;
   if (!data || !data.length) throw new Error("Admin profile not found");
+
   return data[0];
 }
 
-app.get("/", (req, res) => res.send("API running"));
+app.get("/", (req, res) => {
+  res.send("API running");
+});
 
 app.get("/admin", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -222,6 +234,10 @@ app.get("/client-config", (req, res) => {
 
 app.get("/cloudinary-signature", (req, res) => {
   try {
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+      return res.status(500).send("Cloudinary is not configured.");
+    }
+
     const timestamp = Math.floor(Date.now() / 1000);
     const folder = "reviews";
     const stringToSign = `folder=${folder}&timestamp=${timestamp}${CLOUDINARY_API_SECRET}`;
@@ -318,9 +334,11 @@ app.post("/send-review-link", async (req, res) => {
     const reviewerName = (req.body.reviewerName || "").trim();
     const businessName = profile.brand_name || prettyBusinessName(profile.business_id);
 
-    if (!reviewerEmail) return res.status(400).send("Reviewer email is required.");
+    if (!reviewerEmail) {
+      return res.status(400).send("Reviewer email is required.");
+    }
 
-    const greeting = reviewerName ? `Hi ${reviewerName},` : `Hi,`;
+    const greeting = reviewerName ? `Hi ${reviewerName},` : "Hi,";
 
     await resend.emails.send({
       from: RESEND_FROM,
@@ -343,6 +361,43 @@ app.post("/send-review-link", async (req, res) => {
   } catch (err) {
     console.error("POST /send-review-link error:", err);
     res.status(500).send(err.message || "Failed to send review link.");
+  }
+});
+
+app.post("/contact", async (req, res) => {
+  try {
+    const { name, email, message } = req.body || {};
+
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).json({ error: "Email service is not configured." });
+    }
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: "applogixinc@outlook.com",
+      subject: `New AppLogix Contact Form Message from ${name}`,
+      reply_to: email,
+      html: `
+        <div style="font-family:Arial,sans-serif;padding:24px;background:#f4f8ff;">
+          <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe7fb;border-radius:16px;padding:24px;">
+            <h2 style="margin-top:0;color:#1e3a8a;">New Contact Form Message</h2>
+            <p><strong>Name:</strong> ${String(name).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <p><strong>Email:</strong> ${String(email).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <p><strong>Message:</strong></p>
+            <div style="white-space:pre-wrap;color:#334155;">${String(message).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+          </div>
+        </div>
+      `
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("POST /contact error:", err);
+    return res.status(500).json({ error: err.message || "Failed to send message." });
   }
 });
 
@@ -374,6 +429,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     if (!businessId) return res.status(400).send("Missing business ID.");
     if (!clientEmail) return res.status(400).send("Missing client email.");
     if (!planTier || !VALID_PLANS.includes(planTier)) return res.status(400).send("Invalid plan tier.");
+
     if (planTier !== PLAN_FREE && !reviewPageUrl) {
       return res.status(400).send("Review page URL is required for Basic, Pro, and Premium plans.");
     }
@@ -492,8 +548,6 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       reviewPageUrl
     });
 
-    const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
-
     res.json({
       success: true,
       businessName,
@@ -508,7 +562,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       widgetCode,
       welcomeEmail,
       dashboardIncluded: isDashboardPlan,
-      dashboardUrl: isDashboardPlan ? `${appUrl}/admin3` : ""
+      dashboardUrl: isDashboardPlan ? `${PUBLIC_APP_URL}/admin3` : ""
     });
   } catch (err) {
     console.error("POST /create-client server error:", err);
@@ -599,12 +653,13 @@ app.post("/reviews", async (req, res) => {
     if (admin && admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
       try {
         const businessName = prettyBusinessName(businessId);
-        const appUrl = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
 
         await resend.emails.send({
           from: RESEND_FROM,
           to: [admin.notification_email],
-          subject: autoApprove ? `New review for ${businessName}` : `New review awaiting approval for ${businessName}`,
+          subject: autoApprove
+            ? `New review for ${businessName}`
+            : `New review awaiting approval for ${businessName}`,
           html: `
             <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
               <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
@@ -614,7 +669,7 @@ app.post("/reviews", async (req, res) => {
                 <p><strong>Rating:</strong> ${payload.rating} / 5</p>
                 <p><strong>Status:</strong> ${autoApprove ? "Published automatically" : "Pending approval"}</p>
                 <p>${(payload.text || "(no text)").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
-                ${!autoApprove ? `<p><a href="${appUrl}/admin3">Review & Approve</a></p>` : ""}
+                ${!autoApprove ? `<p><a href="${PUBLIC_APP_URL}/admin3">Review & Approve</a></p>` : ""}
               </div>
             </div>
           `
