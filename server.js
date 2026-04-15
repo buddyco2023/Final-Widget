@@ -99,7 +99,7 @@ ${data.planTier.toUpperCase()}
 Business ID:
 ${data.businessId}
 
-Review Page URL:
+Website Review Page URL:
 ${data.reviewPageUrl || "(not required for this plan)"}
 
 Hosted Review Page:
@@ -137,14 +137,14 @@ ${data.widgetCode}
 - Log in to your dashboard
 - Approve or reject reviews
 - Manage review notifications
-- Share your hosted review page if needed
+- Use review links, QR codes, and hosted page tools
 `;
   } else {
     text += `What happens next
 
 - Reviews will publish automatically
-- Your review link can be shared directly
 - Your hosted review page is live
+- Your review link can be shared directly
 - Upgrade anytime for moderation and dashboard controls
 `;
   }
@@ -216,13 +216,17 @@ async function getBusinessProfile(businessId) {
       brand_secondary,
       brand_logo_url,
       branding_enabled,
-      review_page_url
+      review_page_url,
+      notifications_enabled,
+      notification_email,
+      google_import_enabled
     `)
     .eq("business_id", businessId)
     .limit(1);
 
   if (error) throw error;
   if (!data || !data.length) return null;
+
   return data[0];
 }
 
@@ -276,7 +280,6 @@ app.get("/hosted-review.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "hosted-review.html"));
 });
 
-// Pretty hosted page URL
 app.get("/r/:businessId", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(__dirname, "public", "hosted-review.html"));
@@ -319,9 +322,7 @@ app.get("/cloudinary-signature", (req, res) => {
 
 // ------------------------------
 // Simple upload route for hosted page
-// Accepts base64 image and returns same value
-// If you want real file hosting later, switch this
-// to Cloudinary direct upload flow.
+// Currently returns the base64 image as-is.
 // ------------------------------
 app.post("/upload", async (req, res) => {
   try {
@@ -354,6 +355,7 @@ app.post("/admin-me", async (req, res) => {
       success: true,
       email: profile.email,
       businessId: profile.business_id,
+      businessName: profile.brand_name || prettyBusinessName(profile.business_id),
       mustResetPassword: !!profile.must_reset_password,
       notificationsEnabled: !!profile.notifications_enabled,
       notificationEmail: profile.notification_email || "",
@@ -399,7 +401,7 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
 });
 
 // ------------------------------
-// Send review link
+// Send review link (Premium)
 // ------------------------------
 app.post("/send-review-link", async (req, res) => {
   try {
@@ -408,10 +410,6 @@ app.post("/send-review-link", async (req, res) => {
 
     if ((profile.plan_tier || "").toLowerCase() !== PLAN_PREMIUM) {
       return res.status(403).send("Only Premium users can send review invite emails.");
-    }
-
-    if (!profile.review_page_url) {
-      return res.status(400).send("No review page URL is configured for this account.");
     }
 
     if (!resend || !RESEND_FROM) {
@@ -526,7 +524,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     if (!planTier || !VALID_PLANS.includes(planTier)) return res.status(400).send("Invalid plan tier.");
 
     if (planTier !== PLAN_FREE && !reviewPageUrl) {
-      return res.status(400).send("Review page URL is required for Basic, Pro, and Premium plans.");
+      return res.status(400).send("Website Review Page URL is required for Basic, Pro, and Premium plans.");
     }
 
     const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(planTier);
@@ -545,12 +543,14 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       notificationsEnabled = true;
       brandingEnabled = false;
       googleImportEnabled = false;
+      if (!notificationEmail) notificationEmail = clientEmail;
     }
 
     if (planTier === PLAN_PREMIUM) {
       notificationsEnabled = true;
       brandingEnabled = true;
-      googleImportEnabled = true;
+      if (!notificationEmail) notificationEmail = clientEmail;
+      // googleImportEnabled remains optional based on payload
     }
 
     const { data: existingAdmins, error: existingAdminErr } = await supabaseAdmin
@@ -669,7 +669,12 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
 });
 
 // ------------------------------
-// Existing widget reviews endpoint
+// /reviews
+// IMPORTANT:
+// This route now returns ALL reviews for the business.
+// That allows the admin dashboard to show pending reviews.
+// Public widget UI should continue filtering approved reviews client-side.
+// Hosted public pages use /api/reviews/:businessId instead.
 // ------------------------------
 app.get("/reviews", async (req, res) => {
   try {
@@ -679,13 +684,12 @@ app.get("/reviews", async (req, res) => {
     const rawRating = parseInt(req.query.rating, 10);
     const withImages = String(req.query.withImages || "").toLowerCase() === "true";
 
-    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 10;
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 100;
     const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
 
     let query = supabaseAdmin
       .from("reviews")
       .select("id,name,text,rating,image,approved,business_id,created_at")
-      .eq("approved", true)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -704,7 +708,7 @@ app.get("/reviews", async (req, res) => {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Supabase error:", error);
+      console.error("GET /reviews supabase error:", error);
       return res.status(500).send(error.message);
     }
 
@@ -716,7 +720,8 @@ app.get("/reviews", async (req, res) => {
 });
 
 // ------------------------------
-// Existing review submission endpoint
+// Existing widget review submission
+// Sends notifications correctly
 // ------------------------------
 app.post("/reviews", async (req, res) => {
   try {
@@ -730,9 +735,12 @@ app.post("/reviews", async (req, res) => {
     if (!parsedRating || Number.isNaN(parsedRating)) return res.status(400).send("Invalid rating");
 
     const profile = await getBusinessProfile(businessId);
-    const planTier = (profile?.plan_tier || PLAN_FREE).toLowerCase();
-    const autoApprove = !planRequiresModeration(planTier);
+    if (!profile || profile.active === false) {
+      return res.status(404).send("Business not found.");
+    }
 
+    const planTier = (profile.plan_tier || PLAN_FREE).toLowerCase();
+    const autoApprove = !planRequiresModeration(planTier);
     const finalImage = planAllowsImages(planTier) ? image : null;
 
     const payload = {
@@ -748,7 +756,7 @@ app.post("/reviews", async (req, res) => {
     const { error } = await supabaseAdmin.from("reviews").insert([payload]);
     if (error) return res.status(500).send(error.message);
 
-    if (profile?.notifications_enabled && profile?.notification_email && resend && RESEND_FROM) {
+    if (profile.notifications_enabled && profile.notification_email && resend && RESEND_FROM) {
       try {
         const businessName = profile.brand_name || prettyBusinessName(businessId);
 
@@ -811,7 +819,8 @@ app.get("/api/business/:businessId", async (req, res) => {
       brandingEnabled: !!profile.branding_enabled,
       reviewPageUrl: profile.review_page_url || "",
       brandPrimary: profile.brand_primary || "#2563eb",
-      brandSecondary: profile.brand_secondary || "#4ea3ff"
+      brandSecondary: profile.brand_secondary || "#4ea3ff",
+      googleImportEnabled: !!profile.google_import_enabled
     });
   } catch (err) {
     console.error("GET /api/business/:businessId error:", err);
@@ -820,7 +829,8 @@ app.get("/api/business/:businessId", async (req, res) => {
 });
 
 // ------------------------------
-// Hosted page reviews with filters + pagination + summary
+// Hosted page public reviews
+// APPROVED ONLY
 // ------------------------------
 app.get("/api/reviews/:businessId", async (req, res) => {
   try {
@@ -893,6 +903,7 @@ app.get("/api/reviews/:businessId", async (req, res) => {
 
 // ------------------------------
 // Hosted page review submission
+// Sends notifications correctly
 // ------------------------------
 app.post("/api/review", async (req, res) => {
   try {
@@ -974,6 +985,10 @@ app.post("/import-google-review", async (req, res) => {
 
     if ((profile.plan_tier || "").toLowerCase() !== PLAN_PREMIUM) {
       return res.status(403).send("Google review import is Premium only.");
+    }
+
+    if (!profile.google_import_enabled) {
+      return res.status(403).send("Google review import is disabled for this account.");
     }
 
     const name = (req.body.name || "").trim();
