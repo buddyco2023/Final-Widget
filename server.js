@@ -8,7 +8,7 @@ const { Resend } = require("resend");
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "15mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "REPLACE_ME";
@@ -53,6 +53,15 @@ function prettyBusinessName(businessId) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function buildWidgetCode(payload) {
   return `<div id="applogix-review-widget"></div>
 
@@ -92,6 +101,9 @@ ${data.businessId}
 
 Review Page URL:
 ${data.reviewPageUrl || "(not required for this plan)"}
+
+Hosted Review Page:
+${PUBLIC_APP_URL}/r/${data.businessId}
 `;
 
   if (isDashboardPlan) {
@@ -125,12 +137,14 @@ ${data.widgetCode}
 - Log in to your dashboard
 - Approve or reject reviews
 - Manage review notifications
+- Share your hosted review page if needed
 `;
   } else {
     text += `What happens next
 
 - Reviews will publish automatically
 - Your review link can be shared directly
+- Your hosted review page is live
 - Upgrade anytime for moderation and dashboard controls
 `;
   }
@@ -190,6 +204,39 @@ async function getAdminProfileByEmail(email) {
   return data[0];
 }
 
+async function getBusinessProfile(businessId) {
+  const { data, error } = await supabaseAdmin
+    .from("admin_users")
+    .select(`
+      business_id,
+      plan_tier,
+      active,
+      brand_name,
+      brand_primary,
+      brand_secondary,
+      brand_logo_url,
+      branding_enabled,
+      review_page_url
+    `)
+    .eq("business_id", businessId)
+    .limit(1);
+
+  if (error) throw error;
+  if (!data || !data.length) return null;
+  return data[0];
+}
+
+function planAllowsImages(planTier) {
+  return [PLAN_BASIC, PLAN_PRO, PLAN_PREMIUM].includes((planTier || "").toLowerCase());
+}
+
+function planRequiresModeration(planTier) {
+  return [PLAN_PRO, PLAN_PREMIUM].includes((planTier || "").toLowerCase());
+}
+
+// ------------------------------
+// Basic pages
+// ------------------------------
 app.get("/", (req, res) => {
   res.send("API running");
 });
@@ -224,6 +271,17 @@ app.get("/reset-password", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "reset-password.html"));
 });
 
+app.get("/hosted-review.html", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "public", "hosted-review.html"));
+});
+
+// Pretty hosted page URL
+app.get("/r/:businessId", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(__dirname, "public", "hosted-review.html"));
+});
+
 app.get("/client-config", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json({
@@ -232,6 +290,9 @@ app.get("/client-config", (req, res) => {
   });
 });
 
+// ------------------------------
+// Cloudinary signature route
+// ------------------------------
 app.get("/cloudinary-signature", (req, res) => {
   try {
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
@@ -256,6 +317,30 @@ app.get("/cloudinary-signature", (req, res) => {
   }
 });
 
+// ------------------------------
+// Simple upload route for hosted page
+// Accepts base64 image and returns same value
+// If you want real file hosting later, switch this
+// to Cloudinary direct upload flow.
+// ------------------------------
+app.post("/upload", async (req, res) => {
+  try {
+    const { image } = req.body || {};
+
+    if (!image || typeof image !== "string") {
+      return res.status(400).json({ error: "Missing image." });
+    }
+
+    return res.json({ url: image });
+  } catch (err) {
+    console.error("POST /upload error:", err);
+    return res.status(500).json({ error: "Upload failed." });
+  }
+});
+
+// ------------------------------
+// Admin auth helpers
+// ------------------------------
 app.post("/admin-me", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
@@ -313,6 +398,9 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
   }
 });
 
+// ------------------------------
+// Send review link
+// ------------------------------
 app.post("/send-review-link", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
@@ -333,12 +421,13 @@ app.post("/send-review-link", async (req, res) => {
     const reviewerEmail = (req.body.reviewerEmail || "").trim().toLowerCase();
     const reviewerName = (req.body.reviewerName || "").trim();
     const businessName = profile.brand_name || prettyBusinessName(profile.business_id);
+    const hostedPage = `${PUBLIC_APP_URL}/r/${profile.business_id}`;
 
     if (!reviewerEmail) {
       return res.status(400).send("Reviewer email is required.");
     }
 
-    const greeting = reviewerName ? `Hi ${reviewerName},` : "Hi,";
+    const greeting = reviewerName ? `Hi ${escapeHtml(reviewerName)},` : "Hi,";
 
     await resend.emails.send({
       from: RESEND_FROM,
@@ -347,11 +436,11 @@ app.post("/send-review-link", async (req, res) => {
       html: `
         <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
           <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
-            <h2 style="margin-top:0;">${businessName}</h2>
+            <h2 style="margin-top:0;">${escapeHtml(businessName)}</h2>
             <p>${greeting}</p>
             <p>Thank you for your business. We’d really appreciate your feedback.</p>
-            <p><a href="${profile.review_page_url}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
-            <p style="font-size:13px;color:#64748b;">Reviews are submitted by customers, may be screened for spam, and are not verified by AppLogix.</p>
+            <p><a href="${hostedPage}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
+            <p style="font-size:13px;color:#64748b;">Reviews may be screened for spam before appearing publicly.</p>
           </div>
         </div>
       `
@@ -364,6 +453,9 @@ app.post("/send-review-link", async (req, res) => {
   }
 });
 
+// ------------------------------
+// Contact form
+// ------------------------------
 app.post("/contact", async (req, res) => {
   try {
     const { name, email, message } = req.body || {};
@@ -385,10 +477,10 @@ app.post("/contact", async (req, res) => {
         <div style="font-family:Arial,sans-serif;padding:24px;background:#f4f8ff;">
           <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe7fb;border-radius:16px;padding:24px;">
             <h2 style="margin-top:0;color:#1e3a8a;">New Contact Form Message</h2>
-            <p><strong>Name:</strong> ${String(name).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
-            <p><strong>Email:</strong> ${String(email).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+            <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
             <p><strong>Message:</strong></p>
-            <div style="white-space:pre-wrap;color:#334155;">${String(message).replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+            <div style="white-space:pre-wrap;color:#334155;">${escapeHtml(message)}</div>
           </div>
         </div>
       `
@@ -401,6 +493,9 @@ app.post("/contact", async (req, res) => {
   }
 });
 
+// ------------------------------
+// Onboarding create client
+// ------------------------------
 app.post("/create-client", requireAdminToken, async (req, res) => {
   try {
     const businessName = (req.body.businessName || "").trim();
@@ -538,6 +633,8 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       googleImportEnabled
     });
 
+    const hostedPageUrl = `${PUBLIC_APP_URL}/r/${businessId}`;
+
     const welcomeEmail = buildWelcomeEmailText({
       businessName,
       businessId,
@@ -559,6 +656,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       brandingEnabled,
       googleImportEnabled,
       reviewPageUrl: reviewPageUrl || "",
+      hostedPageUrl,
       widgetCode,
       welcomeEmail,
       dashboardIncluded: isDashboardPlan,
@@ -570,10 +668,12 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
   }
 });
 
+// ------------------------------
+// Existing widget reviews endpoint
+// ------------------------------
 app.get("/reviews", async (req, res) => {
   try {
     const businessId = (req.query.businessId || "").trim();
-
     const rawLimit = parseInt(req.query.limit, 10);
     const rawOffset = parseInt(req.query.offset, 10);
     const rawRating = parseInt(req.query.rating, 10);
@@ -585,6 +685,7 @@ app.get("/reviews", async (req, res) => {
     let query = supabaseAdmin
       .from("reviews")
       .select("id,name,text,rating,image,approved,business_id,created_at")
+      .eq("approved", true)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -614,6 +715,9 @@ app.get("/reviews", async (req, res) => {
   }
 });
 
+// ------------------------------
+// Existing review submission endpoint
+// ------------------------------
 app.post("/reviews", async (req, res) => {
   try {
     const name = (req.body.name || "").trim();
@@ -625,23 +729,17 @@ app.post("/reviews", async (req, res) => {
     if (!businessId) return res.status(400).send("Missing businessId");
     if (!parsedRating || Number.isNaN(parsedRating)) return res.status(400).send("Invalid rating");
 
-    const { data: admins, error: adminLookupErr } = await supabaseAdmin
-      .from("admin_users")
-      .select("business_id,plan_tier,notifications_enabled,notification_email")
-      .eq("business_id", businessId)
-      .limit(1);
+    const profile = await getBusinessProfile(businessId);
+    const planTier = (profile?.plan_tier || PLAN_FREE).toLowerCase();
+    const autoApprove = !planRequiresModeration(planTier);
 
-    if (adminLookupErr) return res.status(500).send(adminLookupErr.message);
-
-    const admin = admins && admins.length ? admins[0] : null;
-    const planTier = (admin?.plan_tier || PLAN_FREE).toLowerCase();
-    const autoApprove = planTier === PLAN_FREE || planTier === PLAN_BASIC;
+    const finalImage = planAllowsImages(planTier) ? image : null;
 
     const payload = {
       name: name || "Anonymous",
       text: text || "",
       rating: parsedRating,
-      image,
+      image: finalImage,
       approved: autoApprove,
       business_id: businessId,
       source: "widget"
@@ -650,13 +748,13 @@ app.post("/reviews", async (req, res) => {
     const { error } = await supabaseAdmin.from("reviews").insert([payload]);
     if (error) return res.status(500).send(error.message);
 
-    if (admin && admin.notifications_enabled && admin.notification_email && resend && RESEND_FROM) {
+    if (profile?.notifications_enabled && profile?.notification_email && resend && RESEND_FROM) {
       try {
-        const businessName = prettyBusinessName(businessId);
+        const businessName = profile.brand_name || prettyBusinessName(businessId);
 
         await resend.emails.send({
           from: RESEND_FROM,
-          to: [admin.notification_email],
+          to: [profile.notification_email],
           subject: autoApprove
             ? `New review for ${businessName}`
             : `New review awaiting approval for ${businessName}`,
@@ -664,11 +762,11 @@ app.post("/reviews", async (req, res) => {
             <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
               <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
                 <h2 style="margin-top:0;">New Review Submitted</h2>
-                <p><strong>Business:</strong> ${businessName}</p>
-                <p><strong>Name:</strong> ${payload.name}</p>
+                <p><strong>Business:</strong> ${escapeHtml(businessName)}</p>
+                <p><strong>Name:</strong> ${escapeHtml(payload.name)}</p>
                 <p><strong>Rating:</strong> ${payload.rating} / 5</p>
                 <p><strong>Status:</strong> ${autoApprove ? "Published automatically" : "Pending approval"}</p>
-                <p>${(payload.text || "(no text)").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+                <p>${escapeHtml(payload.text || "(no text)")}</p>
                 ${!autoApprove ? `<p><a href="${PUBLIC_APP_URL}/admin3">Review & Approve</a></p>` : ""}
               </div>
             </div>
@@ -686,6 +784,189 @@ app.post("/reviews", async (req, res) => {
   }
 });
 
+// ------------------------------
+// Hosted page business info
+// ------------------------------
+app.get("/api/business/:businessId", async (req, res) => {
+  try {
+    const businessId = (req.params.businessId || "").trim();
+    if (!businessId) {
+      return res.status(400).json({ error: "Missing businessId." });
+    }
+
+    const profile = await getBusinessProfile(businessId);
+
+    if (!profile || profile.active === false) {
+      return res.status(404).json({ error: "Business not found." });
+    }
+
+    const planTier = (profile.plan_tier || PLAN_FREE).toLowerCase();
+
+    res.json({
+      businessId,
+      name: profile.brand_name || prettyBusinessName(businessId),
+      subtitle: "Share your experience below. Reviews help businesses build trust and improve customer experience.",
+      logo: profile.branding_enabled ? (profile.brand_logo_url || "") : "",
+      planTier,
+      brandingEnabled: !!profile.branding_enabled,
+      reviewPageUrl: profile.review_page_url || "",
+      brandPrimary: profile.brand_primary || "#2563eb",
+      brandSecondary: profile.brand_secondary || "#4ea3ff"
+    });
+  } catch (err) {
+    console.error("GET /api/business/:businessId error:", err);
+    res.status(500).json({ error: "Server error." });
+  }
+});
+
+// ------------------------------
+// Hosted page reviews with filters + pagination + summary
+// ------------------------------
+app.get("/api/reviews/:businessId", async (req, res) => {
+  try {
+    const businessId = (req.params.businessId || "").trim();
+    if (!businessId) {
+      return res.status(400).json({ error: "Missing businessId." });
+    }
+
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const pageSize = 10;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const filter = String(req.query.filter || "all").toLowerCase();
+
+    let query = supabaseAdmin
+      .from("reviews")
+      .select("id,name,text,rating,image,created_at", { count: "exact" })
+      .eq("business_id", businessId)
+      .eq("approved", true)
+      .order("created_at", { ascending: false })
+      .range(from, to);
+
+    if (["1", "2", "3", "4", "5"].includes(filter)) {
+      query = query.eq("rating", parseInt(filter, 10));
+    }
+
+    if (filter === "images") {
+      query = query.not("image", "is", null).neq("image", "");
+    }
+
+    const { data, error, count } = await query;
+    if (error) return res.status(500).json({ error: error.message });
+
+    const { data: summaryRows, error: summaryErr } = await supabaseAdmin
+      .from("reviews")
+      .select("rating")
+      .eq("business_id", businessId)
+      .eq("approved", true);
+
+    if (summaryErr) return res.status(500).json({ error: summaryErr.message });
+
+    const ratings = summaryRows || [];
+    const reviewCount = ratings.length;
+    const average = reviewCount
+      ? ratings.reduce((sum, row) => sum + (row.rating || 0), 0) / reviewCount
+      : 0;
+
+    const reviews = (data || []).map((r) => ({
+      id: r.id,
+      name: r.name || "Anonymous",
+      text: r.text || "",
+      rating: r.rating || 0,
+      image: r.image || "",
+      createdAt: r.created_at || null
+    }));
+
+    res.json({
+      reviews,
+      summary: {
+        average,
+        count: reviewCount
+      },
+      hasMore: (count || 0) > to + 1
+    });
+  } catch (err) {
+    console.error("GET /api/reviews/:businessId error:", err);
+    res.status(500).json({ error: "Server error." });
+  }
+});
+
+// ------------------------------
+// Hosted page review submission
+// ------------------------------
+app.post("/api/review", async (req, res) => {
+  try {
+    const businessId = (req.body.businessId || "").trim();
+    const name = (req.body.name || "").trim();
+    const text = (req.body.text || "").trim();
+    const image = req.body.image || null;
+    const parsedRating = parseInt(req.body.rating, 10);
+
+    if (!businessId) return res.status(400).json({ error: "Missing businessId." });
+    if (!parsedRating || Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return res.status(400).json({ error: "Invalid rating." });
+    }
+
+    const profile = await getBusinessProfile(businessId);
+    if (!profile || profile.active === false) {
+      return res.status(404).json({ error: "Business not found." });
+    }
+
+    const planTier = (profile.plan_tier || PLAN_FREE).toLowerCase();
+    const autoApprove = !planRequiresModeration(planTier);
+    const finalImage = planAllowsImages(planTier) ? image : null;
+
+    const { error } = await supabaseAdmin.from("reviews").insert([{
+      name: name || "Anonymous",
+      text: text || "",
+      rating: parsedRating,
+      image: finalImage,
+      approved: autoApprove,
+      business_id: businessId,
+      source: "hosted_page"
+    }]);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    if (profile.notifications_enabled && profile.notification_email && resend && RESEND_FROM) {
+      try {
+        const businessName = profile.brand_name || prettyBusinessName(businessId);
+
+        await resend.emails.send({
+          from: RESEND_FROM,
+          to: [profile.notification_email],
+          subject: autoApprove
+            ? `New hosted page review for ${businessName}`
+            : `New hosted page review awaiting approval for ${businessName}`,
+          html: `
+            <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
+              <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
+                <h2 style="margin-top:0;">New Hosted Review Submitted</h2>
+                <p><strong>Business:</strong> ${escapeHtml(businessName)}</p>
+                <p><strong>Name:</strong> ${escapeHtml(name || "Anonymous")}</p>
+                <p><strong>Rating:</strong> ${parsedRating} / 5</p>
+                <p><strong>Status:</strong> ${autoApprove ? "Published automatically" : "Pending approval"}</p>
+                <p>${escapeHtml(text || "(no text)")}</p>
+                ${!autoApprove ? `<p><a href="${PUBLIC_APP_URL}/admin3">Review & Approve</a></p>` : ""}
+              </div>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error("Hosted review notification email error:", emailErr);
+      }
+    }
+
+    res.json({ success: true, approved: autoApprove });
+  } catch (err) {
+    console.error("POST /api/review error:", err);
+    res.status(500).json({ error: "Server error." });
+  }
+});
+
+// ------------------------------
+// Google import
+// ------------------------------
 app.post("/import-google-review", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
@@ -727,6 +1008,9 @@ app.post("/import-google-review", async (req, res) => {
   }
 });
 
+// ------------------------------
+// Admin moderation
+// ------------------------------
 app.put("/reviews/:id", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
