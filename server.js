@@ -34,6 +34,7 @@ const PLAN_PRO = "pro";
 const PLAN_PREMIUM = "premium";
 const VALID_PLANS = [PLAN_FREE, PLAN_BASIC, PLAN_PRO, PLAN_PREMIUM];
 const PAID_DASHBOARD_PLANS = [PLAN_PRO, PLAN_PREMIUM];
+const VALID_DELIVERY_TYPES = ["widget", "hosted", "both"];
 
 function requireAdminToken(req, res, next) {
   const token = req.headers["x-admin-token"] || "";
@@ -62,6 +63,14 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function includesWidget(deliveryType) {
+  return deliveryType === "widget" || deliveryType === "both";
+}
+
+function includesHosted(deliveryType) {
+  return deliveryType === "hosted" || deliveryType === "both";
+}
+
 function buildWidgetCode(payload) {
   return `<div id="applogix-review-widget"></div>
 
@@ -86,6 +95,8 @@ window.GOOGLE_IMPORT_ENABLED = ${payload.googleImportEnabled ? "true" : "false"}
 
 function buildWelcomeEmailText(data) {
   const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(data.planTier);
+  const widgetEnabled = includesWidget(data.deliveryType);
+  const hostedEnabled = includesHosted(data.deliveryType);
 
   let text = `Subject: Welcome to AppLogix — Your Review System is Ready
 
@@ -96,15 +107,26 @@ Welcome to AppLogix — your review system is now set up and ready to go.
 Plan:
 ${data.planTier.toUpperCase()}
 
+Delivery Type:
+${data.deliveryType.toUpperCase()}
+
 Business ID:
 ${data.businessId}
+`;
 
+  if (widgetEnabled) {
+    text += `
 Website Review Page URL:
-${data.reviewPageUrl || "(not required for this plan)"}
+${data.reviewPageUrl || "(not provided)"}
+`;
+  }
 
+  if (hostedEnabled) {
+    text += `
 Hosted Review Page:
 ${PUBLIC_APP_URL}/r/${data.businessId}
 `;
+  }
 
   if (isDashboardPlan) {
     text += `
@@ -120,8 +142,12 @@ ${data.tempPassword}
   }
 
   text += `
----
 
+---
+`;
+
+  if (widgetEnabled) {
+    text += `
 Install your review widget
 
 Copy and paste the code below into your website where you want reviews to appear:
@@ -130,6 +156,7 @@ ${data.widgetCode}
 
 ---
 `;
+  }
 
   if (isDashboardPlan) {
     text += `What happens next
@@ -137,14 +164,13 @@ ${data.widgetCode}
 - Log in to your dashboard
 - Approve or reject reviews
 - Manage review notifications
-- Use review links, QR codes, and hosted page tools
+- Use review links, QR codes, and hosted page tools where enabled
 `;
   } else {
     text += `What happens next
 
-- Reviews will publish automatically
-- Your hosted review page is live
-- Your review link can be shared directly
+- Reviews will publish automatically on Free and Basic
+- Your selected delivery format is ready
 - Upgrade anytime for moderation and dashboard controls
 `;
   }
@@ -193,7 +219,10 @@ async function getAdminProfileByEmail(email) {
       active,
       setup_fee_paid,
       partner_name,
-      partner_email
+      partner_email,
+      delivery_type,
+      hosted_header,
+      hosted_footer
     `)
     .eq("email", email)
     .limit(1);
@@ -219,7 +248,10 @@ async function getBusinessProfile(businessId) {
       review_page_url,
       notifications_enabled,
       notification_email,
-      google_import_enabled
+      google_import_enabled,
+      delivery_type,
+      hosted_header,
+      hosted_footer
     `)
     .eq("business_id", businessId)
     .limit(1);
@@ -321,8 +353,7 @@ app.get("/cloudinary-signature", (req, res) => {
 });
 
 // ------------------------------
-// Simple upload route for hosted page
-// Currently returns the base64 image as-is.
+// Simple upload route
 // ------------------------------
 app.post("/upload", async (req, res) => {
   try {
@@ -366,7 +397,10 @@ app.post("/admin-me", async (req, res) => {
       brandName: profile.brand_name || "",
       brandPrimary: profile.brand_primary || "",
       brandSecondary: profile.brand_secondary || "",
-      brandLogoUrl: profile.brand_logo_url || ""
+      brandLogoUrl: profile.brand_logo_url || "",
+      deliveryType: profile.delivery_type || "widget",
+      hostedHeader: profile.hosted_header || "",
+      hostedFooter: profile.hosted_footer || ""
     });
   } catch (err) {
     console.error("POST /admin-me error:", err);
@@ -402,6 +436,7 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
 
 // ------------------------------
 // Send review link (Premium)
+// Uses hosted page if enabled, otherwise widget page URL
 // ------------------------------
 app.post("/send-review-link", async (req, res) => {
   try {
@@ -416,10 +451,18 @@ app.post("/send-review-link", async (req, res) => {
       return res.status(500).send("Email service is not configured.");
     }
 
+    const deliveryType = profile.delivery_type || "widget";
+    const reviewLink = includesHosted(deliveryType)
+      ? `${PUBLIC_APP_URL}/r/${profile.business_id}`
+      : (profile.review_page_url || "");
+
+    if (!reviewLink) {
+      return res.status(400).send("No valid review link is configured for this account.");
+    }
+
     const reviewerEmail = (req.body.reviewerEmail || "").trim().toLowerCase();
     const reviewerName = (req.body.reviewerName || "").trim();
     const businessName = profile.brand_name || prettyBusinessName(profile.business_id);
-    const hostedPage = `${PUBLIC_APP_URL}/r/${profile.business_id}`;
 
     if (!reviewerEmail) {
       return res.status(400).send("Reviewer email is required.");
@@ -437,7 +480,7 @@ app.post("/send-review-link", async (req, res) => {
             <h2 style="margin-top:0;">${escapeHtml(businessName)}</h2>
             <p>${greeting}</p>
             <p>Thank you for your business. We’d really appreciate your feedback.</p>
-            <p><a href="${hostedPage}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
+            <p><a href="${reviewLink}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
             <p style="font-size:13px;color:#64748b;">Reviews may be screened for spam before appearing publicly.</p>
           </div>
         </div>
@@ -502,11 +545,15 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     const tempPassword = (req.body.tempPassword || "").trim();
     const planTier = (req.body.planTier || "").trim().toLowerCase();
     const reviewPageUrl = (req.body.reviewPageUrl || "").trim();
+    const deliveryType = (req.body.deliveryType || "widget").trim().toLowerCase();
 
     let notificationsEnabled = !!req.body.notificationsEnabled;
     let notificationEmail = (req.body.notificationEmail || clientEmail || "").trim().toLowerCase();
     let brandingEnabled = !!req.body.brandingEnabled;
     let googleImportEnabled = !!req.body.googleImportEnabled;
+
+    const hostedHeader = (req.body.hostedHeader || "").trim();
+    const hostedFooter = (req.body.hostedFooter || "").trim();
 
     const brandName = (req.body.brandName || businessName || "").trim();
     const brandPrimary = (req.body.brandPrimary || "#2563eb").trim();
@@ -522,9 +569,10 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     if (!businessId) return res.status(400).send("Missing business ID.");
     if (!clientEmail) return res.status(400).send("Missing client email.");
     if (!planTier || !VALID_PLANS.includes(planTier)) return res.status(400).send("Invalid plan tier.");
+    if (!VALID_DELIVERY_TYPES.includes(deliveryType)) return res.status(400).send("Invalid delivery type.");
 
-    if (planTier !== PLAN_FREE && !reviewPageUrl) {
-      return res.status(400).send("Website Review Page URL is required for Basic, Pro, and Premium plans.");
+    if (includesWidget(deliveryType) && !reviewPageUrl) {
+      return res.status(400).send("Website Review Page URL is required when widget delivery is selected.");
     }
 
     const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(planTier);
@@ -550,7 +598,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       notificationsEnabled = true;
       brandingEnabled = true;
       if (!notificationEmail) notificationEmail = clientEmail;
-      // googleImportEnabled remains optional based on payload
+      // googleImportEnabled remains optional
     }
 
     const { data: existingAdmins, error: existingAdminErr } = await supabaseAdmin
@@ -606,9 +654,12 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       active: active,
       setup_fee_paid: setupFeePaid,
       first_password_reset_at: null,
-      review_page_url: reviewPageUrl || null,
+      review_page_url: includesWidget(deliveryType) ? (reviewPageUrl || null) : null,
       partner_name: partnerName || null,
-      partner_email: partnerEmail || null
+      partner_email: partnerEmail || null,
+      delivery_type: deliveryType,
+      hosted_header: includesHosted(deliveryType) ? (hostedHeader || null) : null,
+      hosted_footer: includesHosted(deliveryType) ? (hostedFooter || null) : null
     };
 
     const { error: insertErr } = await supabaseAdmin.from("admin_users").insert([rowPayload]);
@@ -622,18 +673,22 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       return res.status(500).send(insertErr.message);
     }
 
-    const widgetCode = buildWidgetCode({
-      businessName,
-      businessId,
-      planTier,
-      brandName,
-      brandPrimary,
-      brandSecondary,
-      brandLogoUrl,
-      googleImportEnabled
-    });
+    const widgetCode = includesWidget(deliveryType)
+      ? buildWidgetCode({
+          businessName,
+          businessId,
+          planTier,
+          brandName,
+          brandPrimary,
+          brandSecondary,
+          brandLogoUrl,
+          googleImportEnabled
+        })
+      : "";
 
-    const hostedPageUrl = `${PUBLIC_APP_URL}/r/${businessId}`;
+    const hostedPageUrl = includesHosted(deliveryType)
+      ? `${PUBLIC_APP_URL}/r/${businessId}`
+      : "";
 
     const welcomeEmail = buildWelcomeEmailText({
       businessName,
@@ -641,6 +696,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       clientEmail,
       tempPassword,
       planTier,
+      deliveryType,
       widgetCode,
       reviewPageUrl
     });
@@ -652,13 +708,16 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       clientEmail,
       tempPassword: isDashboardPlan ? tempPassword : "",
       planTier,
+      deliveryType,
       notificationsEnabled,
       brandingEnabled,
       googleImportEnabled,
-      reviewPageUrl: reviewPageUrl || "",
+      reviewPageUrl: includesWidget(deliveryType) ? (reviewPageUrl || "") : "",
       hostedPageUrl,
       widgetCode,
       welcomeEmail,
+      hostedHeader: includesHosted(deliveryType) ? hostedHeader : "",
+      hostedFooter: includesHosted(deliveryType) ? hostedFooter : "",
       dashboardIncluded: isDashboardPlan,
       dashboardUrl: isDashboardPlan ? `${PUBLIC_APP_URL}/admin3` : ""
     });
@@ -670,11 +729,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
 
 // ------------------------------
 // /reviews
-// IMPORTANT:
-// This route now returns ALL reviews for the business.
-// That allows the admin dashboard to show pending reviews.
-// Public widget UI should continue filtering approved reviews client-side.
-// Hosted public pages use /api/reviews/:businessId instead.
+// Admin dashboard uses this and must see pending reviews.
 // ------------------------------
 app.get("/reviews", async (req, res) => {
   try {
@@ -721,7 +776,6 @@ app.get("/reviews", async (req, res) => {
 
 // ------------------------------
 // Existing widget review submission
-// Sends notifications correctly
 // ------------------------------
 app.post("/reviews", async (req, res) => {
   try {
@@ -737,6 +791,10 @@ app.post("/reviews", async (req, res) => {
     const profile = await getBusinessProfile(businessId);
     if (!profile || profile.active === false) {
       return res.status(404).send("Business not found.");
+    }
+
+    if (!includesWidget(profile.delivery_type || "widget")) {
+      return res.status(403).send("Widget delivery is not enabled for this client.");
     }
 
     const planTier = (profile.plan_tier || PLAN_FREE).toLowerCase();
@@ -794,6 +852,7 @@ app.post("/reviews", async (req, res) => {
 
 // ------------------------------
 // Hosted page business info
+// Hosted only if delivery_type includes hosted
 // ------------------------------
 app.get("/api/business/:businessId", async (req, res) => {
   try {
@@ -808,19 +867,26 @@ app.get("/api/business/:businessId", async (req, res) => {
       return res.status(404).json({ error: "Business not found." });
     }
 
+    const deliveryType = profile.delivery_type || "widget";
+    if (!includesHosted(deliveryType)) {
+      return res.status(404).json({ error: "Hosted page is not enabled for this client." });
+    }
+
     const planTier = (profile.plan_tier || PLAN_FREE).toLowerCase();
 
     res.json({
       businessId,
       name: profile.brand_name || prettyBusinessName(businessId),
-      subtitle: "Share your experience below. Reviews help businesses build trust and improve customer experience.",
+      subtitle: profile.hosted_header || "Share your experience below. Reviews help businesses build trust and improve customer experience.",
+      footer: profile.hosted_footer || "Powered by AppLogix",
       logo: profile.branding_enabled ? (profile.brand_logo_url || "") : "",
       planTier,
       brandingEnabled: !!profile.branding_enabled,
       reviewPageUrl: profile.review_page_url || "",
       brandPrimary: profile.brand_primary || "#2563eb",
       brandSecondary: profile.brand_secondary || "#4ea3ff",
-      googleImportEnabled: !!profile.google_import_enabled
+      googleImportEnabled: !!profile.google_import_enabled,
+      deliveryType
     });
   } catch (err) {
     console.error("GET /api/business/:businessId error:", err);
@@ -837,6 +903,16 @@ app.get("/api/reviews/:businessId", async (req, res) => {
     const businessId = (req.params.businessId || "").trim();
     if (!businessId) {
       return res.status(400).json({ error: "Missing businessId." });
+    }
+
+    const profile = await getBusinessProfile(businessId);
+    if (!profile || profile.active === false) {
+      return res.status(404).json({ error: "Business not found." });
+    }
+
+    const deliveryType = profile.delivery_type || "widget";
+    if (!includesHosted(deliveryType)) {
+      return res.status(404).json({ error: "Hosted page is not enabled for this client." });
     }
 
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
@@ -903,7 +979,6 @@ app.get("/api/reviews/:businessId", async (req, res) => {
 
 // ------------------------------
 // Hosted page review submission
-// Sends notifications correctly
 // ------------------------------
 app.post("/api/review", async (req, res) => {
   try {
@@ -921,6 +996,11 @@ app.post("/api/review", async (req, res) => {
     const profile = await getBusinessProfile(businessId);
     if (!profile || profile.active === false) {
       return res.status(404).json({ error: "Business not found." });
+    }
+
+    const deliveryType = profile.delivery_type || "widget";
+    if (!includesHosted(deliveryType)) {
+      return res.status(403).json({ error: "Hosted page is not enabled for this client." });
     }
 
     const planTier = (profile.plan_tier || PLAN_FREE).toLowerCase();
