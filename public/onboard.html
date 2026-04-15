@@ -1,529 +1,516 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AppLogix Client Onboarding</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppLogix Onboarding</title>
   <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #4ea3ff;
+      --bg: #f4f8ff;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe7fb;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
-      color: #1f2937;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #eef5ff 0%, #f8fbff 100%);
+      color: var(--text);
     }
 
     .wrap {
-      max-width: 920px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 18px;
+      padding: 28px 16px 50px;
     }
 
-    .panel {
-      background: #ffffff;
-      border-radius: 28px;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
-      border: 1px solid #e5eefc;
-    }
-
-    .topbar {
-      height: 58px;
-      background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
-    }
-
-    .content {
-      padding: 22px;
-    }
-
-    .title {
-      font-size: 30px;
-      font-weight: 800;
-      margin: 0 0 6px;
-      color: #1f2937;
-    }
-
-    .sub {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 18px;
-    }
-
-    .card {
+    .hero,
+    .card,
+    .result-card {
       background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-      border: 1px solid #e4eefc;
-      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     }
 
-    .section-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: #1e3a8a;
-      margin: 0 0 14px;
+    .hero {
+      overflow: hidden;
+      margin-bottom: 22px;
     }
 
-    .hint {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: -4px;
-      margin-bottom: 12px;
+    .hero-top {
+      height: 56px;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+    }
+
+    .hero-body {
+      padding: 26px 22px;
+      text-align: center;
+    }
+
+    .hero-body h1 {
+      margin: 0 0 10px;
+      font-size: 2.1rem;
+      color: #173b96;
+    }
+
+    .hero-body p {
+      margin: 0 auto;
+      max-width: 720px;
+      color: var(--muted);
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 22px;
+      margin-bottom: 22px;
     }
 
-    .full {
-      grid-column: 1 / -1;
+    .card {
+      padding: 22px;
     }
 
-    .input,
-    .select {
+    .card h2 {
+      margin: 0 0 14px;
+      color: #173b96;
+      font-size: 1.45rem;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #334155;
+    }
+
+    .field,
+    .select,
+    .textarea {
       width: 100%;
-      box-sizing: border-box;
-      padding: 14px 16px;
-      border-radius: 16px;
+      padding: 13px 14px;
+      border-radius: 14px;
       border: 1px solid #cfdcf3;
       background: #f9fbff;
-      font-size: 15px;
-      color: #1f2937;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 14px;
     }
 
-    .input[disabled],
-    .select[disabled] {
-      opacity: 0.7;
-      cursor: not-allowed;
+    .textarea {
+      min-height: 120px;
+      resize: vertical;
     }
 
-    .checkbox-row {
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .check-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      border: 1px solid #cfdcf3;
-      background: #f9fbff;
-      min-height: 50px;
-      box-sizing: border-box;
-    }
-
-    .checkbox-row input {
-      width: 18px;
-      height: 18px;
-      margin: 0;
-    }
-
-    .checkbox-row input[disabled] {
-      cursor: not-allowed;
-    }
-
-    .checkbox-row label {
-      font-size: 14px;
+      margin-bottom: 12px;
       color: #334155;
-      font-weight: 700;
+      font-weight: 600;
     }
 
-    .btn {
+    .submit-btn,
+    .copy-btn,
+    .secondary-btn {
       border: none;
-      border-radius: 16px;
+      border-radius: 14px;
       padding: 14px 18px;
-      font-size: 16px;
+      font-size: 0.98rem;
       font-weight: 800;
       cursor: pointer;
+    }
+
+    .submit-btn {
       width: 100%;
-      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-      color: #ffffff;
-      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
-      margin-bottom: 10px;
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #eef4ff;
+      color: #173b96;
+      border: 1px solid var(--border);
+    }
+
+    .copy-btn {
+      background: #173b96;
+      color: #fff;
+      margin-top: 10px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .result-card {
+      padding: 22px;
+      margin-top: 22px;
+      display: none;
+    }
+
+    .result-card h2 {
+      margin: 0 0 16px;
+      color: #173b96;
+    }
+
+    .result-block {
+      margin-bottom: 22px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #f9fbff;
+    }
+
+    .result-block h3 {
+      margin: 0 0 10px;
+      color: #173b96;
+      font-size: 1.05rem;
+    }
+
+    .result-line {
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+
+    .code-box {
+      width: 100%;
+      min-height: 180px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid #cfdcf3;
+      background: #fff;
+      font-family: Consolas, monospace;
+      font-size: 0.9rem;
+      color: #0f172a;
+      resize: vertical;
     }
 
     .status {
       margin-top: 12px;
-      font-size: 14px;
-      color: #475569;
-      white-space: pre-wrap;
+      text-align: center;
+      font-weight: 700;
     }
 
-    .success-box {
-      display: none;
-      margin-top: 14px;
-      background: #f8fbff;
-      border: 1px solid #dbe7fb;
-      border-radius: 18px;
-      padding: 16px;
+    .error {
+      color: #b91c1c;
     }
 
-    .success-title {
-      font-size: 17px;
-      font-weight: 800;
+    .success {
       color: #166534;
-      margin: 0 0 10px;
     }
 
-    .codebox {
-      background: #0f172a;
-      color: #e2e8f0;
-      border-radius: 16px;
-      padding: 14px;
-      font-family: Consolas, Monaco, monospace;
-      font-size: 12px;
-      line-height: 1.5;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      margin-top: 10px;
-    }
-
-    .copy-btn {
-      margin-top: 10px;
-      margin-right: 8px;
-      border: none;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
-      background: #16a34a;
-      color: white;
-    }
-
-    .copy-btn.secondary {
-      background: #2563eb;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    @media (max-width: 700px) {
-      .grid {
+    @media (max-width: 900px) {
+      .grid,
+      .two-col {
         grid-template-columns: 1fr;
+      }
+
+      .hero-body h1 {
+        font-size: 1.8rem;
       }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="panel">
-      <div class="topbar"></div>
-
-      <div class="content">
-        <h1 class="title">AppLogix Client Onboarding</h1>
-        <div class="sub">Create clients, generate widget code, and produce the correct handoff based on plan.</div>
-
-        <div class="card">
-          <div class="section-title">Internal Access</div>
-          <div class="grid">
-            <input id="adminToken" class="input full" type="password" placeholder="Admin token" />
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">Plan Selection</div>
-          <div class="grid">
-            <select id="planTier" class="select full" onchange="applyPlanTierFeatures()">
-              <option value="">Select plan tier</option>
-              <option value="free">Free</option>
-              <option value="basic">Basic</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
-            </select>
-          </div>
-          <div class="hint">
-            Free: optional website review URL. Basic / Pro / Premium: review page URL required.
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">Client Details</div>
-          <div class="grid">
-            <input id="businessName" class="input" type="text" placeholder="Business name" oninput="generateBusinessId()" />
-            <input id="businessId" class="input" type="text" placeholder="Business ID" />
-
-            <input id="clientEmail" class="input" type="email" placeholder="Client email" />
-            <input id="reviewPageUrl" class="input" type="text" placeholder="Review page URL (where widget lives on client site)" />
-
-            <input id="tempPassword" class="input dashboard-only" type="text" placeholder="Temporary password" value="AppLogix" />
-            <input id="notificationEmail" class="input dashboard-only" type="email" placeholder="Notification email" />
-
-            <input id="partnerName" class="input" type="text" placeholder="Partner name (optional)" />
-            <input id="partnerEmail" class="input" type="email" placeholder="Partner email (optional)" />
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">Plan Features & Billing</div>
-          <div class="hint">These are locked automatically by the selected plan.</div>
-          <div class="grid">
-            <div class="checkbox-row">
-              <input id="notificationsEnabled" type="checkbox" disabled />
-              <label for="notificationsEnabled">Notifications enabled</label>
-            </div>
-
-            <div class="checkbox-row">
-              <input id="brandingEnabled" type="checkbox" disabled />
-              <label for="brandingEnabled">Branding enabled</label>
-            </div>
-
-            <div class="checkbox-row">
-              <input id="googleImportEnabled" type="checkbox" disabled />
-              <label for="googleImportEnabled">Google import enabled</label>
-            </div>
-
-            <div class="checkbox-row">
-              <input id="active" type="checkbox" checked />
-              <label for="active">Account active</label>
-            </div>
-
-            <div class="checkbox-row full">
-              <input id="setupFeePaid" type="checkbox" />
-              <label for="setupFeePaid">Setup fee paid</label>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">Branding</div>
-          <div class="grid">
-            <input id="brandName" class="input" type="text" placeholder="Brand name (usually business name)" />
-            <input id="brandLogoUrl" class="input" type="text" placeholder="Brand logo URL (optional)" />
-
-            <input id="brandPrimary" class="input" type="text" placeholder="Brand primary color" value="#2563eb" />
-            <input id="brandSecondary" class="input" type="text" placeholder="Brand secondary color" value="#4ea3ff" />
-          </div>
-        </div>
-
-        <div class="card">
-          <button class="btn" onclick="createClient()">Create Client</button>
-          <div id="status" class="status">Ready.</div>
-
-          <div id="successBox" class="success-box">
-            <div class="success-title">Client created successfully</div>
-            <div id="successSummary" class="status"></div>
-
-            <div class="codebox" id="widgetCodeBox"></div>
-            <button class="copy-btn" onclick="copyWidgetCode()">Copy Widget Code</button>
-            <button class="copy-btn secondary" onclick="copyWelcomeEmail()">Copy Welcome Email</button>
-          </div>
-        </div>
+    <section class="hero">
+      <div class="hero-top"></div>
+      <div class="hero-body">
+        <h1>AppLogix Client Onboarding</h1>
+        <p>
+          Create a new client, generate dashboard access when applicable,
+          provide widget installation code, and now automatically issue a hosted review page link.
+        </p>
       </div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Client Details</h2>
+
+        <label class="field-label" for="businessName">Business Name</label>
+        <input id="businessName" class="field" type="text" placeholder="Buddy Co" />
+
+        <label class="field-label" for="businessId">Business ID</label>
+        <input id="businessId" class="field" type="text" placeholder="kenorabuddyco" />
+
+        <label class="field-label" for="clientEmail">Client Email</label>
+        <input id="clientEmail" class="field" type="email" placeholder="owner@example.com" />
+
+        <label class="field-label" for="planTier">Plan Tier</label>
+        <select id="planTier" class="select">
+          <option value="free">Free</option>
+          <option value="basic">Basic</option>
+          <option value="pro">Pro</option>
+          <option value="premium">Premium</option>
+        </select>
+
+        <div id="tempPasswordWrap" style="display:none;">
+          <label class="field-label" for="tempPassword">Temporary Password</label>
+          <input id="tempPassword" class="field" type="text" placeholder="Temporary password for first login" />
+        </div>
+
+        <div id="reviewPageWrap">
+          <label class="field-label" for="reviewPageUrl">Review Page URL</label>
+          <input id="reviewPageUrl" class="field" type="text" placeholder="https://yourdomain.com/reviews" />
+          <div class="muted">Required for Basic, Pro, and Premium plans.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Branding & Settings</h2>
+
+        <label class="field-label" for="brandName">Brand Name</label>
+        <input id="brandName" class="field" type="text" placeholder="Buddy Co" />
+
+        <div class="two-col">
+          <div>
+            <label class="field-label" for="brandPrimary">Primary Color</label>
+            <input id="brandPrimary" class="field" type="text" value="#2563eb" />
+          </div>
+          <div>
+            <label class="field-label" for="brandSecondary">Secondary Color</label>
+            <input id="brandSecondary" class="field" type="text" value="#4ea3ff" />
+          </div>
+        </div>
+
+        <label class="field-label" for="brandLogoUrl">Brand Logo URL</label>
+        <input id="brandLogoUrl" class="field" type="text" placeholder="https://..." />
+
+        <label class="field-label" for="notificationEmail">Notification Email</label>
+        <input id="notificationEmail" class="field" type="email" placeholder="notifications@example.com" />
+
+        <div class="check-row">
+          <input id="setupFeePaid" type="checkbox" />
+          <label for="setupFeePaid">Setup fee paid</label>
+        </div>
+
+        <div class="check-row">
+          <input id="active" type="checkbox" checked />
+          <label for="active">Client active</label>
+        </div>
+
+        <button id="createBtn" class="submit-btn">Create Client</button>
+        <div id="status" class="status"></div>
+      </section>
     </div>
+
+    <section id="resultCard" class="result-card">
+      <h2>Onboarding Output</h2>
+
+      <div class="result-block">
+        <h3>Client Summary</h3>
+        <div id="summaryLines"></div>
+      </div>
+
+      <div class="result-block">
+        <h3>Hosted Review Page</h3>
+        <div id="hostedPageUrl" class="result-line"></div>
+        <button class="copy-btn" data-copy-target="hostedPageUrl">Copy Hosted Page URL</button>
+      </div>
+
+      <div class="result-block">
+        <h3>Widget Install Code</h3>
+        <textarea id="widgetCode" class="code-box" readonly></textarea>
+        <button class="copy-btn" data-copy-target="widgetCode">Copy Widget Code</button>
+      </div>
+
+      <div class="result-block">
+        <h3>Welcome Email Draft</h3>
+        <textarea id="welcomeEmail" class="code-box" readonly></textarea>
+        <button class="copy-btn" data-copy-target="welcomeEmail">Copy Welcome Email</button>
+      </div>
+
+      <div id="dashboardBlock" class="result-block" style="display:none;">
+        <h3>Dashboard Access</h3>
+        <div id="dashboardUrl" class="result-line"></div>
+        <div id="dashboardEmail" class="result-line"></div>
+        <div id="dashboardPassword" class="result-line"></div>
+      </div>
+    </section>
   </div>
 
   <script>
-    function slugifyBusinessName(value) {
-      return value
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9\\s-]/g, "")
-        .replace(/\\s+/g, "")
-        .replace(/-+/g, "");
+    const createBtn = document.getElementById("createBtn");
+    const statusEl = document.getElementById("status");
+    const resultCard = document.getElementById("resultCard");
+
+    const planTierEl = document.getElementById("planTier");
+    const tempPasswordWrap = document.getElementById("tempPasswordWrap");
+    const reviewPageWrap = document.getElementById("reviewPageWrap");
+
+    function updatePlanUI() {
+      const plan = planTierEl.value;
+
+      tempPasswordWrap.style.display = (plan === "pro" || plan === "premium") ? "block" : "none";
+      reviewPageWrap.style.display = (plan === "free") ? "none" : "block";
     }
 
-    function generateBusinessId() {
-      const businessName = document.getElementById("businessName").value;
-      const businessIdInput = document.getElementById("businessId");
-      const brandNameInput = document.getElementById("brandName");
+    planTierEl.addEventListener("change", updatePlanUI);
+    updatePlanUI();
 
-      if (!businessIdInput.dataset.editedManually) {
-        businessIdInput.value = slugifyBusinessName(businessName);
-      }
-
-      if (!brandNameInput.value) {
-        brandNameInput.value = businessName;
-      }
+    function getAdminToken() {
+      return localStorage.getItem("ARW_ADMIN_TOKEN") || "";
     }
 
-    function setCheckbox(id, checked) {
-      document.getElementById(id).checked = checked;
-    }
-
-    function setDashboardFieldsVisible(show) {
-      document.querySelectorAll(".dashboard-only").forEach(el => {
-        el.classList.toggle("hidden", !show);
-      });
-    }
-
-    function applyPlanTierFeatures() {
-      const plan = document.getElementById("planTier").value;
-      const reviewPageUrl = document.getElementById("reviewPageUrl");
-
-      if (plan === "free") {
-        setCheckbox("notificationsEnabled", false);
-        setCheckbox("brandingEnabled", false);
-        setCheckbox("googleImportEnabled", false);
-        setDashboardFieldsVisible(false);
-        reviewPageUrl.placeholder = "Review page URL (optional for Free)";
-        reviewPageUrl.removeAttribute("required");
-      } else if (plan === "basic") {
-        setCheckbox("notificationsEnabled", false);
-        setCheckbox("brandingEnabled", false);
-        setCheckbox("googleImportEnabled", false);
-        setDashboardFieldsVisible(false);
-        reviewPageUrl.placeholder = "Review page URL (required)";
-        reviewPageUrl.setAttribute("required", "required");
-      } else if (plan === "pro") {
-        setCheckbox("notificationsEnabled", true);
-        setCheckbox("brandingEnabled", false);
-        setCheckbox("googleImportEnabled", false);
-        setDashboardFieldsVisible(true);
-        reviewPageUrl.placeholder = "Review page URL (required)";
-        reviewPageUrl.setAttribute("required", "required");
-      } else if (plan === "premium") {
-        setCheckbox("notificationsEnabled", true);
-        setCheckbox("brandingEnabled", true);
-        setCheckbox("googleImportEnabled", true);
-        setDashboardFieldsVisible(true);
-        reviewPageUrl.placeholder = "Review page URL (required)";
-        reviewPageUrl.setAttribute("required", "required");
-      } else {
-        setCheckbox("notificationsEnabled", false);
-        setCheckbox("brandingEnabled", false);
-        setCheckbox("googleImportEnabled", false);
-        setDashboardFieldsVisible(false);
-        reviewPageUrl.placeholder = "Review page URL";
-        reviewPageUrl.removeAttribute("required");
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        return false;
       }
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
-      document.getElementById("businessId").addEventListener("input", function () {
-        this.dataset.editedManually = "true";
-      });
+    document.addEventListener("click", async (e) => {
+      if (!e.target.matches(".copy-btn")) return;
 
-      applyPlanTierFeatures();
+      const targetId = e.target.getAttribute("data-copy-target");
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      const text = target.value !== undefined ? target.value : target.innerText;
+      const ok = await copyText(text);
+
+      const original = e.target.innerText;
+      e.target.innerText = ok ? "Copied" : "Copy failed";
+      setTimeout(() => {
+        e.target.innerText = original;
+      }, 1200);
     });
 
-    function buildWelcomeEmail(data) {
-      return data.welcomeEmail || "";
-    }
+    createBtn.addEventListener("click", async () => {
+      statusEl.className = "status";
+      statusEl.innerText = "Creating client...";
+      createBtn.disabled = true;
 
-    async function createClient() {
-      const status = document.getElementById("status");
-      const successBox = document.getElementById("successBox");
-      const successSummary = document.getElementById("successSummary");
-      const widgetCodeBox = document.getElementById("widgetCodeBox");
-
+      const businessName = document.getElementById("businessName").value.trim();
+      const businessId = document.getElementById("businessId").value.trim();
+      const clientEmail = document.getElementById("clientEmail").value.trim();
       const planTier = document.getElementById("planTier").value;
+      const tempPassword = document.getElementById("tempPassword").value.trim();
       const reviewPageUrl = document.getElementById("reviewPageUrl").value.trim();
+      const brandName = document.getElementById("brandName").value.trim();
+      const brandPrimary = document.getElementById("brandPrimary").value.trim();
+      const brandSecondary = document.getElementById("brandSecondary").value.trim();
+      const brandLogoUrl = document.getElementById("brandLogoUrl").value.trim();
+      const notificationEmail = document.getElementById("notificationEmail").value.trim();
+      const setupFeePaid = document.getElementById("setupFeePaid").checked;
+      const active = document.getElementById("active").checked;
+
+      if (!businessName || !businessId || !clientEmail) {
+        statusEl.className = "status error";
+        statusEl.innerText = "Business name, business ID, and client email are required.";
+        createBtn.disabled = false;
+        return;
+      }
+
+      if ((planTier === "basic" || planTier === "pro" || planTier === "premium") && !reviewPageUrl) {
+        statusEl.className = "status error";
+        statusEl.innerText = "Review page URL is required for Basic, Pro, and Premium.";
+        createBtn.disabled = false;
+        return;
+      }
+
+      if ((planTier === "pro" || planTier === "premium") && !tempPassword) {
+        statusEl.className = "status error";
+        statusEl.innerText = "Temporary password is required for Pro and Premium.";
+        createBtn.disabled = false;
+        return;
+      }
 
       const payload = {
-        businessName: document.getElementById("businessName").value.trim(),
-        businessId: document.getElementById("businessId").value.trim(),
-        clientEmail: document.getElementById("clientEmail").value.trim(),
-        tempPassword: document.getElementById("tempPassword").value.trim(),
-        planTier: planTier,
-        notificationEmail: document.getElementById("notificationEmail").value.trim(),
-        notificationsEnabled: document.getElementById("notificationsEnabled").checked,
-        brandingEnabled: document.getElementById("brandingEnabled").checked,
-        googleImportEnabled: document.getElementById("googleImportEnabled").checked,
-        brandName: document.getElementById("brandName").value.trim(),
-        brandPrimary: document.getElementById("brandPrimary").value.trim(),
-        brandSecondary: document.getElementById("brandSecondary").value.trim(),
-        brandLogoUrl: document.getElementById("brandLogoUrl").value.trim(),
-        active: document.getElementById("active").checked,
-        setupFeePaid: document.getElementById("setupFeePaid").checked,
-        reviewPageUrl: reviewPageUrl,
-        partnerName: document.getElementById("partnerName").value.trim(),
-        partnerEmail: document.getElementById("partnerEmail").value.trim()
+        businessName,
+        businessId,
+        clientEmail,
+        planTier,
+        tempPassword,
+        reviewPageUrl,
+        brandName,
+        brandPrimary,
+        brandSecondary,
+        brandLogoUrl,
+        notificationEmail,
+        notificationsEnabled: (planTier === "pro" || planTier === "premium"),
+        brandingEnabled: (planTier === "premium"),
+        googleImportEnabled: (planTier === "premium"),
+        setupFeePaid,
+        active
       };
-
-      const adminToken = document.getElementById("adminToken").value.trim();
-
-      if (!adminToken) {
-        status.textContent = "Please enter your admin token.";
-        successBox.style.display = "none";
-        return;
-      }
-
-      if (!payload.businessName || !payload.businessId || !payload.clientEmail || !payload.planTier) {
-        status.textContent = "Please complete required fields.";
-        successBox.style.display = "none";
-        return;
-      }
-
-      if (planTier !== "free" && !reviewPageUrl) {
-        status.textContent = "Review page URL is required for Basic, Pro, and Premium.";
-        successBox.style.display = "none";
-        return;
-      }
-
-      if ((planTier === "pro" || planTier === "premium") && !payload.tempPassword) {
-        status.textContent = "Temporary password is required for Pro and Premium.";
-        successBox.style.display = "none";
-        return;
-      }
-
-      status.textContent = "Creating client...";
-      successBox.style.display = "none";
 
       try {
         const res = await fetch("/create-client", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-admin-token": adminToken
+            "x-admin-token": getAdminToken()
           },
           body: JSON.stringify(payload)
         });
 
+        const text = await res.text();
+        let data = null;
+
+        try {
+          data = JSON.parse(text);
+        } catch (_) {}
+
         if (!res.ok) {
-          const errText = await res.text();
-          status.textContent = "Create failed: " + errText;
-          successBox.style.display = "none";
-          return;
+          throw new Error(data?.error || text || "Failed to create client.");
         }
 
-        const data = await res.json();
+        resultCard.style.display = "block";
 
-        status.textContent = "Client created successfully.";
-        successBox.style.display = "block";
+        const summaryLines = [
+          `<div class="result-line"><strong>Business:</strong> ${data.businessName}</div>`,
+          `<div class="result-line"><strong>Business ID:</strong> ${data.businessId}</div>`,
+          `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
+          `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
+          `<div class="result-line"><strong>Review Page URL:</strong> ${data.reviewPageUrl || "(none)"}</div>`
+        ].join("");
 
-        let summary =
-          "Business: " + data.businessName + "\n" +
-          "Business ID: " + data.businessId + "\n" +
-          "Email: " + data.clientEmail + "\n" +
-          "Plan: " + data.planTier + "\n" +
-          "Review Page URL: " + (data.reviewPageUrl || "Not required for this plan") + "\n";
+        document.getElementById("summaryLines").innerHTML = summaryLines;
+        document.getElementById("hostedPageUrl").innerText = data.hostedPageUrl || "";
+        document.getElementById("widgetCode").value = data.widgetCode || "";
+        document.getElementById("welcomeEmail").value = data.welcomeEmail || "";
 
+        const dashboardBlock = document.getElementById("dashboardBlock");
         if (data.dashboardIncluded) {
-          summary +=
-            "Dashboard: " + data.dashboardUrl + "\n" +
-            "Temporary Password: " + data.tempPassword;
+          dashboardBlock.style.display = "block";
+          document.getElementById("dashboardUrl").innerHTML = `<strong>Dashboard:</strong> ${data.dashboardUrl || ""}`;
+          document.getElementById("dashboardEmail").innerHTML = `<strong>Email:</strong> ${data.clientEmail || ""}`;
+          document.getElementById("dashboardPassword").innerHTML = `<strong>Temporary Password:</strong> ${data.tempPassword || ""}`;
         } else {
-          summary += "Dashboard: Not included for this plan";
+          dashboardBlock.style.display = "none";
         }
 
-        successSummary.textContent = summary;
-        widgetCodeBox.textContent = data.widgetCode;
+        statusEl.className = "status success";
+        statusEl.innerText = "Client created successfully.";
+        resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
 
-        window.__latestWidgetCode = data.widgetCode;
-        window.__latestWelcomeEmail = buildWelcomeEmail(data);
-      } catch (e) {
-        status.textContent = "Create failed: " + (e.message || "Unknown error");
-        successBox.style.display = "none";
+      } catch (err) {
+        statusEl.className = "status error";
+        statusEl.innerText = err.message || "Error creating client.";
       }
-    }
 
-    function copyWidgetCode() {
-      const text = window.__latestWidgetCode || "";
-      if (!text) return;
-
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Widget code copied."))
-        .catch(() => alert("Could not copy automatically. Please copy manually."));
-    }
-
-    function copyWelcomeEmail() {
-      const text = window.__latestWelcomeEmail || "";
-      if (!text) return;
-
-      navigator.clipboard.writeText(text)
-        .then(() => alert("Welcome email copied."))
-        .catch(() => alert("Could not copy automatically. Please copy manually."));
-    }
+      createBtn.disabled = false;
+    });
   </script>
 </body>
 </html>
