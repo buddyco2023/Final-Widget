@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AppLogix Onboarding</title>
+  <title>AppLogix Client Onboarding</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -125,8 +125,7 @@
     }
 
     .submit-btn,
-    .copy-btn,
-    .secondary-btn {
+    .copy-btn {
       border: none;
       border-radius: 14px;
       padding: 14px 18px;
@@ -141,12 +140,6 @@
       color: white;
     }
 
-    .secondary-btn {
-      background: #eef4ff;
-      color: #173b96;
-      border: 1px solid var(--border);
-    }
-
     .copy-btn {
       background: #173b96;
       color: #fff;
@@ -156,6 +149,8 @@
     .muted {
       color: var(--muted);
       font-size: 0.92rem;
+      margin-top: -8px;
+      margin-bottom: 14px;
     }
 
     .result-card {
@@ -234,8 +229,8 @@
       <div class="hero-body">
         <h1>AppLogix Client Onboarding</h1>
         <p>
-          Create a new client, generate dashboard access when applicable,
-          provide widget installation code, and now automatically issue a hosted review page link.
+          Create a new client, generate widget code, welcome email, hosted page link,
+          and dashboard access where applicable.
         </p>
       </div>
     </section>
@@ -248,7 +243,8 @@
         <input id="businessName" class="field" type="text" placeholder="Buddy Co" />
 
         <label class="field-label" for="businessId">Business ID</label>
-        <input id="businessId" class="field" type="text" placeholder="kenorabuddyco" />
+        <input id="businessId" class="field" type="text" placeholder="auto-generated from business name" />
+        <div class="muted">Auto-filled from business name. You can edit it manually.</div>
 
         <label class="field-label" for="clientEmail">Client Email</label>
         <input id="clientEmail" class="field" type="email" placeholder="owner@example.com" />
@@ -263,18 +259,22 @@
 
         <div id="tempPasswordWrap" style="display:none;">
           <label class="field-label" for="tempPassword">Temporary Password</label>
-          <input id="tempPassword" class="field" type="text" placeholder="Temporary password for first login" />
+          <input id="tempPassword" class="field" type="text" value="AppLogix." />
+          <div class="muted">Used for first login on Pro and Premium dashboard accounts.</div>
         </div>
 
         <div id="reviewPageWrap">
-          <label class="field-label" for="reviewPageUrl">Review Page URL</label>
+          <label class="field-label" for="reviewPageUrl">Website Review Page URL</label>
           <input id="reviewPageUrl" class="field" type="text" placeholder="https://yourdomain.com/reviews" />
-          <div class="muted">Required for Basic, Pro, and Premium plans.</div>
+          <div class="muted">
+            This is the page on the client’s website where the review widget is installed.
+            Used for website links and QR codes.
+          </div>
         </div>
       </section>
 
       <section class="card">
-        <h2>Branding & Settings</h2>
+        <h2>Branding + Settings</h2>
 
         <label class="field-label" for="brandName">Brand Name</label>
         <input id="brandName" class="field" type="text" placeholder="Buddy Co" />
@@ -304,6 +304,18 @@
         <div class="check-row">
           <input id="active" type="checkbox" checked />
           <label for="active">Client active</label>
+        </div>
+
+        <div class="check-row">
+          <input id="googleImportEnabled" type="checkbox" />
+          <label for="googleImportEnabled">Enable Google review import</label>
+        </div>
+        <div class="muted" id="googleImportNote">
+          Available for Premium only. Turn this on only if the client wants it.
+        </div>
+
+        <div class="muted" id="brandingNote">
+          Branding fields are only active for Premium. Notifications apply to Pro and Premium.
         </div>
 
         <button id="createBtn" class="submit-btn">Create Client</button>
@@ -351,15 +363,51 @@
     const statusEl = document.getElementById("status");
     const resultCard = document.getElementById("resultCard");
 
+    const businessNameEl = document.getElementById("businessName");
+    const businessIdEl = document.getElementById("businessId");
+    const brandNameEl = document.getElementById("brandName");
     const planTierEl = document.getElementById("planTier");
     const tempPasswordWrap = document.getElementById("tempPasswordWrap");
     const reviewPageWrap = document.getElementById("reviewPageWrap");
+    const googleImportEnabledEl = document.getElementById("googleImportEnabled");
+
+    let businessIdTouched = false;
+
+    function slugifyBusinessName(name) {
+      return String(name || "")
+        .toLowerCase()
+        .trim()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9]+/g, "")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    businessNameEl.addEventListener("input", () => {
+      if (!businessIdTouched) {
+        businessIdEl.value = slugifyBusinessName(businessNameEl.value);
+      }
+
+      if (!brandNameEl.value.trim()) {
+        brandNameEl.value = businessNameEl.value;
+      }
+    });
+
+    businessIdEl.addEventListener("input", () => {
+      businessIdTouched = true;
+    });
 
     function updatePlanUI() {
       const plan = planTierEl.value;
 
       tempPasswordWrap.style.display = (plan === "pro" || plan === "premium") ? "block" : "none";
       reviewPageWrap.style.display = (plan === "free") ? "none" : "block";
+
+      if (plan !== "premium") {
+        googleImportEnabledEl.checked = false;
+        googleImportEnabledEl.disabled = true;
+      } else {
+        googleImportEnabledEl.disabled = false;
+      }
     }
 
     planTierEl.addEventListener("change", updatePlanUI);
@@ -400,19 +448,20 @@
       statusEl.innerText = "Creating client...";
       createBtn.disabled = true;
 
-      const businessName = document.getElementById("businessName").value.trim();
-      const businessId = document.getElementById("businessId").value.trim();
+      const businessName = businessNameEl.value.trim();
+      const businessId = businessIdEl.value.trim();
       const clientEmail = document.getElementById("clientEmail").value.trim();
-      const planTier = document.getElementById("planTier").value;
+      const planTier = planTierEl.value;
       const tempPassword = document.getElementById("tempPassword").value.trim();
       const reviewPageUrl = document.getElementById("reviewPageUrl").value.trim();
-      const brandName = document.getElementById("brandName").value.trim();
+      const brandName = brandNameEl.value.trim();
       const brandPrimary = document.getElementById("brandPrimary").value.trim();
       const brandSecondary = document.getElementById("brandSecondary").value.trim();
       const brandLogoUrl = document.getElementById("brandLogoUrl").value.trim();
       const notificationEmail = document.getElementById("notificationEmail").value.trim();
       const setupFeePaid = document.getElementById("setupFeePaid").checked;
       const active = document.getElementById("active").checked;
+      const googleImportEnabled = googleImportEnabledEl.checked;
 
       if (!businessName || !businessId || !clientEmail) {
         statusEl.className = "status error";
@@ -423,7 +472,7 @@
 
       if ((planTier === "basic" || planTier === "pro" || planTier === "premium") && !reviewPageUrl) {
         statusEl.className = "status error";
-        statusEl.innerText = "Review page URL is required for Basic, Pro, and Premium.";
+        statusEl.innerText = "Website Review Page URL is required for Basic, Pro, and Premium.";
         createBtn.disabled = false;
         return;
       }
@@ -449,7 +498,7 @@
         notificationEmail,
         notificationsEnabled: (planTier === "pro" || planTier === "premium"),
         brandingEnabled: (planTier === "premium"),
-        googleImportEnabled: (planTier === "premium"),
+        googleImportEnabled: (planTier === "premium") ? googleImportEnabled : false,
         setupFeePaid,
         active
       };
@@ -482,7 +531,8 @@
           `<div class="result-line"><strong>Business ID:</strong> ${data.businessId}</div>`,
           `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
           `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
-          `<div class="result-line"><strong>Review Page URL:</strong> ${data.reviewPageUrl || "(none)"}</div>`
+          `<div class="result-line"><strong>Website Review Page URL:</strong> ${data.reviewPageUrl || "(none)"}</div>`,
+          `<div class="result-line"><strong>Google Import:</strong> ${payload.googleImportEnabled ? "Enabled" : "Disabled"}</div>`
         ].join("");
 
         document.getElementById("summaryLines").innerHTML = summaryLines;
