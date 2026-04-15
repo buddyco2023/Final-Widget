@@ -24,6 +24,11 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const RESEND_FROM = process.env.RESEND_FROM || "";
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "https://final-widget.onrender.com";
 
+const MARKETING_SITE_URL = process.env.MARKETING_SITE_URL || "https://applogix.org";
+const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "applogixinc@outlook.com";
+const BRAND_LOGO_PUBLIC_URL = process.env.BRAND_LOGO_PUBLIC_URL || `${MARKETING_SITE_URL}/logo.png`;
+const TERMS_URL = process.env.TERMS_URL || `${MARKETING_SITE_URL}/terms.html`;
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
@@ -69,6 +74,42 @@ function includesWidget(deliveryType) {
 
 function includesHosted(deliveryType) {
   return deliveryType === "hosted" || deliveryType === "both";
+}
+
+function coerceMoney(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function coerceInt(value, fallback = 1) {
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function computeNextInvoiceDate(billingDay, fromDate = new Date()) {
+  const day = Math.max(1, Math.min(28, coerceInt(billingDay, 1)));
+  const d = new Date(fromDate);
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth();
+  let next = new Date(Date.UTC(year, month, day));
+  if (next <= d) {
+    next = new Date(Date.UTC(year, month + 1, day));
+  }
+  return next.toISOString().slice(0, 10);
+}
+
+function advanceInvoiceDate(dateString, billingDay) {
+  const day = Math.max(1, Math.min(28, coerceInt(billingDay, 1)));
+  const base = dateString ? new Date(`${dateString}T00:00:00Z`) : new Date();
+  return new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, day)).toISOString().slice(0, 10);
+}
+
+function daysUntil(dateString) {
+  if (!dateString) return null;
+  const now = new Date();
+  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const target = new Date(`${dateString}T00:00:00Z`);
+  return Math.round((target - todayUtc) / 86400000);
 }
 
 function buildWidgetCode(payload) {
@@ -176,11 +217,90 @@ ${data.widgetCode}
   }
 
   text += `
+
+Support
+Website: ${MARKETING_SITE_URL}
+Contact: ${CONTACT_EMAIL}
+Terms: ${TERMS_URL}
+
 If you need help with setup or installation, reply to this email.
 
 — AppLogix`;
 
   return text;
+}
+
+function buildWelcomeEmailHtml(data) {
+  const isDashboardPlan = PAID_DASHBOARD_PLANS.includes(data.planTier);
+  const widgetEnabled = includesWidget(data.deliveryType);
+  const hostedEnabled = includesHosted(data.deliveryType);
+
+  return `
+    <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
+      <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #dbe7fb;border-radius:20px;overflow:hidden;">
+        <div style="background:linear-gradient(90deg,#4ea3ff,#2563eb);padding:20px;text-align:center;">
+          <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:64px;max-width:220px;background:#ffffff;border-radius:12px;padding:8px;">
+        </div>
+
+        <div style="padding:28px;">
+          <h2 style="margin-top:0;color:#1e3a8a;">Welcome to AppLogix</h2>
+          <p style="color:#334155;">Hi ${escapeHtml(data.businessName)},</p>
+          <p style="color:#334155;">Your review system is now set up and ready to go.</p>
+
+          <table style="width:100%;border-collapse:collapse;margin:18px 0;">
+            <tr>
+              <td style="padding:8px 0;color:#64748b;"><strong>Plan</strong></td>
+              <td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.planTier.toUpperCase())}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#64748b;"><strong>Delivery</strong></td>
+              <td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.deliveryType.toUpperCase())}</td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:#64748b;"><strong>Business ID</strong></td>
+              <td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.businessId)}</td>
+            </tr>
+          </table>
+
+          ${widgetEnabled ? `
+            <div style="margin:18px 0;padding:16px;border:1px solid #dbe7fb;border-radius:14px;background:#f8fbff;">
+              <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;">Website Review Page URL</div>
+              <div style="word-break:break-all;color:#334155;">${escapeHtml(data.reviewPageUrl || "")}</div>
+            </div>
+          ` : ""}
+
+          ${hostedEnabled ? `
+            <div style="margin:18px 0;padding:16px;border:1px solid #dbe7fb;border-radius:14px;background:#f8fbff;">
+              <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;">Hosted Review Page</div>
+              <div style="word-break:break-all;color:#334155;">${escapeHtml(`${PUBLIC_APP_URL}/r/${data.businessId}`)}</div>
+            </div>
+          ` : ""}
+
+          ${isDashboardPlan ? `
+            <div style="margin:18px 0;padding:16px;border:1px solid #dbe7fb;border-radius:14px;background:#f8fbff;">
+              <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;">Dashboard Access</div>
+              <div style="color:#334155;"><strong>URL:</strong> ${escapeHtml(`${PUBLIC_APP_URL}/admin3`)}</div>
+              <div style="color:#334155;"><strong>Email:</strong> ${escapeHtml(data.clientEmail)}</div>
+              <div style="color:#334155;"><strong>Temporary Password:</strong> ${escapeHtml(data.tempPassword)}</div>
+            </div>
+          ` : ""}
+
+          ${widgetEnabled ? `
+            <div style="margin:18px 0;">
+              <div style="font-weight:700;color:#1e3a8a;margin-bottom:8px;">Widget Install Code</div>
+              <pre style="white-space:pre-wrap;word-break:break-word;background:#0f172a;color:#f8fafc;padding:16px;border-radius:14px;font-size:12px;line-height:1.5;">${escapeHtml(data.widgetCode)}</pre>
+            </div>
+          ` : ""}
+
+          <div style="margin-top:24px;padding-top:18px;border-top:1px solid #e5e7eb;color:#64748b;font-size:14px;">
+            <div>Website: <a href="${MARKETING_SITE_URL}" style="color:#2563eb;text-decoration:none;">${MARKETING_SITE_URL}</a></div>
+            <div>Contact: <a href="mailto:${CONTACT_EMAIL}" style="color:#2563eb;text-decoration:none;">${CONTACT_EMAIL}</a></div>
+            <div>Terms: <a href="${TERMS_URL}" style="color:#2563eb;text-decoration:none;">${TERMS_URL}</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 async function getUserFromBearer(req) {
@@ -222,7 +342,18 @@ async function getAdminProfileByEmail(email) {
       partner_email,
       delivery_type,
       hosted_header,
-      hosted_footer
+      hosted_footer,
+      base_monthly_price,
+      hosted_addon_price,
+      total_monthly_price,
+      setup_fee_amount,
+      billing_day,
+      next_invoice_date,
+      last_payment_date,
+      billing_status,
+      partner_commission_percent,
+      terms_accepted,
+      terms_accepted_at
     `)
     .eq("email", email)
     .limit(1);
@@ -251,7 +382,18 @@ async function getBusinessProfile(businessId) {
       google_import_enabled,
       delivery_type,
       hosted_header,
-      hosted_footer
+      hosted_footer,
+      base_monthly_price,
+      hosted_addon_price,
+      total_monthly_price,
+      setup_fee_amount,
+      billing_day,
+      next_invoice_date,
+      last_payment_date,
+      billing_status,
+      partner_name,
+      partner_email,
+      partner_commission_percent
     `)
     .eq("business_id", businessId)
     .limit(1);
@@ -400,7 +542,18 @@ app.post("/admin-me", async (req, res) => {
       brandLogoUrl: profile.brand_logo_url || "",
       deliveryType: profile.delivery_type || "widget",
       hostedHeader: profile.hosted_header || "",
-      hostedFooter: profile.hosted_footer || ""
+      hostedFooter: profile.hosted_footer || "",
+      baseMonthlyPrice: coerceMoney(profile.base_monthly_price, 0),
+      hostedAddonPrice: coerceMoney(profile.hosted_addon_price, 0),
+      totalMonthlyPrice: coerceMoney(profile.total_monthly_price, 0),
+      setupFeeAmount: coerceMoney(profile.setup_fee_amount, 0),
+      billingDay: coerceInt(profile.billing_day, 1),
+      nextInvoiceDate: profile.next_invoice_date || "",
+      lastPaymentDate: profile.last_payment_date || "",
+      billingStatus: profile.billing_status || "active",
+      partnerName: profile.partner_name || "",
+      partnerEmail: profile.partner_email || "",
+      partnerCommissionPercent: coerceMoney(profile.partner_commission_percent, 25)
     });
   } catch (err) {
     console.error("POST /admin-me error:", err);
@@ -475,13 +628,14 @@ app.post("/send-review-link", async (req, res) => {
       to: [reviewerEmail],
       subject: `We’d love your feedback for ${businessName}`,
       html: `
-        <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
+        <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
           <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
-            <h2 style="margin-top:0;">${escapeHtml(businessName)}</h2>
+            <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:220px;background:#ffffff;border-radius:12px;padding:8px;">
+            <h2 style="margin-top:18px;color:#1e3a8a;">${escapeHtml(businessName)}</h2>
             <p>${greeting}</p>
             <p>Thank you for your business. We’d really appreciate your feedback.</p>
             <p><a href="${reviewLink}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
-            <p style="font-size:13px;color:#64748b;">Reviews may be screened for spam before appearing publicly.</p>
+            <p style="font-size:13px;color:#64748b;">Questions? ${escapeHtml(CONTACT_EMAIL)} · ${escapeHtml(MARKETING_SITE_URL)}</p>
           </div>
         </div>
       `
@@ -511,7 +665,7 @@ app.post("/contact", async (req, res) => {
 
     await resend.emails.send({
       from: RESEND_FROM,
-      to: "applogixinc@outlook.com",
+      to: CONTACT_EMAIL,
       subject: `New AppLogix Contact Form Message from ${name}`,
       reply_to: email,
       html: `
@@ -565,11 +719,23 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     const partnerName = (req.body.partnerName || "").trim();
     const partnerEmail = (req.body.partnerEmail || "").trim().toLowerCase();
 
+    const baseMonthlyPrice = coerceMoney(req.body.baseMonthlyPrice, 0);
+    const hostedAddonPrice = coerceMoney(req.body.hostedAddonPrice, 0);
+    const totalMonthlyPrice = coerceMoney(req.body.totalMonthlyPrice, 0);
+    const setupFeeAmount = coerceMoney(req.body.setupFeeAmount, 0);
+    const billingDay = Math.max(1, Math.min(28, coerceInt(req.body.billingDay, 1)));
+    const nextInvoiceDate = (req.body.nextInvoiceDate || computeNextInvoiceDate(billingDay)).trim();
+    const lastPaymentDate = (req.body.lastPaymentDate || "").trim() || null;
+    const billingStatus = (req.body.billingStatus || "active").trim().toLowerCase();
+    const partnerCommissionPercent = coerceMoney(req.body.partnerCommissionPercent, 25);
+    const termsAccepted = !!req.body.termsAccepted;
+
     if (!businessName) return res.status(400).send("Missing business name.");
     if (!businessId) return res.status(400).send("Missing business ID.");
     if (!clientEmail) return res.status(400).send("Missing client email.");
     if (!planTier || !VALID_PLANS.includes(planTier)) return res.status(400).send("Invalid plan tier.");
     if (!VALID_DELIVERY_TYPES.includes(deliveryType)) return res.status(400).send("Invalid delivery type.");
+    if (!termsAccepted) return res.status(400).send("Terms and conditions must be accepted during onboarding.");
 
     if (includesWidget(deliveryType) && !reviewPageUrl) {
       return res.status(400).send("Website Review Page URL is required when widget delivery is selected.");
@@ -598,7 +764,6 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       notificationsEnabled = true;
       brandingEnabled = true;
       if (!notificationEmail) notificationEmail = clientEmail;
-      // googleImportEnabled remains optional
     }
 
     const { data: existingAdmins, error: existingAdminErr } = await supabaseAdmin
@@ -659,7 +824,18 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       partner_email: partnerEmail || null,
       delivery_type: deliveryType,
       hosted_header: includesHosted(deliveryType) ? (hostedHeader || null) : null,
-      hosted_footer: includesHosted(deliveryType) ? (hostedFooter || null) : null
+      hosted_footer: includesHosted(deliveryType) ? (hostedFooter || null) : null,
+      base_monthly_price: baseMonthlyPrice,
+      hosted_addon_price: hostedAddonPrice,
+      total_monthly_price: totalMonthlyPrice,
+      setup_fee_amount: setupFeeAmount,
+      billing_day: billingDay,
+      next_invoice_date: nextInvoiceDate || null,
+      last_payment_date: lastPaymentDate,
+      billing_status: billingStatus || "active",
+      partner_commission_percent: partnerCommissionPercent,
+      terms_accepted: termsAccepted,
+      terms_accepted_at: new Date().toISOString()
     };
 
     const { error: insertErr } = await supabaseAdmin.from("admin_users").insert([rowPayload]);
@@ -690,7 +866,7 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       ? `${PUBLIC_APP_URL}/r/${businessId}`
       : "";
 
-    const welcomeEmail = buildWelcomeEmailText({
+    const welcomeEmailText = buildWelcomeEmailText({
       businessName,
       businessId,
       clientEmail,
@@ -700,6 +876,31 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       widgetCode,
       reviewPageUrl
     });
+
+    const welcomeEmailHtml = buildWelcomeEmailHtml({
+      businessName,
+      businessId,
+      clientEmail,
+      tempPassword,
+      planTier,
+      deliveryType,
+      widgetCode,
+      reviewPageUrl
+    });
+
+    if (resend && RESEND_FROM && planTier !== PLAN_PREMIUM) {
+      try {
+        await resend.emails.send({
+          from: RESEND_FROM,
+          to: [clientEmail],
+          subject: "Welcome to AppLogix — Your Review System is Ready",
+          text: welcomeEmailText,
+          html: welcomeEmailHtml
+        });
+      } catch (emailErr) {
+        console.error("Onboarding email send error:", emailErr);
+      }
+    }
 
     res.json({
       success: true,
@@ -715,15 +916,226 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       reviewPageUrl: includesWidget(deliveryType) ? (reviewPageUrl || "") : "",
       hostedPageUrl,
       widgetCode,
-      welcomeEmail,
+      welcomeEmail: welcomeEmailText,
       hostedHeader: includesHosted(deliveryType) ? hostedHeader : "",
       hostedFooter: includesHosted(deliveryType) ? hostedFooter : "",
       dashboardIncluded: isDashboardPlan,
-      dashboardUrl: isDashboardPlan ? `${PUBLIC_APP_URL}/admin3` : ""
+      dashboardUrl: isDashboardPlan ? `${PUBLIC_APP_URL}/admin3` : "",
+      baseMonthlyPrice,
+      hostedAddonPrice,
+      totalMonthlyPrice,
+      setupFeeAmount,
+      billingDay,
+      nextInvoiceDate,
+      lastPaymentDate,
+      billingStatus,
+      partnerName,
+      partnerEmail,
+      partnerCommissionPercent
     });
   } catch (err) {
     console.error("POST /create-client server error:", err);
     res.status(500).send(err.message || "Server error");
+  }
+});
+
+// ------------------------------
+// Internal billing + partner tracking
+// ------------------------------
+app.get("/ops-clients", requireAdminToken, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("admin_users")
+      .select(`
+        business_id,
+        email,
+        plan_tier,
+        delivery_type,
+        brand_name,
+        active,
+        base_monthly_price,
+        hosted_addon_price,
+        total_monthly_price,
+        setup_fee_amount,
+        billing_day,
+        next_invoice_date,
+        last_payment_date,
+        billing_status,
+        partner_name,
+        partner_email,
+        partner_commission_percent
+      `)
+      .order("business_id", { ascending: true });
+
+    if (error) return res.status(500).send(error.message);
+
+    const rows = (data || []).map((row) => {
+      const totalMonthlyPrice = coerceMoney(row.total_monthly_price, 0);
+      const partnerCommissionPercent = coerceMoney(row.partner_commission_percent, 25);
+
+      return {
+        businessId: row.business_id,
+        businessName: row.brand_name || prettyBusinessName(row.business_id),
+        email: row.email || "",
+        planTier: row.plan_tier || "",
+        deliveryType: row.delivery_type || "widget",
+        active: row.active !== false,
+        baseMonthlyPrice: coerceMoney(row.base_monthly_price, 0),
+        hostedAddonPrice: coerceMoney(row.hosted_addon_price, 0),
+        totalMonthlyPrice,
+        setupFeeAmount: coerceMoney(row.setup_fee_amount, 0),
+        billingDay: coerceInt(row.billing_day, 1),
+        nextInvoiceDate: row.next_invoice_date || "",
+        lastPaymentDate: row.last_payment_date || "",
+        billingStatus: row.billing_status || "active",
+        partnerName: row.partner_name || "",
+        partnerEmail: row.partner_email || "",
+        partnerCommissionPercent,
+        partnerMonthlyCommission: Number((totalMonthlyPrice * partnerCommissionPercent / 100).toFixed(2)),
+        daysUntilInvoice: daysUntil(row.next_invoice_date)
+      };
+    });
+
+    res.json(rows);
+  } catch (err) {
+    console.error("GET /ops-clients error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+app.post("/ops-record-payment/:businessId", requireAdminToken, async (req, res) => {
+  try {
+    const businessId = (req.params.businessId || "").trim();
+    const paidDate = (req.body.paidDate || new Date().toISOString().slice(0, 10)).trim();
+
+    const profile = await getBusinessProfile(businessId);
+    if (!profile) return res.status(404).send("Client not found.");
+
+    const nextInvoiceDate = advanceInvoiceDate(profile.next_invoice_date || paidDate, profile.billing_day || 1);
+
+    const { error } = await supabaseAdmin
+      .from("admin_users")
+      .update({
+        last_payment_date: paidDate,
+        next_invoice_date: nextInvoiceDate,
+        billing_status: "paid"
+      })
+      .eq("business_id", businessId);
+
+    if (error) return res.status(500).send(error.message);
+    res.json({ success: true, nextInvoiceDate });
+  } catch (err) {
+    console.error("POST /ops-record-payment/:businessId error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+app.post("/ops-send-billing-reminders", requireAdminToken, async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email service is not configured.");
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from("admin_users")
+      .select("business_id,email,brand_name,next_invoice_date,billing_status,total_monthly_price")
+      .eq("active", true);
+
+    if (error) return res.status(500).send(error.message);
+
+    let sent = 0;
+
+    for (const row of data || []) {
+      if (!row.email || !row.next_invoice_date) continue;
+
+      const dueIn = daysUntil(row.next_invoice_date);
+      const shouldSend = dueIn === 3 || dueIn === 0 || (dueIn !== null && dueIn < 0 && row.billing_status !== "paid");
+
+      if (!shouldSend) continue;
+
+      const businessName = row.brand_name || prettyBusinessName(row.business_id);
+      const subject =
+        dueIn === 3
+          ? `Upcoming AppLogix invoice for ${businessName}`
+          : dueIn === 0
+            ? `AppLogix invoice due today for ${businessName}`
+            : `AppLogix payment reminder for ${businessName}`;
+
+      await resend.emails.send({
+        from: RESEND_FROM,
+        to: [row.email],
+        subject,
+        html: `
+          <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
+            <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #dbe7fb;border-radius:18px;padding:24px;">
+              <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:220px;background:#ffffff;border-radius:12px;padding:8px;">
+              <h2 style="color:#1e3a8a;">Billing Reminder</h2>
+              <p>Hi ${escapeHtml(businessName)},</p>
+              <p>This is a reminder about your AppLogix billing.</p>
+              <p><strong>Next Billing Date:</strong> ${escapeHtml(row.next_invoice_date)}</p>
+              <p><strong>Monthly Total:</strong> $${coerceMoney(row.total_monthly_price, 0).toFixed(2)}</p>
+              <p>If you have any questions, contact us at <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
+              <p style="color:#64748b;">${MARKETING_SITE_URL}</p>
+            </div>
+          </div>
+        `
+      });
+
+      sent += 1;
+    }
+
+    res.json({ success: true, sent });
+  } catch (err) {
+    console.error("POST /ops-send-billing-reminders error:", err);
+    res.status(500).send(err.message || "Server error");
+  }
+});
+
+app.get("/ops-partner-payout-report", requireAdminToken, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("admin_users")
+      .select("business_id,brand_name,total_monthly_price,partner_name,partner_email,partner_commission_percent,active,billing_status")
+      .eq("active", true);
+
+    if (error) return res.status(500).send(error.message);
+
+    const grouped = {};
+
+    for (const row of data || []) {
+      if (!row.partner_name && !row.partner_email) continue;
+
+      const key = `${row.partner_name || ""}|${row.partner_email || ""}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          partnerName: row.partner_name || "",
+          partnerEmail: row.partner_email || "",
+          totalMonthlyPayout: 0,
+          clients: []
+        };
+      }
+
+      const monthly = coerceMoney(row.total_monthly_price, 0);
+      const pct = coerceMoney(row.partner_commission_percent, 25);
+      const payout = Number((monthly * pct / 100).toFixed(2));
+
+      grouped[key].clients.push({
+        businessId: row.business_id,
+        businessName: row.brand_name || prettyBusinessName(row.business_id),
+        totalMonthlyPrice: monthly,
+        commissionPercent: pct,
+        monthlyPayout: payout,
+        billingStatus: row.billing_status || "active"
+      });
+
+      grouped[key].totalMonthlyPayout = Number((grouped[key].totalMonthlyPayout + payout).toFixed(2));
+    }
+
+    res.json(Object.values(grouped));
+  } catch (err) {
+    console.error("GET /ops-partner-payout-report error:", err);
+    res.status(500).send("Server error");
   }
 });
 
