@@ -67,21 +67,11 @@
       color: white;
       margin-top: 6px;
     }
-    .btn.gray {
-      background: #64748b;
-    }
-    .btn.green {
-      background: #16a34a;
-    }
-    .btn.orange {
-      background: #f59e0b;
-    }
-    .btn.red {
-      background: #dc2626;
-    }
-    .btn.secondary {
-      background: #1e3a8a;
-    }
+    .btn.gray { background: #64748b; }
+    .btn.green { background: #16a34a; }
+    .btn.orange { background: #f59e0b; }
+    .btn.red { background: #dc2626; }
+    .btn.secondary { background: #1e3a8a; }
     .btn.light {
       background: #eef4ff;
       color: #1e3a8a;
@@ -146,7 +136,7 @@
     }
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
       margin-bottom: 18px;
     }
@@ -212,7 +202,7 @@
     }
     @media (max-width: 700px) {
       .stats-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
       }
       .tool-grid {
         grid-template-columns: 1fr;
@@ -259,6 +249,10 @@
           <div class="stat-number" id="averageRating">0.0</div>
           <div class="stat-label">Average Rating</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-number" id="nextBillingDate">—</div>
+          <div class="stat-label">Next Billing Date</div>
+        </div>
       </div>
 
       <button class="btn" onclick="loadReviews()">Refresh Reviews</button>
@@ -289,7 +283,6 @@
         <canvas id="qrCanvas"></canvas>
         <button class="btn secondary" onclick="downloadQr()">Download QR</button>
         <div id="qrStatus" class="status"></div>
-        <div class="small-note">QR codes can be used on signs, receipts, invoices, flyers, or printed review cards.</div>
       </div>
     </div>
 
@@ -306,7 +299,6 @@
       <textarea id="reviewMessage" class="textarea"></textarea>
       <button class="btn light" onclick="copyMessage()">Copy Message</button>
       <div id="messageStatus" class="status"></div>
-      <div class="small-note">Use this in SMS, DMs, email, invoices, or printed handouts.</div>
     </div>
 
     <div id="reviews"></div>
@@ -327,7 +319,6 @@
 
     function setStatus(message) {
       document.getElementById("status").textContent = message;
-      console.log(message);
     }
 
     function stars(n) {
@@ -354,8 +345,6 @@
 
     async function init() {
       try {
-        setStatus("Loading /client-config ...");
-
         const res = await fetch("/client-config", { cache: "no-store" });
         if (!res.ok) {
           throw new Error("client-config request failed with status " + res.status);
@@ -378,7 +367,6 @@
           if (e.key === "Enter") login();
         });
       } catch (err) {
-        console.error("init error:", err);
         setStatus("Init failed: " + (err.message || "Unknown error"));
       }
     }
@@ -416,7 +404,6 @@
         setStatus("Login successful. Loading profile...");
         await loadProfile();
       } catch (err) {
-        console.error("login error:", err);
         setStatus("Login exception: " + (err.message || "Unknown error"));
       }
     };
@@ -458,6 +445,8 @@
         document.getElementById("businessLabel").textContent =
           "Business ID: " + businessId + " | Plan: " + planTier + " | Delivery: " + deliveryType;
 
+        document.getElementById("nextBillingDate").textContent = profile.nextInvoiceDate || "—";
+
         if (planTier === "pro" || planTier === "premium") {
           document.getElementById("reviewToolsCard").classList.remove("hidden");
           document.getElementById("messageCard").classList.remove("hidden");
@@ -470,7 +459,6 @@
 
         await loadReviews();
       } catch (err) {
-        console.error("loadProfile error:", err);
         setStatus("Profile exception: " + (err.message || "Unknown error"));
       }
     }
@@ -511,25 +499,10 @@ ${messageLink || "[insert review link]"}
 Thank you!`;
 
       document.getElementById("reviewMessage").value = message;
-
-      if (currentQrUrl && !((currentQrUrl === hostedUrl && includesHosted(deliveryType)) || (currentQrUrl === reviewPageUrl && includesWidget(deliveryType)))) {
-        currentQrUrl = "";
-        clearQr();
-      }
-    }
-
-    function clearQr() {
-      const canvas = document.getElementById("qrCanvas");
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      document.getElementById("qrStatus").textContent = "";
     }
 
     window.copyHosted = async function () {
-      if (!includesHosted(deliveryType)) {
-        document.getElementById("qrStatus").textContent = "Hosted page is not enabled for this client.";
-        return;
-      }
+      if (!includesHosted(deliveryType)) return;
 
       try {
         await navigator.clipboard.writeText(hostedUrl);
@@ -540,15 +513,7 @@ Thank you!`;
     };
 
     window.copyWebsite = async function () {
-      if (!includesWidget(deliveryType)) {
-        document.getElementById("qrStatus").textContent = "Widget delivery is not enabled for this client.";
-        return;
-      }
-
-      if (!reviewPageUrl) {
-        document.getElementById("qrStatus").textContent = "No website review URL available.";
-        return;
-      }
+      if (!includesWidget(deliveryType) || !reviewPageUrl) return;
 
       try {
         await navigator.clipboard.writeText(reviewPageUrl);
@@ -582,7 +547,6 @@ Thank you!`;
         { width: 260, margin: 2 },
         function (error) {
           if (error) {
-            console.error(error);
             document.getElementById("qrStatus").textContent = "Failed to generate QR code.";
             return;
           }
@@ -592,22 +556,12 @@ Thank you!`;
     }
 
     window.generateHostedQr = function () {
-      if (!includesHosted(deliveryType)) {
-        document.getElementById("qrStatus").textContent = "Hosted page is not enabled for this client.";
-        return;
-      }
+      if (!includesHosted(deliveryType)) return;
       generateQr(hostedUrl);
     };
 
     window.generateWebsiteQr = function () {
-      if (!includesWidget(deliveryType)) {
-        document.getElementById("qrStatus").textContent = "Widget delivery is not enabled for this client.";
-        return;
-      }
-      if (!reviewPageUrl) {
-        document.getElementById("qrStatus").textContent = "No website review URL available.";
-        return;
-      }
+      if (!includesWidget(deliveryType) || !reviewPageUrl) return;
       generateQr(reviewPageUrl);
     };
 
@@ -665,7 +619,6 @@ Thank you!`;
           await logout();
         }, 1200);
       } catch (err) {
-        console.error("saveNewPassword error:", err);
         document.getElementById("resetStatus").textContent =
           "Reset exception: " + (err.message || "Unknown error");
       }
