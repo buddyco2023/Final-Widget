@@ -3,6 +3,7 @@
 <head>
   <title>AppLogix Admin Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -40,6 +41,19 @@
       border: 1px solid #cfdcf3;
       margin-bottom: 12px;
       font-size: 16px;
+      background: #fff;
+    }
+    .textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid #cfdcf3;
+      margin-bottom: 12px;
+      font-size: 15px;
+      min-height: 120px;
+      resize: vertical;
+      background: #fff;
     }
     .btn {
       width: 100%;
@@ -64,6 +78,14 @@
     }
     .btn.red {
       background: #dc2626;
+    }
+    .btn.secondary {
+      background: #1e3a8a;
+    }
+    .btn.light {
+      background: #eef4ff;
+      color: #1e3a8a;
+      border: 1px solid #dbe7fb;
     }
     .status {
       margin-top: 12px;
@@ -109,6 +131,7 @@
     .review-text {
       margin-bottom: 12px;
       line-height: 1.5;
+      white-space: pre-wrap;
     }
     .review-image {
       width: 100%;
@@ -144,8 +167,54 @@
       font-size: 13px;
       color: #64748b;
     }
+    .tool-block {
+      border: 1px solid #dbe7fb;
+      border-radius: 14px;
+      padding: 14px;
+      background: #f8fbff;
+      margin-bottom: 12px;
+    }
+    .tool-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 6px;
+    }
+    .tool-link {
+      word-break: break-all;
+      font-size: 14px;
+      color: #334155;
+      margin-bottom: 10px;
+      line-height: 1.45;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .qr-wrap {
+      text-align: center;
+      margin-top: 14px;
+    }
+    #qrCanvas {
+      max-width: 100%;
+      background: white;
+      border: 1px solid #dbe7fb;
+      border-radius: 14px;
+      padding: 10px;
+      display: block;
+      margin: 0 auto 10px;
+    }
+    .small-note {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+    }
     @media (max-width: 700px) {
       .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      .tool-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -195,12 +264,49 @@
       <button class="btn" onclick="loadReviews()">Refresh Reviews</button>
     </div>
 
+    <div id="reviewToolsCard" class="card hidden">
+      <div class="sub"><strong>Review Access Tools</strong></div>
+
+      <div class="tool-block">
+        <div class="tool-title">Hosted Review Page</div>
+        <div id="hostedLink" class="tool-link"></div>
+        <div class="tool-grid">
+          <button class="btn light" onclick="copyHosted()">Copy Hosted Link</button>
+          <button class="btn light" onclick="generateHostedQr()">Generate Hosted QR</button>
+        </div>
+      </div>
+
+      <div class="tool-block">
+        <div class="tool-title">Website Review Page</div>
+        <div id="websiteLink" class="tool-link"></div>
+        <div class="tool-grid">
+          <button class="btn light" onclick="copyWebsite()">Copy Website Link</button>
+          <button class="btn light" onclick="generateWebsiteQr()">Generate Website QR</button>
+        </div>
+      </div>
+
+      <div class="qr-wrap">
+        <canvas id="qrCanvas"></canvas>
+        <button class="btn secondary" onclick="downloadQr()">Download QR</button>
+        <div id="qrStatus" class="status"></div>
+        <div class="small-note">QR codes can be used on signs, receipts, invoices, flyers, or printed review cards.</div>
+      </div>
+    </div>
+
     <div id="premiumInviteCard" class="card hidden">
-      <div class="sub">Send Review Link</div>
+      <div class="sub"><strong>Send Review Request Email</strong></div>
       <input id="reviewerName" class="input" placeholder="Name (optional)" />
       <input id="reviewerEmail" class="input" placeholder="Email" />
       <button class="btn" onclick="sendInvite()">Send Email</button>
       <div id="inviteStatus" class="status"></div>
+    </div>
+
+    <div id="messageCard" class="card hidden">
+      <div class="sub"><strong>Review Request Message</strong></div>
+      <textarea id="reviewMessage" class="textarea"></textarea>
+      <button class="btn light" onclick="copyMessage()">Copy Message</button>
+      <div id="messageStatus" class="status"></div>
+      <div class="small-note">Use this in SMS, DMs, email, invoices, or printed handouts.</div>
     </div>
 
     <div id="reviews"></div>
@@ -213,6 +319,10 @@
     let session = null;
     let businessId = null;
     let planTier = null;
+    let businessName = null;
+    let reviewPageUrl = "";
+    let hostedUrl = "";
+    let currentQrUrl = "";
 
     function setStatus(message) {
       document.getElementById("status").textContent = message;
@@ -222,6 +332,15 @@
     function stars(n) {
       const val = Math.max(0, Math.min(5, Number(n) || 0));
       return "★".repeat(val) + "☆".repeat(5 - val);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     async function init() {
@@ -314,6 +433,9 @@
         const profile = JSON.parse(text);
         businessId = profile.businessId;
         planTier = (profile.planTier || "").toLowerCase();
+        businessName = profile.brandName || profile.businessId || "Your Business";
+        reviewPageUrl = profile.reviewPageUrl || "";
+        hostedUrl = window.location.origin + "/r/" + businessId;
 
         document.getElementById("loginCard").classList.add("hidden");
         document.getElementById("logoutBtn").classList.remove("hidden");
@@ -328,6 +450,14 @@
         document.getElementById("businessLabel").textContent =
           "Business ID: " + businessId + " | Plan: " + planTier;
 
+        // Pro and Premium get review tools
+        if (planTier === "pro" || planTier === "premium") {
+          document.getElementById("reviewToolsCard").classList.remove("hidden");
+          document.getElementById("messageCard").classList.remove("hidden");
+          setupReviewTools();
+        }
+
+        // Premium keeps real send-email button
         if (planTier === "premium") {
           document.getElementById("premiumInviteCard").classList.remove("hidden");
         }
@@ -338,6 +468,102 @@
         setStatus("Profile exception: " + (err.message || "Unknown error"));
       }
     }
+
+    function setupReviewTools() {
+      document.getElementById("hostedLink").textContent = hostedUrl;
+      document.getElementById("websiteLink").textContent = reviewPageUrl || "No website review page set";
+
+      const message = `Hi${businessName ? " from " + businessName : ""} — we’d love your feedback.
+
+It only takes a few seconds and helps us improve and serve you better:
+
+${hostedUrl}
+
+Thank you!`;
+
+      document.getElementById("reviewMessage").value = message;
+    }
+
+    window.copyHosted = async function () {
+      try {
+        await navigator.clipboard.writeText(hostedUrl);
+        document.getElementById("qrStatus").textContent = "Hosted link copied.";
+      } catch (err) {
+        document.getElementById("qrStatus").textContent = "Could not copy hosted link.";
+      }
+    };
+
+    window.copyWebsite = async function () {
+      if (!reviewPageUrl) {
+        document.getElementById("qrStatus").textContent = "No website review URL available.";
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(reviewPageUrl);
+        document.getElementById("qrStatus").textContent = "Website link copied.";
+      } catch (err) {
+        document.getElementById("qrStatus").textContent = "Could not copy website link.";
+      }
+    };
+
+    window.copyMessage = async function () {
+      const msg = document.getElementById("reviewMessage").value || "";
+      try {
+        await navigator.clipboard.writeText(msg);
+        document.getElementById("messageStatus").textContent = "Message copied.";
+      } catch (err) {
+        document.getElementById("messageStatus").textContent = "Could not copy message.";
+      }
+    };
+
+    function generateQr(url) {
+      if (!url) {
+        document.getElementById("qrStatus").textContent = "No URL available for QR generation.";
+        return;
+      }
+
+      currentQrUrl = url;
+
+      QRCode.toCanvas(
+        document.getElementById("qrCanvas"),
+        url,
+        { width: 260, margin: 2 },
+        function (error) {
+          if (error) {
+            console.error(error);
+            document.getElementById("qrStatus").textContent = "Failed to generate QR code.";
+            return;
+          }
+          document.getElementById("qrStatus").textContent = "QR code generated.";
+        }
+      );
+    }
+
+    window.generateHostedQr = function () {
+      generateQr(hostedUrl);
+    };
+
+    window.generateWebsiteQr = function () {
+      if (!reviewPageUrl) {
+        document.getElementById("qrStatus").textContent = "No website review URL available.";
+        return;
+      }
+      generateQr(reviewPageUrl);
+    };
+
+    window.downloadQr = function () {
+      if (!currentQrUrl) {
+        document.getElementById("qrStatus").textContent = "Generate a QR code first.";
+        return;
+      }
+
+      const canvas = document.getElementById("qrCanvas");
+      const link = document.createElement("a");
+      link.download = `${businessId || "review"}-qr.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    };
 
     window.saveNewPassword = async function () {
       try {
@@ -417,13 +643,13 @@
 
       document.getElementById("reviews").innerHTML = data.map(r => `
         <div class="review">
-          <strong>${r.name || "Anonymous"}</strong>
+          <strong>${escapeHtml(r.name || "Anonymous")}</strong>
           <div class="review-stars">${stars(r.rating)}</div>
           <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
             ${r.approved ? "Approved" : "Pending"}
           </div>
-          <div class="review-text">${r.text || ""}</div>
-          ${r.image ? `<img class="review-image" src="${r.image}" alt="Submitted review image" />` : ""}
+          <div class="review-text">${escapeHtml(r.text || "")}</div>
+          ${r.image ? `<img class="review-image" src="${escapeHtml(r.image)}" alt="Submitted review image" />` : ""}
           <div class="review-actions">
             ${!r.approved ? `<button class="btn green" onclick="approveReview(${r.id})">Approve</button>` : ""}
             ${r.approved ? `<button class="btn orange" onclick="markPending(${r.id})">Mark Pending</button>` : ""}
