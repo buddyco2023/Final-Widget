@@ -229,7 +229,7 @@
       <div class="hero-body">
         <h1>AppLogix Client Onboarding</h1>
         <p>
-          Create a new client, generate widget code, welcome email, hosted page link,
+          Create a new client, generate widget code, welcome email, optional hosted page,
           and dashboard access where applicable.
         </p>
       </div>
@@ -257,6 +257,13 @@
           <option value="premium">Premium</option>
         </select>
 
+        <label class="field-label" for="deliveryType">Delivery Type</label>
+        <select id="deliveryType" class="select">
+          <option value="widget">Widget Only</option>
+          <option value="hosted">Hosted Page Only</option>
+          <option value="both">Widget + Hosted Page</option>
+        </select>
+
         <div id="tempPasswordWrap" style="display:none;">
           <label class="field-label" for="tempPassword">Temporary Password</label>
           <input id="tempPassword" class="field" type="text" value="AppLogix." />
@@ -269,6 +276,18 @@
           <div class="muted">
             This is the page on the client’s website where the review widget is installed.
             Used for website links and QR codes.
+          </div>
+        </div>
+
+        <div id="hostedFieldsWrap" style="display:none;">
+          <label class="field-label" for="hostedHeader">Hosted Page Header</label>
+          <input id="hostedHeader" class="field" type="text" placeholder="Leave a Review" />
+
+          <label class="field-label" for="hostedFooter">Hosted Page Footer</label>
+          <input id="hostedFooter" class="field" type="text" placeholder="Powered by AppLogix" />
+
+          <div class="muted">
+            Only used if Hosted Page is selected.
           </div>
         </div>
       </section>
@@ -310,12 +329,12 @@
           <input id="googleImportEnabled" type="checkbox" />
           <label for="googleImportEnabled">Enable Google review import</label>
         </div>
-        <div class="muted" id="googleImportNote">
-          Available for Premium only. Turn this on only if the client wants it.
+        <div class="muted">
+          Premium only, and only turn this on if the client wants Google import.
         </div>
 
-        <div class="muted" id="brandingNote">
-          Branding fields are only active for Premium. Notifications apply to Pro and Premium.
+        <div class="muted">
+          Branding applies to Premium. Notifications apply to Pro and Premium.
         </div>
 
         <button id="createBtn" class="submit-btn">Create Client</button>
@@ -331,13 +350,13 @@
         <div id="summaryLines"></div>
       </div>
 
-      <div class="result-block">
+      <div id="hostedResultBlock" class="result-block" style="display:none;">
         <h3>Hosted Review Page</h3>
         <div id="hostedPageUrl" class="result-line"></div>
         <button class="copy-btn" data-copy-target="hostedPageUrl">Copy Hosted Page URL</button>
       </div>
 
-      <div class="result-block">
+      <div id="widgetResultBlock" class="result-block" style="display:none;">
         <h3>Widget Install Code</h3>
         <textarea id="widgetCode" class="code-box" readonly></textarea>
         <button class="copy-btn" data-copy-target="widgetCode">Copy Widget Code</button>
@@ -367,8 +386,10 @@
     const businessIdEl = document.getElementById("businessId");
     const brandNameEl = document.getElementById("brandName");
     const planTierEl = document.getElementById("planTier");
+    const deliveryTypeEl = document.getElementById("deliveryType");
     const tempPasswordWrap = document.getElementById("tempPasswordWrap");
     const reviewPageWrap = document.getElementById("reviewPageWrap");
+    const hostedFieldsWrap = document.getElementById("hostedFieldsWrap");
     const googleImportEnabledEl = document.getElementById("googleImportEnabled");
 
     let businessIdTouched = false;
@@ -398,9 +419,11 @@
 
     function updatePlanUI() {
       const plan = planTierEl.value;
+      const delivery = deliveryTypeEl.value;
 
       tempPasswordWrap.style.display = (plan === "pro" || plan === "premium") ? "block" : "none";
-      reviewPageWrap.style.display = (plan === "free") ? "none" : "block";
+      reviewPageWrap.style.display = (delivery === "widget" || delivery === "both") ? "block" : "none";
+      hostedFieldsWrap.style.display = (delivery === "hosted" || delivery === "both") ? "block" : "none";
 
       if (plan !== "premium") {
         googleImportEnabledEl.checked = false;
@@ -411,10 +434,11 @@
     }
 
     planTierEl.addEventListener("change", updatePlanUI);
+    deliveryTypeEl.addEventListener("change", updatePlanUI);
     updatePlanUI();
 
     function getAdminToken() {
-      return localStorage.getItem("ARW_ADMIN_TOKEN") || "";
+      return "1234";
     }
 
     async function copyText(text) {
@@ -452,8 +476,11 @@
       const businessId = businessIdEl.value.trim();
       const clientEmail = document.getElementById("clientEmail").value.trim();
       const planTier = planTierEl.value;
+      const deliveryType = deliveryTypeEl.value;
       const tempPassword = document.getElementById("tempPassword").value.trim();
       const reviewPageUrl = document.getElementById("reviewPageUrl").value.trim();
+      const hostedHeader = document.getElementById("hostedHeader").value.trim();
+      const hostedFooter = document.getElementById("hostedFooter").value.trim();
       const brandName = brandNameEl.value.trim();
       const brandPrimary = document.getElementById("brandPrimary").value.trim();
       const brandSecondary = document.getElementById("brandSecondary").value.trim();
@@ -470,9 +497,9 @@
         return;
       }
 
-      if ((planTier === "basic" || planTier === "pro" || planTier === "premium") && !reviewPageUrl) {
+      if ((deliveryType === "widget" || deliveryType === "both") && !reviewPageUrl) {
         statusEl.className = "status error";
-        statusEl.innerText = "Website Review Page URL is required for Basic, Pro, and Premium.";
+        statusEl.innerText = "Website Review Page URL is required when widget delivery is selected.";
         createBtn.disabled = false;
         return;
       }
@@ -489,8 +516,11 @@
         businessId,
         clientEmail,
         planTier,
+        deliveryType,
         tempPassword,
         reviewPageUrl,
+        hostedHeader,
+        hostedFooter,
         brandName,
         brandPrimary,
         brandSecondary,
@@ -531,13 +561,29 @@
           `<div class="result-line"><strong>Business ID:</strong> ${data.businessId}</div>`,
           `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
           `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
+          `<div class="result-line"><strong>Delivery Type:</strong> ${deliveryType}</div>`,
           `<div class="result-line"><strong>Website Review Page URL:</strong> ${data.reviewPageUrl || "(none)"}</div>`,
           `<div class="result-line"><strong>Google Import:</strong> ${payload.googleImportEnabled ? "Enabled" : "Disabled"}</div>`
         ].join("");
 
         document.getElementById("summaryLines").innerHTML = summaryLines;
-        document.getElementById("hostedPageUrl").innerText = data.hostedPageUrl || "";
-        document.getElementById("widgetCode").value = data.widgetCode || "";
+
+        const hostedResultBlock = document.getElementById("hostedResultBlock");
+        if (deliveryType === "hosted" || deliveryType === "both") {
+          hostedResultBlock.style.display = "block";
+          document.getElementById("hostedPageUrl").innerText = data.hostedPageUrl || "";
+        } else {
+          hostedResultBlock.style.display = "none";
+        }
+
+        const widgetResultBlock = document.getElementById("widgetResultBlock");
+        if (deliveryType === "widget" || deliveryType === "both") {
+          widgetResultBlock.style.display = "block";
+          document.getElementById("widgetCode").value = data.widgetCode || "";
+        } else {
+          widgetResultBlock.style.display = "none";
+        }
+
         document.getElementById("welcomeEmail").value = data.welcomeEmail || "";
 
         const dashboardBlock = document.getElementById("dashboardBlock");
