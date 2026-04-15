@@ -267,7 +267,7 @@
     <div id="reviewToolsCard" class="card hidden">
       <div class="sub"><strong>Review Access Tools</strong></div>
 
-      <div class="tool-block">
+      <div id="hostedToolBlock" class="tool-block hidden">
         <div class="tool-title">Hosted Review Page</div>
         <div id="hostedLink" class="tool-link"></div>
         <div class="tool-grid">
@@ -276,7 +276,7 @@
         </div>
       </div>
 
-      <div class="tool-block">
+      <div id="websiteToolBlock" class="tool-block hidden">
         <div class="tool-title">Website Review Page</div>
         <div id="websiteLink" class="tool-link"></div>
         <div class="tool-grid">
@@ -323,6 +323,7 @@
     let reviewPageUrl = "";
     let hostedUrl = "";
     let currentQrUrl = "";
+    let deliveryType = "widget";
 
     function setStatus(message) {
       document.getElementById("status").textContent = message;
@@ -343,6 +344,14 @@
         .replace(/'/g, "&#039;");
     }
 
+    function includesWidget(type) {
+      return type === "widget" || type === "both";
+    }
+
+    function includesHosted(type) {
+      return type === "hosted" || type === "both";
+    }
+
     async function init() {
       try {
         setStatus("Loading /client-config ...");
@@ -353,7 +362,6 @@
         }
 
         const cfg = await res.json();
-        console.log("client-config:", cfg);
 
         if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
           throw new Error("Missing supabase config values");
@@ -423,7 +431,6 @@
         });
 
         const text = await res.text();
-        console.log("/admin-me raw:", text);
 
         if (!res.ok) {
           setStatus("Profile error: " + text);
@@ -433,9 +440,10 @@
         const profile = JSON.parse(text);
         businessId = profile.businessId;
         planTier = (profile.planTier || "").toLowerCase();
-        businessName = profile.brandName || profile.businessId || "Your Business";
+        businessName = profile.brandName || profile.businessName || profile.businessId || "Your Business";
         reviewPageUrl = profile.reviewPageUrl || "";
         hostedUrl = window.location.origin + "/r/" + businessId;
+        deliveryType = (profile.deliveryType || "widget").toLowerCase();
 
         document.getElementById("loginCard").classList.add("hidden");
         document.getElementById("logoutBtn").classList.remove("hidden");
@@ -448,16 +456,14 @@
 
         document.getElementById("dashboardCard").classList.remove("hidden");
         document.getElementById("businessLabel").textContent =
-          "Business ID: " + businessId + " | Plan: " + planTier;
+          "Business ID: " + businessId + " | Plan: " + planTier + " | Delivery: " + deliveryType;
 
-        // Pro and Premium get review tools
         if (planTier === "pro" || planTier === "premium") {
           document.getElementById("reviewToolsCard").classList.remove("hidden");
           document.getElementById("messageCard").classList.remove("hidden");
           setupReviewTools();
         }
 
-        // Premium keeps real send-email button
         if (planTier === "premium") {
           document.getElementById("premiumInviteCard").classList.remove("hidden");
         }
@@ -470,21 +476,61 @@
     }
 
     function setupReviewTools() {
-      document.getElementById("hostedLink").textContent = hostedUrl;
-      document.getElementById("websiteLink").textContent = reviewPageUrl || "No website review page set";
+      const hostedBlock = document.getElementById("hostedToolBlock");
+      const websiteBlock = document.getElementById("websiteToolBlock");
+
+      if (includesHosted(deliveryType)) {
+        hostedBlock.classList.remove("hidden");
+        document.getElementById("hostedLink").textContent = hostedUrl;
+      } else {
+        hostedBlock.classList.add("hidden");
+        document.getElementById("hostedLink").textContent = "";
+      }
+
+      if (includesWidget(deliveryType)) {
+        websiteBlock.classList.remove("hidden");
+        document.getElementById("websiteLink").textContent = reviewPageUrl || "No website review page set";
+      } else {
+        websiteBlock.classList.add("hidden");
+        document.getElementById("websiteLink").textContent = "";
+      }
+
+      let messageLink = "";
+      if (includesHosted(deliveryType)) {
+        messageLink = hostedUrl;
+      } else if (includesWidget(deliveryType)) {
+        messageLink = reviewPageUrl;
+      }
 
       const message = `Hi${businessName ? " from " + businessName : ""} — we’d love your feedback.
 
 It only takes a few seconds and helps us improve and serve you better:
 
-${hostedUrl}
+${messageLink || "[insert review link]"}
 
 Thank you!`;
 
       document.getElementById("reviewMessage").value = message;
+
+      if (currentQrUrl && !((currentQrUrl === hostedUrl && includesHosted(deliveryType)) || (currentQrUrl === reviewPageUrl && includesWidget(deliveryType)))) {
+        currentQrUrl = "";
+        clearQr();
+      }
+    }
+
+    function clearQr() {
+      const canvas = document.getElementById("qrCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      document.getElementById("qrStatus").textContent = "";
     }
 
     window.copyHosted = async function () {
+      if (!includesHosted(deliveryType)) {
+        document.getElementById("qrStatus").textContent = "Hosted page is not enabled for this client.";
+        return;
+      }
+
       try {
         await navigator.clipboard.writeText(hostedUrl);
         document.getElementById("qrStatus").textContent = "Hosted link copied.";
@@ -494,6 +540,11 @@ Thank you!`;
     };
 
     window.copyWebsite = async function () {
+      if (!includesWidget(deliveryType)) {
+        document.getElementById("qrStatus").textContent = "Widget delivery is not enabled for this client.";
+        return;
+      }
+
       if (!reviewPageUrl) {
         document.getElementById("qrStatus").textContent = "No website review URL available.";
         return;
@@ -541,10 +592,18 @@ Thank you!`;
     }
 
     window.generateHostedQr = function () {
+      if (!includesHosted(deliveryType)) {
+        document.getElementById("qrStatus").textContent = "Hosted page is not enabled for this client.";
+        return;
+      }
       generateQr(hostedUrl);
     };
 
     window.generateWebsiteQr = function () {
+      if (!includesWidget(deliveryType)) {
+        document.getElementById("qrStatus").textContent = "Widget delivery is not enabled for this client.";
+        return;
+      }
       if (!reviewPageUrl) {
         document.getElementById("qrStatus").textContent = "No website review URL available.";
         return;
