@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leave a Review | AppLogix</title>
+  <meta name="description" content="Leave a review for this business through AppLogix." />
+  <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #4ea3ff;
+      --gold: #ffd84d;
+      --bg: #f4f8ff;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe7fb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #eef5ff 0%, #f8fbff 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .hero,
+    .summary-card,
+    .filters-card,
+    .review-card,
+    .form-card,
+    .empty-card,
+    .load-wrap {
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .hero {
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+
+    .hero-topbar {
+      height: 56px;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+    }
+
+    .hero-body {
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    .business-logo {
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+      border-radius: 18px;
+      background: #fff;
+      padding: 8px;
+      margin: 0 auto 14px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+      display: none;
+    }
+
+    .business-name {
+      margin: 0 0 10px;
+      font-size: 2rem;
+      color: #16338a;
+    }
+
+    .business-subtitle {
+      margin: 0 auto;
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .summary-card {
+      padding: 22px;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .summary-title {
+      font-size: 0.95rem;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .summary-number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #173b96;
+      line-height: 1;
+    }
+
+    .summary-stars {
+      color: var(--gold);
+      font-size: 1.8rem;
+      letter-spacing: 2px;
+    }
+
+    .summary-count {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .filters-card {
+      padding: 16px;
+      margin-bottom: 22px;
+    }
+
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .filter-btn {
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .review-card {
+      padding: 20px;
+    }
+
+    .review-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .review-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .review-stars {
+      margin-bottom: 12px;
+      font-size: 1.35rem;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    .review-text {
+      color: #334155;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .review-card img {
+      width: 100%;
+      display: block;
+      margin-top: 12px;
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    .empty-card {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    .load-wrap {
+      text-align: center;
+      padding: 18px;
+      margin-bottom: 22px;
+    }
+
+    .load-more {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 20px;
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: none;
+    }
+
+    .form-card {
+      padding: 24px;
+    }
+
+    .form-title {
+      margin: 0 0 14px;
+      font-size: 2rem;
+      color: #173b96;
+    }
+
+    .field,
+    .textarea,
+    .file {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 13px;
+      padding: 14px 15px;
+      border-radius: 16px;
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    .rating-block {
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid #cfdcf3;
+      background: #f9fbff;
+    }
+
+    .rating-label {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 10px;
+    }
+
+    .star-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .star-btn {
+      border: none;
+      background: transparent;
+      font-size: 2rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 12px;
+      color: #d7dce5;
+    }
+
+    .star-btn.active {
+      color: var(--gold);
+    }
+
+    .submit-btn {
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 15px 18px;
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.72;
+      cursor: not-allowed;
+    }
+
+    .note,
+    .status {
+      margin-top: 12px;
+      font-size: 0.92rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .footer img {
+      height: 44px;
+      width: auto;
+      margin: 0 auto 10px;
+      display: block;
+      opacity: 0.95;
+    }
+
+    @media (max-width: 900px) {
+      .reviews-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .business-name {
+        font-size: 1.65rem;
+      }
+
+      .form-title {
+        font-size: 1.7rem;
+      }
+
+      .reviews-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <div class="hero-topbar"></div>
+      <div class="hero-body">
+        <img id="businessLogo" class="business-logo" alt="Business logo">
+        <h1 id="businessName" class="business-name">Leave a Review</h1>
+        <p id="businessSubtitle" class="business-subtitle">
+          Share your experience below. Reviews help businesses build trust and improve customer experience.
+        </p>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <div class="summary-title">Customer Rating</div>
+      <div class="summary-row">
+        <div id="summaryNumber" class="summary-number">0.0</div>
+        <div id="summaryStars" class="summary-stars">☆☆☆☆☆</div>
+      </div>
+      <div id="summaryCount" class="summary-count">0 reviews</div>
+    </section>
+
+    <section class="filters-card">
+      <div class="filters-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="5">5★</button>
+        <button class="filter-btn" data-filter="4">4★</button>
+        <button class="filter-btn" data-filter="3">3★</button>
+        <button class="filter-btn" data-filter="2">2★</button>
+        <button class="filter-btn" data-filter="1">1★</button>
+        <button class="filter-btn" data-filter="images">With Photos</button>
+      </div>
+    </section>
+
+    <section id="reviewsGrid" class="reviews-grid">
+      <div class="empty-card">Loading reviews...</div>
+    </section>
+
+    <div class="load-wrap">
+      <button id="loadMoreBtn" class="load-more">Load More</button>
+    </div>
+
+    <section class="form-card">
+      <h2 class="form-title">Leave a Review</h2>
+
+      <input id="reviewName" class="field" type="text" placeholder="Your name">
+
+      <div class="rating-block">
+        <div class="rating-label">Select rating</div>
+        <div class="star-picker">
+          <button type="button" class="star-btn" id="star1">★</button>
+          <button type="button" class="star-btn" id="star2">★</button>
+          <button type="button" class="star-btn" id="star3">★</button>
+          <button type="button" class="star-btn" id="star4">★</button>
+          <button type="button" class="star-btn" id="star5">★</button>
+        </div>
+      </div>
+
+      <textarea id="reviewText" class="textarea" placeholder="Share your experience..."></textarea>
+
+      <input id="reviewImage" class="file" type="file" accept="image/jpeg,image/png,image/webp">
+
+      <button id="submitBtn" class="submit-btn">Submit Review</button>
+
+      <div id="formStatus" class="status"></div>
+      <div id="formNote" class="note">
+        Reviews are submitted for spam screening before appearing on the page.
+      </div>
+    </section>
+
+    <div class="footer">
+      <img src="/powered-by.png" alt="Powered by AppLogix" onerror="this.style.display='none'">
+      <div>Powered by AppLogix</div>
+    </div>
+  </div>
+
+  <script src="/hosted-review.js"></script>
+</body>
+</html>
