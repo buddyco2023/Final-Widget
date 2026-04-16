@@ -1,458 +1,340 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AppLogix Admin Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppLogix Billing + Partner Tracker</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(#eef5ff, #ffffff);
+      background: #eef5ff;
       color: #1f2937;
     }
-
     .wrap {
-      max-width: 900px;
-      margin: auto;
-      padding: 20px;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
     }
-
     .card {
-      background: white;
-      border-radius: 20px;
+      background: #fff;
+      border-radius: 18px;
       padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      margin-bottom: 18px;
+      border: 1px solid #dbe7fb;
+      box-shadow: 0 10px 24px rgba(15,23,42,.08);
     }
-
-    input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
+    .title {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #1e3a8a;
     }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
+    .sub {
+      color: #64748b;
+      margin-bottom: 14px;
+    }
+    .btn {
       border: none;
-      background: #2563eb;
-      color: white;
-      font-weight: bold;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 800;
       cursor: pointer;
-      margin-top: 8px;
+      background: #2563eb;
+      color: #fff;
     }
-
-    .btn-green {
+    .btn.green {
       background: #16a34a;
     }
-
-    .btn-red {
-      background: #dc2626;
+    .btn.light {
+      background: #eef4ff;
+      color: #1e3a8a;
+      border: 1px solid #dbe7fb;
     }
-
-    .btn-gray {
-      background: #64748b;
-    }
-
-    .hidden {
-      display: none;
-    }
-
     .status {
       margin-top: 10px;
       font-size: 14px;
-      color: #475569;
       white-space: pre-wrap;
     }
-
-    .stats {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
-      flex-wrap: wrap;
+    .table-wrap {
+      overflow: auto;
     }
-
-    .stat {
-      flex: 1;
-      min-width: 120px;
-      text-align: center;
-      background: #f3f6ff;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
       padding: 12px;
-      border-radius: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: top;
     }
-
-    .stat-number {
-      font-size: 26px;
-      font-weight: 800;
+    th {
       color: #1e3a8a;
+      background: #f8fbff;
+      position: sticky;
+      top: 0;
     }
-
-    .stat-label {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: 4px;
-    }
-
-    .avg-stars {
-      color: gold;
-      font-size: 20px;
-      margin-top: 4px;
-      letter-spacing: 2px;
-    }
-
-    .review {
-      border: 1px solid #ddd;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      background: #fff;
-    }
-
-    .review-name {
-      font-weight: 800;
-      margin-bottom: 8px;
-      font-size: 18px;
-    }
-
-    .stars {
-      color: gold;
-      font-size: 20px;
-      margin-bottom: 8px;
-      letter-spacing: 2px;
-    }
-
-    .review-status {
+    .pill {
       display: inline-block;
-      padding: 6px 10px;
+      padding: 4px 8px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
-      margin-bottom: 10px;
     }
-
-    .status-approved {
-      background: #dcfce7;
-      color: #166534;
+    .paid { background: #dcfce7; color: #166534; }
+    .active { background: #dbeafe; color: #1d4ed8; }
+    .past_due { background: #fee2e2; color: #b91c1c; }
+    .paused { background: #e5e7eb; color: #374151; }
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
     }
-
-    .status-pending {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .review-text {
-      line-height: 1.6;
-      color: #334155;
-    }
-
-    .review img {
-      width: 100%;
-      display: block;
+    .input {
+      padding: 12px;
       border-radius: 12px;
-      margin-top: 12px;
-    }
-
-    .empty {
-      text-align: center;
-      padding: 20px;
-      color: #64748b;
+      border: 1px solid #cfdcf3;
       background: #fff;
-      border-radius: 12px;
-      border: 1px solid #ddd;
+      font-size: 14px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 12px;
+    }
+    .payout-card {
+      border: 1px solid #dbe7fb;
+      border-radius: 14px;
+      padding: 16px;
+      background: #f8fbff;
+      margin-bottom: 12px;
     }
   </style>
 </head>
-
 <body>
-<div class="wrap">
-
-  <div class="card" id="loginCard">
-    <h2>AppLogix Admin</h2>
-
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-
-    <button id="loginBtn" onclick="login()">Login</button>
-
-    <div id="status" class="status">Initializing...</div>
-  </div>
-
-  <div class="card hidden" id="resetCard">
-    <h2>Set New Password</h2>
-    <div class="status" style="margin-bottom:12px;">
-      After saving this password, manually set <strong>must_reset_password = false</strong> in Supabase for this user.
+  <div class="wrap">
+    <div class="card">
+      <div class="title">Billing + Partner Tracker</div>
+      <div class="sub">Track invoice dates, payment status, reminders, and monthly partner payouts.</div>
+      <div class="controls">
+        <button class="btn" onclick="loadClients()">Refresh</button>
+        <button class="btn light" onclick="sendReminders()">Send Billing Reminders</button>
+        <button class="btn light" onclick="loadPayoutReport()">Load Partner Payout Report</button>
+        <input id="filterInput" class="input" placeholder="Filter by business, plan, or partner" oninput="renderRows()" />
+      </div>
+      <div id="opsStatus" class="status"></div>
     </div>
 
-    <input id="newPassword" type="password" placeholder="New password">
-    <input id="confirmPassword" type="password" placeholder="Confirm password">
-
-    <button onclick="saveNewPassword()">Save New Password</button>
-
-    <div id="resetStatus" class="status"></div>
-  </div>
-
-  <div class="card hidden" id="dashboard">
-    <h2>Dashboard</h2>
-    <div id="businessLabel" class="status"></div>
-
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-number" id="total">0</div>
-        <div class="stat-label">Total</div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-number" id="pending">0</div>
-        <div class="stat-label">Pending</div>
-      </div>
-
-      <div class="stat">
-        <div class="stat-number" id="avg">0.0</div>
-        <div class="stat-label">Average</div>
-        <div class="avg-stars" id="avgStars">☆☆☆☆☆</div>
+    <div class="card">
+      <div class="section-title">Client Billing Tracker</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Plan / Delivery</th>
+              <th>Billing</th>
+              <th>Next Invoice</th>
+              <th>Last Payment</th>
+              <th>Partner</th>
+              <th>Commission</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
       </div>
     </div>
 
-    <button onclick="loadReviews()">Refresh</button>
-    <button class="btn-gray" onclick="logout()">Logout</button>
-
-    <div id="reviews"></div>
+    <div class="card">
+      <div class="section-title">Partner Payout Report</div>
+      <div id="payouts"></div>
+    </div>
   </div>
 
-</div>
+  <script>
+    let clientRows = [];
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-let supabase = null;
-let session = null;
-let businessId = null;
-
-function setStatus(message) {
-  document.getElementById("status").textContent = message;
-}
-
-function renderStars(n) {
-  const safe = Math.max(0, Math.min(5, Number(n) || 0));
-  return "★".repeat(safe) + "☆".repeat(5 - safe);
-}
-
-function renderAverageStars(avg) {
-  const rounded = Math.round(avg);
-  return "★".repeat(rounded) + "☆".repeat(5 - rounded);
-}
-
-async function init() {
-  try {
-    setStatus("Loading config...");
-
-    const res = await fetch("/client-config?ts=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) {
-      throw new Error("Could not load /client-config");
+    function token() {
+      return "1234";
     }
 
-    const cfg = await res.json();
-
-    if (!window.supabase || !window.supabase.createClient) {
-      throw new Error("Supabase library did not load");
+    function money(n) {
+      return "$" + Number(n || 0).toFixed(2);
     }
 
-    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
-      throw new Error("Missing config");
+    function pill(status) {
+      const safe = String(status || "active").toLowerCase();
+      return `<span class="pill ${safe}">${safe.replace("_", " ")}</span>`;
     }
 
-    supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    async function loadClients() {
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Loading...";
 
-    setStatus("Ready.");
+      try {
+        const res = await fetch("/ops-clients", {
+          headers: { "x-admin-token": token() },
+          cache: "no-store"
+        });
 
-    document.getElementById("password").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        login();
+        if (!res.ok) {
+          status.textContent = await res.text();
+          return;
+        }
+
+        clientRows = await res.json();
+        renderRows();
+        status.textContent = "Loaded.";
+      } catch (err) {
+        status.textContent = err.message || "Load failed.";
       }
-    });
-  } catch (err) {
-    console.error(err);
-    setStatus("Error: " + err.message);
-  }
-}
-
-async function login() {
-  if (!supabase) {
-    setStatus("System not ready");
-    return;
-  }
-
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  if (!email || !password) {
-    setStatus("Enter your email and password.");
-    return;
-  }
-
-  setStatus("Logging in...");
-
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    setStatus(error.message);
-    return;
-  }
-
-  session = data.session;
-  await loadProfile();
-}
-
-async function loadProfile() {
-  const res = await fetch("/admin-me", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + session.access_token
     }
-  });
 
-  if (!res.ok) {
-    const err = await res.text();
-    setStatus("Profile error: " + err);
-    return;
-  }
+    function renderRows() {
+      const q = document.getElementById("filterInput").value.trim().toLowerCase();
 
-  const data = await res.json();
-  businessId = data.businessId;
+      const rows = clientRows.filter(r => {
+        const blob = `${r.businessName} ${r.businessId} ${r.planTier} ${r.deliveryType} ${r.partnerName}`.toLowerCase();
+        return !q || blob.includes(q);
+      });
 
-  document.getElementById("businessLabel").textContent = "Business ID: " + businessId;
-  document.getElementById("loginCard").classList.add("hidden");
-
-  if (data.mustResetPassword) {
-    document.getElementById("resetCard").classList.remove("hidden");
-    document.getElementById("dashboard").classList.add("hidden");
-    document.getElementById("reviews").innerHTML = "";
-  } else {
-    document.getElementById("resetCard").classList.add("hidden");
-    document.getElementById("dashboard").classList.remove("hidden");
-    await loadReviews();
-  }
-}
-
-async function saveNewPassword() {
-  const pw1 = document.getElementById("newPassword").value;
-  const pw2 = document.getElementById("confirmPassword").value;
-  const resetStatus = document.getElementById("resetStatus");
-
-  if (!pw1 || !pw2) {
-    resetStatus.textContent = "Please enter the new password twice.";
-    return;
-  }
-
-  if (pw1 !== pw2) {
-    resetStatus.textContent = "Passwords do not match.";
-    return;
-  }
-
-  resetStatus.textContent = "Saving...";
-
-  const { error } = await supabase.auth.updateUser({ password: pw1 });
-
-  if (error) {
-    resetStatus.textContent = error.message;
-    return;
-  }
-
-  resetStatus.textContent = "Password saved. Now manually set must_reset_password = false in Supabase, then log in again.";
-
-  setTimeout(async () => {
-    await logout();
-  }, 1500);
-}
-
-async function loadReviews() {
-  const res = await fetch("/reviews?businessId=" + encodeURIComponent(businessId));
-  const data = await res.json();
-
-  const total = Array.isArray(data) ? data.length : 0;
-  const pending = Array.isArray(data) ? data.filter(r => !r.approved).length : 0;
-  const avg = total ? data.reduce((s, r) => s + (Number(r.rating) || 0), 0) / total : 0;
-
-  document.getElementById("total").textContent = total;
-  document.getElementById("pending").textContent = pending;
-  document.getElementById("avg").textContent = avg.toFixed(1);
-  document.getElementById("avgStars").textContent = renderAverageStars(avg);
-
-  const reviewsEl = document.getElementById("reviews");
-
-  if (!Array.isArray(data) || !data.length) {
-    reviewsEl.innerHTML = `<div class="empty">No reviews found.</div>`;
-    return;
-  }
-
-  reviewsEl.innerHTML = data.map(r => `
-    <div class="review">
-      <div class="review-name">${r.name || "Anonymous"}</div>
-      <div class="stars">${renderStars(r.rating)}</div>
-      <div class="review-status ${r.approved ? "status-approved" : "status-pending"}">
-        ${r.approved ? "Approved" : "Pending"}
-      </div>
-      <div class="review-text">${r.text || ""}</div>
-      ${r.image ? `<img src="${r.image}" alt="Review image">` : ""}
-      ${!r.approved ? `<button class="btn-green" onclick="approve(${r.id})">Approve</button>` : ""}
-      <button class="btn-red" onclick="del(${r.id})">Delete</button>
-    </div>
-  `).join("");
-}
-
-async function approve(id) {
-  await fetch("/reviews/" + id, {
-    method: "PUT",
-    headers: {
-      "Authorization": "Bearer " + session.access_token,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ approved: true })
-  });
-
-  loadReviews();
-}
-
-async function del(id) {
-  await fetch("/reviews/" + id, {
-    method: "DELETE",
-    headers: {
-      "Authorization": "Bearer " + session.access_token
+      document.getElementById("rows").innerHTML = rows.map(r => `
+        <tr>
+          <td>
+            <strong>${escapeHtml(r.businessName)}</strong><br>
+            <span style="color:#64748b">${escapeHtml(r.businessId)}</span><br>
+            <span style="color:#64748b">${escapeHtml(r.email || "")}</span>
+          </td>
+          <td>
+            <strong>${escapeHtml((r.planTier || "").toUpperCase())}</strong><br>
+            <span style="color:#64748b">${escapeHtml((r.deliveryType || "").toUpperCase())}</span>
+          </td>
+          <td>
+            Base: ${money(r.baseMonthlyPrice)}<br>
+            Hosted: ${money(r.hostedAddonPrice)}<br>
+            <strong>Total: ${money(r.totalMonthlyPrice)}</strong><br>
+            Setup: ${money(r.setupFeeAmount)}<br>
+            ${pill(r.billingStatus)}
+          </td>
+          <td>
+            ${escapeHtml(r.nextInvoiceDate || "")}<br>
+            <span style="color:#64748b">Day ${Number(r.billingDay || 1)}</span><br>
+            <span style="color:#64748b">${typeof r.daysUntilInvoice === "number" ? `${r.daysUntilInvoice} day(s)` : ""}</span>
+          </td>
+          <td>${escapeHtml(r.lastPaymentDate || "—")}</td>
+          <td>
+            ${escapeHtml(r.partnerName || "—")}<br>
+            <span style="color:#64748b">${escapeHtml(r.partnerEmail || "")}</span>
+          </td>
+          <td>
+            ${Number(r.partnerCommissionPercent || 0).toFixed(2)}%<br>
+            <strong>${money(r.partnerMonthlyCommission)}</strong>
+          </td>
+          <td>
+            <button class="btn green" onclick="recordPayment('${escapeJs(r.businessId)}')">Record Payment</button>
+          </td>
+        </tr>
+      `).join("");
     }
-  });
 
-  loadReviews();
-}
+    async function recordPayment(businessId) {
+      const paidDate = prompt("Enter payment date (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
+      if (!paidDate) return;
 
-async function logout() {
-  if (supabase) {
-    await supabase.auth.signOut();
-  }
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Recording payment...";
 
-  session = null;
-  businessId = null;
+      const res = await fetch("/ops-record-payment/" + encodeURIComponent(businessId), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": token()
+        },
+        body: JSON.stringify({ paidDate })
+      });
 
-  document.getElementById("email").value = "";
-  document.getElementById("password").value = "";
-  document.getElementById("newPassword").value = "";
-  document.getElementById("confirmPassword").value = "";
-  document.getElementById("resetStatus").textContent = "";
+      status.textContent = res.ok ? "Payment recorded." : await res.text();
+      await loadClients();
+    }
 
-  document.getElementById("loginCard").classList.remove("hidden");
-  document.getElementById("resetCard").classList.add("hidden");
-  document.getElementById("dashboard").classList.add("hidden");
-  document.getElementById("reviews").innerHTML = "";
+    async function sendReminders() {
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Sending reminders...";
 
-  setStatus("Ready.");
-}
+      const res = await fetch("/ops-send-billing-reminders", {
+        method: "POST",
+        headers: { "x-admin-token": token() }
+      });
 
-init();
-</script>
+      if (!res.ok) {
+        status.textContent = await res.text();
+        return;
+      }
 
+      const data = await res.json();
+      status.textContent = `Billing reminders sent: ${data.sent}`;
+    }
+
+    async function loadPayoutReport() {
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Loading payout report...";
+
+      const res = await fetch("/ops-partner-payout-report", {
+        headers: { "x-admin-token": token() },
+        cache: "no-store"
+      });
+
+      if (!res.ok) {
+        status.textContent = await res.text();
+        return;
+      }
+
+      const data = await res.json();
+      const wrap = document.getElementById("payouts");
+
+      if (!data.length) {
+        wrap.innerHTML = "<div style='color:#64748b;'>No partner payouts found.</div>";
+        status.textContent = "Payout report loaded.";
+        return;
+      }
+
+      wrap.innerHTML = data.map(group => `
+        <div class="payout-card">
+          <div><strong>${escapeHtml(group.partnerName || "Unnamed Partner")}</strong></div>
+          <div style="color:#64748b;margin-bottom:10px;">${escapeHtml(group.partnerEmail || "")}</div>
+          <div style="font-weight:800;color:#1e3a8a;margin-bottom:10px;">Total Monthly Payout: ${money(group.totalMonthlyPayout)}</div>
+          ${group.clients.map(c => `
+            <div style="padding:8px 0;border-top:1px solid #e5e7eb;">
+              <strong>${escapeHtml(c.businessName)}</strong> (${escapeHtml(c.businessId)})<br>
+              Client Monthly: ${money(c.totalMonthlyPrice)} · Commission: ${Number(c.commissionPercent).toFixed(2)}% · Payout: ${money(c.monthlyPayout)} · Status: ${escapeHtml(c.billingStatus)}
+            </div>
+          `).join("")}
+        </div>
+      `).join("");
+
+      status.textContent = "Payout report loaded.";
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeJs(value) {
+      return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    loadClients();
+  </script>
 </body>
 </html>
