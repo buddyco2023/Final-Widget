@@ -28,6 +28,10 @@ const MARKETING_SITE_URL = process.env.MARKETING_SITE_URL || "https://applogix.o
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "applogixinc@outlook.com";
 const BRAND_LOGO_PUBLIC_URL = process.env.BRAND_LOGO_PUBLIC_URL || `${MARKETING_SITE_URL}/logo.png`;
 const TERMS_URL = process.env.TERMS_URL || `${MARKETING_SITE_URL}/terms.html`;
+const LEGAL_COMPANY_NAME = process.env.LEGAL_COMPANY_NAME || "11274228 Canada Inc (AppLogix)";
+const GST_NUMBER = process.env.GST_NUMBER || "709181085RT0001";
+
+const HST_RATE = 0.13;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -86,6 +90,19 @@ function coerceInt(value, fallback = 1) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function money(value) {
+  return coerceMoney(value, 0).toFixed(2);
+}
+
+function calcTax(subtotal) {
+  return Number((coerceMoney(subtotal, 0) * HST_RATE).toFixed(2));
+}
+
+function calcTotalWithTax(subtotal) {
+  const base = coerceMoney(subtotal, 0);
+  return Number((base + calcTax(base)).toFixed(2));
+}
+
 function computeNextInvoiceDate(billingDay, fromDate = new Date()) {
   const day = Math.max(1, Math.min(28, coerceInt(billingDay, 1)));
   const d = new Date(fromDate);
@@ -110,6 +127,29 @@ function daysUntil(dateString) {
   const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const target = new Date(`${dateString}T00:00:00Z`);
   return Math.round((target - todayUtc) / 86400000);
+}
+
+function invoiceMonthKey(dateString) {
+  const d = dateString ? new Date(`${dateString}T00:00:00Z`) : new Date();
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}${month}`;
+}
+
+function sanitizeInvoicePart(value) {
+  return String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 8) || "CLIENT";
+}
+
+function buildInvoiceNumber(businessId, dateString) {
+  return `ALX-${invoiceMonthKey(dateString)}-${sanitizeInvoicePart(businessId)}`;
+}
+
+function buildReceiptNumber(businessId, paidDate) {
+  const safeDate = String(paidDate || new Date().toISOString().slice(0, 10)).replace(/-/g, "");
+  return `RCT-${safeDate}-${sanitizeInvoicePart(businessId)}`;
 }
 
 function buildWidgetCode(payload) {
@@ -199,33 +239,13 @@ ${data.widgetCode}
 `;
   }
 
-  if (isDashboardPlan) {
-    text += `What happens next
-
-- Log in to your dashboard
-- Approve or reject reviews
-- Manage review notifications
-- Use review links, QR codes, and hosted page tools where enabled
-`;
-  } else {
-    text += `What happens next
-
-- Reviews will publish automatically on Free and Basic
-- Your selected delivery format is ready
-- Upgrade anytime for moderation and dashboard controls
-`;
-  }
-
   text += `
-
 Support
 Website: ${MARKETING_SITE_URL}
 Contact: ${CONTACT_EMAIL}
 Terms: ${TERMS_URL}
 
-If you need help with setup or installation, reply to this email.
-
-— AppLogix`;
+— ${LEGAL_COMPANY_NAME}`;
 
   return text;
 }
@@ -239,7 +259,7 @@ function buildWelcomeEmailHtml(data) {
     <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
       <div style="max-width:700px;margin:0 auto;background:#ffffff;border:1px solid #dbe7fb;border-radius:20px;overflow:hidden;">
         <div style="background:linear-gradient(90deg,#4ea3ff,#2563eb);padding:20px;text-align:center;">
-          <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:64px;max-width:220px;background:#ffffff;border-radius:12px;padding:8px;">
+          <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:64px;max-width:240px;background:#ffffff;border-radius:12px;padding:8px;">
         </div>
 
         <div style="padding:28px;">
@@ -248,18 +268,9 @@ function buildWelcomeEmailHtml(data) {
           <p style="color:#334155;">Your review system is now set up and ready to go.</p>
 
           <table style="width:100%;border-collapse:collapse;margin:18px 0;">
-            <tr>
-              <td style="padding:8px 0;color:#64748b;"><strong>Plan</strong></td>
-              <td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.planTier.toUpperCase())}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 0;color:#64748b;"><strong>Delivery</strong></td>
-              <td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.deliveryType.toUpperCase())}</td>
-            </tr>
-            <tr>
-              <td style="padding:8px 0;color:#64748b;"><strong>Business ID</strong></td>
-              <td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.businessId)}</td>
-            </tr>
+            <tr><td style="padding:8px 0;color:#64748b;"><strong>Plan</strong></td><td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.planTier.toUpperCase())}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;"><strong>Delivery</strong></td><td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.deliveryType.toUpperCase())}</td></tr>
+            <tr><td style="padding:8px 0;color:#64748b;"><strong>Business ID</strong></td><td style="padding:8px 0;color:#0f172a;">${escapeHtml(data.businessId)}</td></tr>
           </table>
 
           ${widgetEnabled ? `
@@ -293,6 +304,7 @@ function buildWelcomeEmailHtml(data) {
           ` : ""}
 
           <div style="margin-top:24px;padding-top:18px;border-top:1px solid #e5e7eb;color:#64748b;font-size:14px;">
+            <div>${escapeHtml(LEGAL_COMPANY_NAME)}</div>
             <div>Website: <a href="${MARKETING_SITE_URL}" style="color:#2563eb;text-decoration:none;">${MARKETING_SITE_URL}</a></div>
             <div>Contact: <a href="mailto:${CONTACT_EMAIL}" style="color:#2563eb;text-decoration:none;">${CONTACT_EMAIL}</a></div>
             <div>Terms: <a href="${TERMS_URL}" style="color:#2563eb;text-decoration:none;">${TERMS_URL}</a></div>
@@ -300,10 +312,222 @@ function buildWelcomeEmailHtml(data) {
         </div>
       </div>
     </div>
-  `;
-}
+  `;// ------------------------------
+// PRE-ONBOARD EMAIL
+// ------------------------------
+app.post("/send-pre-onboard-email", requireAdminToken, async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email service not configured.");
+    }
 
-async function getUserFromBearer(req) {
+    const {
+      businessName,
+      clientEmail,
+      planTier,
+      deliveryType,
+      reviewPageUrl
+    } = req.body;
+
+    if (!businessName || !clientEmail || !planTier) {
+      return res.status(400).send("Missing required fields.");
+    }
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: [clientEmail],
+      reply_to: CONTACT_EMAIL,
+      subject: `Approval Required: AppLogix Setup for ${businessName}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
+          <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:18px;padding:24px;border:1px solid #dbe7fb;">
+            
+            <div style="text-align:center;margin-bottom:20px;">
+              <img src="${BRAND_LOGO_PUBLIC_URL}" style="max-height:60px;">
+            </div>
+
+            <h2 style="margin-top:0;color:#1e3a8a;">Before We Activate Your Account</h2>
+
+            <p>Hi ${escapeHtml(businessName)},</p>
+
+            <p>We are preparing your AppLogix review system. Please confirm the details below before we activate your account:</p>
+
+            <ul style="line-height:1.6;color:#334155;">
+              <li><strong>Plan:</strong> ${escapeHtml(planTier)}</li>
+              <li><strong>Delivery Type:</strong> ${escapeHtml(deliveryType)}</li>
+              ${reviewPageUrl ? `<li><strong>Website URL:</strong> ${escapeHtml(reviewPageUrl)}</li>` : ""}
+            </ul>
+
+            <div style="margin:18px 0;padding:14px;background:#f8fbff;border-radius:12px;border:1px solid #dbe7fb;">
+              <strong>Important:</strong><br/>
+              Please reply to this email confirming:
+              <ul>
+                <li>All information above is correct</li>
+                <li>You agree to our Terms & Conditions</li>
+                <li>(For Premium Users Only) Provide your logo (PNG or URL)</li>
+              </ul>
+            </div>
+
+            <p style="margin-top:20px;">
+              Terms & Conditions:<br/>
+              <a href="${TERMS_URL}" style="color:#2563eb;">${TERMS_URL}</a>
+            </p>
+
+            <div style="margin-top:30px;color:#64748b;font-size:14px;">
+              ${LEGAL_COMPANY_NAME}<br/>
+              ${CONTACT_EMAIL}
+            </div>
+
+          </div>
+        </div>
+      `
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Pre-onboard email error:", err);
+    res.status(500).send("Failed to send pre-onboarding email.");
+  }
+});
+
+
+// ------------------------------
+// SEND INVOICE EMAIL
+// ------------------------------
+app.post("/send-invoice", requireAdminToken, async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email not configured.");
+    }
+
+    const {
+      businessId,
+      businessName,
+      clientEmail,
+      amount,
+      nextBillingDate
+    } = req.body;
+
+    if (!businessId || !clientEmail || !amount) {
+      return res.status(400).send("Missing invoice data.");
+    }
+
+    const subtotal = coerceMoney(amount);
+    const tax = calcTax(subtotal);
+    const total = calcTotalWithTax(subtotal);
+    const invoiceNumber = buildInvoiceNumber(businessId, nextBillingDate);
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: [clientEmail],
+      subject: `Invoice ${invoiceNumber} — AppLogix`,
+      html: `
+        <div style="font-family:Arial;padding:24px;background:#eef5ff;">
+          <div style="max-width:640px;margin:auto;background:#fff;padding:24px;border-radius:18px;border:1px solid #dbe7fb;">
+
+            <div style="text-align:center;margin-bottom:20px;">
+              <img src="${BRAND_LOGO_PUBLIC_URL}" style="max-height:60px;">
+            </div>
+
+            <h2 style="color:#1e3a8a;">Invoice</h2>
+
+            <p><strong>Invoice #:</strong> ${invoiceNumber}</p>
+            <p><strong>Client:</strong> ${escapeHtml(businessName)}</p>
+
+            <table style="width:100%;margin-top:20px;border-collapse:collapse;">
+              <tr><td>Service</td><td style="text-align:right;">$${money(subtotal)}</td></tr>
+              <tr><td>HST (13%)</td><td style="text-align:right;">$${money(tax)}</td></tr>
+              <tr><td><strong>Total</strong></td><td style="text-align:right;"><strong>$${money(total)}</strong></td></tr>
+            </table>
+
+            <p style="margin-top:20px;">
+              Please remit payment to continue service.
+            </p>
+
+            <div style="margin-top:30px;color:#64748b;font-size:14px;">
+              ${LEGAL_COMPANY_NAME}<br/>
+              GST/HST #: ${GST_NUMBER}<br/>
+              ${CONTACT_EMAIL}
+            </div>
+
+          </div>
+        </div>
+      `
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Invoice error:", err);
+    res.status(500).send("Failed to send invoice.");
+  }
+});
+
+
+// ------------------------------
+// SEND RECEIPT EMAIL
+// ------------------------------
+app.post("/send-receipt", requireAdminToken, async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email not configured.");
+    }
+
+    const {
+      businessId,
+      businessName,
+      clientEmail,
+      amount
+    } = req.body;
+
+    const receiptNumber = buildReceiptNumber(businessId);
+    const subtotal = coerceMoney(amount);
+    const tax = calcTax(subtotal);
+    const total = calcTotalWithTax(subtotal);
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: [clientEmail],
+      subject: `Payment Receipt ${receiptNumber}`,
+      html: `
+        <div style="font-family:Arial;padding:24px;background:#eef5ff;">
+          <div style="max-width:640px;margin:auto;background:#fff;padding:24px;border-radius:18px;border:1px solid #dbe7fb;">
+
+            <div style="text-align:center;margin-bottom:20px;">
+              <img src="${BRAND_LOGO_PUBLIC_URL}" style="max-height:60px;">
+            </div>
+
+            <h2 style="color:#1e3a8a;">Payment Received</h2>
+
+            <p><strong>Receipt #:</strong> ${receiptNumber}</p>
+            <p><strong>Client:</strong> ${escapeHtml(businessName)}</p>
+
+            <table style="width:100%;margin-top:20px;">
+              <tr><td>Subtotal</td><td style="text-align:right;">$${money(subtotal)}</td></tr>
+              <tr><td>HST</td><td style="text-align:right;">$${money(tax)}</td></tr>
+              <tr><td><strong>Total Paid</strong></td><td style="text-align:right;"><strong>$${money(total)}</strong></td></tr>
+            </table>
+
+            <p style="margin-top:20px;">Thank you for your payment.</p>
+
+            <div style="margin-top:30px;color:#64748b;font-size:14px;">
+              ${LEGAL_COMPANY_NAME}<br/>
+              GST/HST #: ${GST_NUMBER}
+            </div>
+
+          </div>
+        </div>
+      `
+    });
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("Receipt error:", err);
+    res.status(500).send("Failed to send receipt.");
+  }
+});async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
   if (!auth.startsWith("Bearer ")) {
     throw new Error("Missing bearer token");
@@ -369,6 +593,7 @@ async function getBusinessProfile(businessId) {
     .from("admin_users")
     .select(`
       business_id,
+      email,
       plan_tier,
       active,
       brand_name,
@@ -588,107 +813,6 @@ app.post("/admin-mark-password-reset-complete", async (req, res) => {
 });
 
 // ------------------------------
-// Send review link (Premium)
-// Uses hosted page if enabled, otherwise widget page URL
-// ------------------------------
-app.post("/send-review-link", async (req, res) => {
-  try {
-    const user = await getUserFromBearer(req);
-    const profile = await getAdminProfileByEmail(user.email);
-
-    if ((profile.plan_tier || "").toLowerCase() !== PLAN_PREMIUM) {
-      return res.status(403).send("Only Premium users can send review invite emails.");
-    }
-
-    if (!resend || !RESEND_FROM) {
-      return res.status(500).send("Email service is not configured.");
-    }
-
-    const deliveryType = profile.delivery_type || "widget";
-    const reviewLink = includesHosted(deliveryType)
-      ? `${PUBLIC_APP_URL}/r/${profile.business_id}`
-      : (profile.review_page_url || "");
-
-    if (!reviewLink) {
-      return res.status(400).send("No valid review link is configured for this account.");
-    }
-
-    const reviewerEmail = (req.body.reviewerEmail || "").trim().toLowerCase();
-    const reviewerName = (req.body.reviewerName || "").trim();
-    const businessName = profile.brand_name || prettyBusinessName(profile.business_id);
-
-    if (!reviewerEmail) {
-      return res.status(400).send("Reviewer email is required.");
-    }
-
-    const greeting = reviewerName ? `Hi ${escapeHtml(reviewerName)},` : "Hi,";
-
-    await resend.emails.send({
-      from: RESEND_FROM,
-      to: [reviewerEmail],
-      subject: `We’d love your feedback for ${businessName}`,
-      html: `
-        <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
-          <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
-            <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:220px;background:#ffffff;border-radius:12px;padding:8px;">
-            <h2 style="margin-top:18px;color:#1e3a8a;">${escapeHtml(businessName)}</h2>
-            <p>${greeting}</p>
-            <p>Thank you for your business. We’d really appreciate your feedback.</p>
-            <p><a href="${reviewLink}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Leave a Review</a></p>
-            <p style="font-size:13px;color:#64748b;">Questions? ${escapeHtml(CONTACT_EMAIL)} · ${escapeHtml(MARKETING_SITE_URL)}</p>
-          </div>
-        </div>
-      `
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("POST /send-review-link error:", err);
-    res.status(500).send(err.message || "Failed to send review link.");
-  }
-});
-
-// ------------------------------
-// Contact form
-// ------------------------------
-app.post("/contact", async (req, res) => {
-  try {
-    const { name, email, message } = req.body || {};
-
-    if (!name || !email || !message) {
-      return res.status(400).json({ error: "Missing required fields." });
-    }
-
-    if (!resend || !RESEND_FROM) {
-      return res.status(500).json({ error: "Email service is not configured." });
-    }
-
-    await resend.emails.send({
-      from: RESEND_FROM,
-      to: CONTACT_EMAIL,
-      subject: `New AppLogix Contact Form Message from ${name}`,
-      reply_to: email,
-      html: `
-        <div style="font-family:Arial,sans-serif;padding:24px;background:#f4f8ff;">
-          <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe7fb;border-radius:16px;padding:24px;">
-            <h2 style="margin-top:0;color:#1e3a8a;">New Contact Form Message</h2>
-            <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-            <p><strong>Email:</strong> ${escapeHtml(email)}</p>
-            <p><strong>Message:</strong></p>
-            <div style="white-space:pre-wrap;color:#334155;">${escapeHtml(message)}</div>
-          </div>
-        </div>
-      `
-    });
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error("POST /contact error:", err);
-    return res.status(500).json({ error: err.message || "Failed to send message." });
-  }
-});
-
-// ------------------------------
 // Onboarding create client
 // ------------------------------
 app.post("/create-client", requireAdminToken, async (req, res) => {
@@ -779,17 +903,6 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
     let authData = null;
 
     if (isDashboardPlan) {
-      const { data: existingAuthUsers, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
-      if (listErr) return res.status(500).send(listErr.message);
-
-      const emailExists = (existingAuthUsers?.users || []).some(
-        (u) => (u.email || "").toLowerCase() === clientEmail
-      );
-
-      if (emailExists) {
-        return res.status(400).send("A Supabase auth user already exists with that email.");
-      }
-
       const createAuthResult = await supabaseAdmin.auth.admin.createUser({
         email: clientEmail,
         password: tempPassword,
@@ -936,6 +1049,48 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
   } catch (err) {
     console.error("POST /create-client server error:", err);
     res.status(500).send(err.message || "Server error");
+  }// ------------------------------
+// Invoice sender
+// ------------------------------
+app.post("/ops-send-invoice/:businessId", requireAdminToken, async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email service is not configured.");
+    }
+
+    const businessId = (req.params.businessId || "").trim();
+    const profile = await getBusinessProfile(businessId);
+
+    if (!profile) {
+      return res.status(404).send("Client not found.");
+    }
+
+    if (!profile.email) {
+      return res.status(400).send("Client email is missing.");
+    }
+
+    const businessName = profile.brand_name || prettyBusinessName(businessId);
+    const invoiceNumber = buildInvoiceNumber(businessId, profile.next_invoice_date);
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: [profile.email],
+      reply_to: CONTACT_EMAIL,
+      subject: `Invoice ${invoiceNumber} – ${businessName}`,
+      html: buildInvoiceEmailHtml({
+        invoiceNumber,
+        businessName,
+        planTier: profile.plan_tier || "",
+        deliveryType: profile.delivery_type || "",
+        amount: profile.total_monthly_price || 0,
+        nextBillingDate: profile.next_invoice_date || ""
+      })
+    });
+
+    res.json({ success: true, invoiceNumber });
+  } catch (err) {
+    console.error("POST /ops-send-invoice/:businessId error:", err);
+    res.status(500).send(err.message || "Failed to send invoice.");
   }
 });
 
@@ -992,7 +1147,10 @@ app.get("/ops-clients", requireAdminToken, async (req, res) => {
         partnerEmail: row.partner_email || "",
         partnerCommissionPercent,
         partnerMonthlyCommission: Number((totalMonthlyPrice * partnerCommissionPercent / 100).toFixed(2)),
-        daysUntilInvoice: daysUntil(row.next_invoice_date)
+        daysUntilInvoice: daysUntil(row.next_invoice_date),
+        invoiceNumber: buildInvoiceNumber(row.business_id, row.next_invoice_date),
+        hstAmount: calcTax(totalMonthlyPrice),
+        totalWithHst: calcTotalWithTax(totalMonthlyPrice)
       };
     });
 
@@ -1011,7 +1169,8 @@ app.post("/ops-record-payment/:businessId", requireAdminToken, async (req, res) 
     const profile = await getBusinessProfile(businessId);
     if (!profile) return res.status(404).send("Client not found.");
 
-    const nextInvoiceDate = advanceInvoiceDate(profile.next_invoice_date || paidDate, profile.billing_day || 1);
+    const currentNextInvoiceDate = profile.next_invoice_date || paidDate;
+    const nextInvoiceDate = advanceInvoiceDate(currentNextInvoiceDate, profile.billing_day || 1);
 
     const { error } = await supabaseAdmin
       .from("admin_users")
@@ -1023,6 +1182,29 @@ app.post("/ops-record-payment/:businessId", requireAdminToken, async (req, res) 
       .eq("business_id", businessId);
 
     if (error) return res.status(500).send(error.message);
+
+    if (resend && RESEND_FROM && profile.email) {
+      try {
+        const businessName = profile.brand_name || prettyBusinessName(businessId);
+        const receiptNumber = buildReceiptNumber(businessId, paidDate);
+
+        await resend.emails.send({
+          from: RESEND_FROM,
+          to: [profile.email],
+          reply_to: CONTACT_EMAIL,
+          subject: `Payment Receipt ${receiptNumber} – ${businessName}`,
+          html: buildReceiptEmailHtml({
+            receiptNumber,
+            businessName,
+            amount: profile.total_monthly_price || 0,
+            date: paidDate
+          })
+        });
+      } catch (emailErr) {
+        console.error("Receipt email send error:", emailErr);
+      }
+    }
+
     res.json({ success: true, nextInvoiceDate });
   } catch (err) {
     console.error("POST /ops-record-payment/:businessId error:", err);
@@ -1038,7 +1220,7 @@ app.post("/ops-send-billing-reminders", requireAdminToken, async (req, res) => {
 
     const { data, error } = await supabaseAdmin
       .from("admin_users")
-      .select("business_id,email,brand_name,next_invoice_date,billing_status,total_monthly_price")
+      .select("business_id,email,brand_name,next_invoice_date,billing_status,total_monthly_price,plan_tier,delivery_type")
       .eq("active", true);
 
     if (error) return res.status(500).send(error.message);
@@ -1054,31 +1236,21 @@ app.post("/ops-send-billing-reminders", requireAdminToken, async (req, res) => {
       if (!shouldSend) continue;
 
       const businessName = row.brand_name || prettyBusinessName(row.business_id);
-      const subject =
-        dueIn === 3
-          ? `Upcoming AppLogix invoice for ${businessName}`
-          : dueIn === 0
-            ? `AppLogix invoice due today for ${businessName}`
-            : `AppLogix payment reminder for ${businessName}`;
+      const invoiceNumber = buildInvoiceNumber(row.business_id, row.next_invoice_date);
 
       await resend.emails.send({
         from: RESEND_FROM,
         to: [row.email],
-        subject,
-        html: `
-          <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
-            <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #dbe7fb;border-radius:18px;padding:24px;">
-              <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:220px;background:#ffffff;border-radius:12px;padding:8px;">
-              <h2 style="color:#1e3a8a;">Billing Reminder</h2>
-              <p>Hi ${escapeHtml(businessName)},</p>
-              <p>This is a reminder about your AppLogix billing.</p>
-              <p><strong>Next Billing Date:</strong> ${escapeHtml(row.next_invoice_date)}</p>
-              <p><strong>Monthly Total:</strong> $${coerceMoney(row.total_monthly_price, 0).toFixed(2)}</p>
-              <p>If you have any questions, contact us at <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
-              <p style="color:#64748b;">${MARKETING_SITE_URL}</p>
-            </div>
-          </div>
-        `
+        reply_to: CONTACT_EMAIL,
+        subject: `Invoice ${invoiceNumber} – ${businessName}`,
+        html: buildInvoiceEmailHtml({
+          invoiceNumber,
+          businessName,
+          planTier: row.plan_tier || "",
+          deliveryType: row.delivery_type || "",
+          amount: row.total_monthly_price || 0,
+          nextBillingDate: row.next_invoice_date
+        })
       });
 
       sent += 1;
@@ -1141,7 +1313,6 @@ app.get("/ops-partner-payout-report", requireAdminToken, async (req, res) => {
 
 // ------------------------------
 // /reviews
-// Admin dashboard uses this and must see pending reviews.
 // ------------------------------
 app.get("/reviews", async (req, res) => {
   try {
@@ -1160,17 +1331,9 @@ app.get("/reviews", async (req, res) => {
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
-    if (businessId) {
-      query = query.eq("business_id", businessId);
-    }
-
-    if (Number.isFinite(rawRating) && rawRating >= 1 && rawRating <= 5) {
-      query = query.eq("rating", rawRating);
-    }
-
-    if (withImages) {
-      query = query.not("image", "is", null).neq("image", "");
-    }
+    if (businessId) query = query.eq("business_id", businessId);
+    if (Number.isFinite(rawRating) && rawRating >= 1 && rawRating <= 5) query = query.eq("rating", rawRating);
+    if (withImages) query = query.not("image", "is", null).neq("image", "");
 
     const { data, error } = await query;
 
@@ -1186,9 +1349,6 @@ app.get("/reviews", async (req, res) => {
   }
 });
 
-// ------------------------------
-// Existing widget review submission
-// ------------------------------
 app.post("/reviews", async (req, res) => {
   try {
     const name = (req.body.name || "").trim();
@@ -1239,7 +1399,8 @@ app.post("/reviews", async (req, res) => {
           html: `
             <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
               <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
-                <h2 style="margin-top:0;">New Review Submitted</h2>
+                <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:240px;background:#ffffff;border-radius:12px;padding:8px;">
+                <h2 style="margin-top:16px;">New Review Submitted</h2>
                 <p><strong>Business:</strong> ${escapeHtml(businessName)}</p>
                 <p><strong>Name:</strong> ${escapeHtml(payload.name)}</p>
                 <p><strong>Rating:</strong> ${payload.rating} / 5</p>
@@ -1264,7 +1425,6 @@ app.post("/reviews", async (req, res) => {
 
 // ------------------------------
 // Hosted page business info
-// Hosted only if delivery_type includes hosted
 // ------------------------------
 app.get("/api/business/:businessId", async (req, res) => {
   try {
@@ -1308,7 +1468,6 @@ app.get("/api/business/:businessId", async (req, res) => {
 
 // ------------------------------
 // Hosted page public reviews
-// APPROVED ONLY
 // ------------------------------
 app.get("/api/reviews/:businessId", async (req, res) => {
   try {
@@ -1444,7 +1603,8 @@ app.post("/api/review", async (req, res) => {
           html: `
             <div style="font-family:Arial,sans-serif;padding:24px;background:#f3f7ff;">
               <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:20px;padding:24px;border:1px solid #e5eefc;">
-                <h2 style="margin-top:0;">New Hosted Review Submitted</h2>
+                <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:240px;background:#ffffff;border-radius:12px;padding:8px;">
+                <h2 style="margin-top:16px;">New Hosted Review Submitted</h2>
                 <p><strong>Business:</strong> ${escapeHtml(businessName)}</p>
                 <p><strong>Name:</strong> ${escapeHtml(name || "Anonymous")}</p>
                 <p><strong>Rating:</strong> ${parsedRating} / 5</p>
@@ -1568,3 +1728,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
+});
+}
