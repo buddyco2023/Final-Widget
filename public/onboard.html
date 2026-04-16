@@ -8,162 +8,135 @@
     :root {
       --primary: #2563eb;
       --secondary: #4ea3ff;
-      --bg: #f4f8ff;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #64748b;
       --border: #dbe7fb;
+      --muted: #64748b;
     }
-
-    * { box-sizing: border-box; }
-
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: linear-gradient(180deg, #eef5ff 0%, #f8fbff 100%);
-      color: var(--text);
+      color: #1f2937;
     }
-
     .wrap {
-      max-width: 1100px;
+      max-width: 1180px;
       margin: 0 auto;
       padding: 28px 16px 50px;
     }
-
-    .hero,
-    .card,
-    .result-card {
-      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    .hero, .card, .result-card {
+      background: #fff;
       border: 1px solid var(--border);
       border-radius: 24px;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 12px 30px rgba(15,23,42,.08);
     }
-
     .hero {
       overflow: hidden;
       margin-bottom: 22px;
     }
-
     .hero-top {
       height: 56px;
       background: linear-gradient(90deg, var(--secondary), var(--primary));
     }
-
     .hero-body {
       padding: 26px 22px;
       text-align: center;
     }
-
     .hero-body h1 {
       margin: 0 0 10px;
-      font-size: 2.1rem;
       color: #173b96;
     }
-
     .hero-body p {
       margin: 0 auto;
-      max-width: 720px;
+      max-width: 760px;
       color: var(--muted);
     }
-
     .grid {
       display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
+      grid-template-columns: 1fr 1fr;
       gap: 22px;
       margin-bottom: 22px;
     }
-
     .card {
       padding: 22px;
     }
-
     .card h2 {
       margin: 0 0 14px;
       color: #173b96;
-      font-size: 1.45rem;
+      font-size: 1.35rem;
     }
-
     .field-label {
       display: block;
-      font-size: 0.92rem;
+      font-size: .92rem;
       font-weight: 700;
       margin-bottom: 8px;
       color: #334155;
     }
-
-    .field,
-    .select,
-    .textarea {
+    .field, .select, .textarea {
       width: 100%;
       padding: 13px 14px;
       border-radius: 14px;
       border: 1px solid #cfdcf3;
       background: #f9fbff;
       font-size: 1rem;
-      color: var(--text);
+      color: #1f2937;
       margin-bottom: 14px;
     }
-
-    .textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
     .two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
-
+    .three-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+    }
+    .muted {
+      color: var(--muted);
+      font-size: .92rem;
+      margin-top: -8px;
+      margin-bottom: 14px;
+    }
     .check-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
       margin-bottom: 12px;
       color: #334155;
       font-weight: 600;
     }
-
-    .submit-btn,
-    .copy-btn {
+    .submit-btn, .copy-btn {
       border: none;
       border-radius: 14px;
       padding: 14px 18px;
-      font-size: 0.98rem;
+      font-size: .98rem;
       font-weight: 800;
       cursor: pointer;
     }
-
     .submit-btn {
       width: 100%;
       background: linear-gradient(180deg, var(--secondary), var(--primary));
       color: white;
     }
-
     .copy-btn {
       background: #173b96;
       color: #fff;
       margin-top: 10px;
     }
-
-    .muted {
-      color: var(--muted);
-      font-size: 0.92rem;
-      margin-top: -8px;
-      margin-bottom: 14px;
+    .status {
+      margin-top: 12px;
+      text-align: center;
+      font-weight: 700;
+      white-space: pre-wrap;
     }
-
+    .error { color: #b91c1c; }
+    .success { color: #166534; }
     .result-card {
       padding: 22px;
-      margin-top: 22px;
       display: none;
     }
-
-    .result-card h2 {
-      margin: 0 0 16px;
-      color: #173b96;
-    }
-
     .result-block {
       margin-bottom: 22px;
       padding: 16px;
@@ -171,18 +144,10 @@
       border-radius: 18px;
       background: #f9fbff;
     }
-
-    .result-block h3 {
-      margin: 0 0 10px;
-      color: #173b96;
-      font-size: 1.05rem;
-    }
-
     .result-line {
       margin-bottom: 8px;
       word-break: break-word;
     }
-
     .code-box {
       width: 100%;
       min-height: 180px;
@@ -191,33 +156,13 @@
       border: 1px solid #cfdcf3;
       background: #fff;
       font-family: Consolas, monospace;
-      font-size: 0.9rem;
+      font-size: .9rem;
       color: #0f172a;
       resize: vertical;
     }
-
-    .status {
-      margin-top: 12px;
-      text-align: center;
-      font-weight: 700;
-    }
-
-    .error {
-      color: #b91c1c;
-    }
-
-    .success {
-      color: #166534;
-    }
-
     @media (max-width: 900px) {
-      .grid,
-      .two-col {
+      .grid, .two-col, .three-col {
         grid-template-columns: 1fr;
-      }
-
-      .hero-body h1 {
-        font-size: 1.8rem;
       }
     }
   </style>
@@ -228,16 +173,13 @@
       <div class="hero-top"></div>
       <div class="hero-body">
         <h1>AppLogix Client Onboarding</h1>
-        <p>
-          Create a new client, generate widget code, welcome email, optional hosted page,
-          and dashboard access where applicable.
-        </p>
+        <p>Create a new client, calculate pricing, store billing details, assign partner commission, accept terms, and generate onboarding assets automatically.</p>
       </div>
     </section>
 
     <div class="grid">
       <section class="card">
-        <h2>Client Details</h2>
+        <h2>Client + Delivery</h2>
 
         <label class="field-label" for="businessName">Business Name</label>
         <input id="businessName" class="field" type="text" placeholder="Buddy Co" />
@@ -249,34 +191,35 @@
         <label class="field-label" for="clientEmail">Client Email</label>
         <input id="clientEmail" class="field" type="email" placeholder="owner@example.com" />
 
-        <label class="field-label" for="planTier">Plan Tier</label>
-        <select id="planTier" class="select">
-          <option value="free">Free</option>
-          <option value="basic">Basic</option>
-          <option value="pro">Pro</option>
-          <option value="premium">Premium</option>
-        </select>
-
-        <label class="field-label" for="deliveryType">Delivery Type</label>
-        <select id="deliveryType" class="select">
-          <option value="widget">Widget Only</option>
-          <option value="hosted">Hosted Page Only</option>
-          <option value="both">Widget + Hosted Page</option>
-        </select>
+        <div class="two-col">
+          <div>
+            <label class="field-label" for="planTier">Plan Tier</label>
+            <select id="planTier" class="select">
+              <option value="free">Free</option>
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="deliveryType">Delivery Type</label>
+            <select id="deliveryType" class="select">
+              <option value="widget">Widget Only</option>
+              <option value="hosted">Hosted Page Only</option>
+              <option value="both">Widget + Hosted Page</option>
+            </select>
+          </div>
+        </div>
 
         <div id="tempPasswordWrap" style="display:none;">
           <label class="field-label" for="tempPassword">Temporary Password</label>
           <input id="tempPassword" class="field" type="text" value="AppLogix." />
-          <div class="muted">Used for first login on Pro and Premium dashboard accounts.</div>
         </div>
 
         <div id="reviewPageWrap">
           <label class="field-label" for="reviewPageUrl">Website Review Page URL</label>
           <input id="reviewPageUrl" class="field" type="text" placeholder="https://yourdomain.com/reviews" />
-          <div class="muted">
-            This is the page on the client’s website where the review widget is installed.
-            Used for website links and QR codes.
-          </div>
+          <div class="muted">Required when widget delivery is selected. This is the page where the widget lives.</div>
         </div>
 
         <div id="hostedFieldsWrap" style="display:none;">
@@ -285,15 +228,11 @@
 
           <label class="field-label" for="hostedFooter">Hosted Page Footer</label>
           <input id="hostedFooter" class="field" type="text" placeholder="Powered by AppLogix" />
-
-          <div class="muted">
-            Only used if Hosted Page is selected.
-          </div>
         </div>
       </section>
 
       <section class="card">
-        <h2>Branding + Settings</h2>
+        <h2>Branding + Notifications</h2>
 
         <label class="field-label" for="brandName">Brand Name</label>
         <input id="brandName" class="field" type="text" placeholder="Buddy Co" />
@@ -316,6 +255,11 @@
         <input id="notificationEmail" class="field" type="email" placeholder="notifications@example.com" />
 
         <div class="check-row">
+          <input id="googleImportEnabled" type="checkbox" />
+          <label for="googleImportEnabled">Enable Google review import (Premium only)</label>
+        </div>
+
+        <div class="check-row">
           <input id="setupFeePaid" type="checkbox" />
           <label for="setupFeePaid">Setup fee paid</label>
         </div>
@@ -324,17 +268,82 @@
           <input id="active" type="checkbox" checked />
           <label for="active">Client active</label>
         </div>
+      </section>
+    </div>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Pricing + Billing</h2>
+
+        <div class="three-col">
+          <div>
+            <label class="field-label" for="baseMonthlyPrice">Base Monthly</label>
+            <input id="baseMonthlyPrice" class="field" type="number" step="0.01" />
+          </div>
+          <div>
+            <label class="field-label" for="hostedAddonPrice">Hosted Add-On</label>
+            <input id="hostedAddonPrice" class="field" type="number" step="0.01" />
+          </div>
+          <div>
+            <label class="field-label" for="totalMonthlyPrice">Total Monthly</label>
+            <input id="totalMonthlyPrice" class="field" type="number" step="0.01" />
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label class="field-label" for="setupFeeAmount">Setup Fee</label>
+            <input id="setupFeeAmount" class="field" type="number" step="0.01" />
+          </div>
+          <div>
+            <label class="field-label" for="billingDay">Billing Day (1-28)</label>
+            <input id="billingDay" class="field" type="number" min="1" max="28" value="1" />
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label class="field-label" for="nextInvoiceDate">Next Invoice Date</label>
+            <input id="nextInvoiceDate" class="field" type="date" />
+          </div>
+          <div>
+            <label class="field-label" for="billingStatus">Billing Status</label>
+            <select id="billingStatus" class="select">
+              <option value="active">Active</option>
+              <option value="paid">Paid</option>
+              <option value="past_due">Past Due</option>
+              <option value="paused">Paused</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Partner Commission + Terms</h2>
+
+        <label class="field-label" for="partnerName">Partner Name</label>
+        <input id="partnerName" class="field" type="text" placeholder="Partner or referral source" />
+
+        <label class="field-label" for="partnerEmail">Partner Email</label>
+        <input id="partnerEmail" class="field" type="email" placeholder="partner@example.com" />
+
+        <div class="two-col">
+          <div>
+            <label class="field-label" for="partnerCommissionPercent">Commission %</label>
+            <input id="partnerCommissionPercent" class="field" type="number" step="0.01" value="25" />
+          </div>
+          <div>
+            <label class="field-label" for="partnerMonthlyCommission">Partner Monthly Commission</label>
+            <input id="partnerMonthlyCommission" class="field" type="number" step="0.01" readonly />
+          </div>
+        </div>
 
         <div class="check-row">
-          <input id="googleImportEnabled" type="checkbox" />
-          <label for="googleImportEnabled">Enable Google review import</label>
-        </div>
-        <div class="muted">
-          Premium only, and only turn this on if the client wants Google import.
-        </div>
-
-        <div class="muted">
-          Branding applies to Premium. Notifications apply to Pro and Premium.
+          <input id="termsAccepted" type="checkbox" />
+          <label for="termsAccepted">
+            I confirm the client has accepted the
+            <a href="https://applogix.org/terms.html" target="_blank" rel="noopener noreferrer">AppLogix Terms & Conditions</a>.
+          </label>
         </div>
 
         <button id="createBtn" class="submit-btn">Create Client</button>
@@ -378,9 +387,12 @@
   </div>
 
   <script>
-    const createBtn = document.getElementById("createBtn");
-    const statusEl = document.getElementById("status");
-    const resultCard = document.getElementById("resultCard");
+    const DEFAULTS = {
+      free: { monthly: 0, setup: 0 },
+      basic: { monthly: 10, setup: 100 },
+      pro: { monthly: 49, setup: 200 },
+      premium: { monthly: 99, setup: 400 }
+    };
 
     const businessNameEl = document.getElementById("businessName");
     const businessIdEl = document.getElementById("businessId");
@@ -390,11 +402,21 @@
     const tempPasswordWrap = document.getElementById("tempPasswordWrap");
     const reviewPageWrap = document.getElementById("reviewPageWrap");
     const hostedFieldsWrap = document.getElementById("hostedFieldsWrap");
-    const googleImportEnabledEl = document.getElementById("googleImportEnabled");
+
+    const baseMonthlyPriceEl = document.getElementById("baseMonthlyPrice");
+    const hostedAddonPriceEl = document.getElementById("hostedAddonPrice");
+    const totalMonthlyPriceEl = document.getElementById("totalMonthlyPrice");
+    const setupFeeAmountEl = document.getElementById("setupFeeAmount");
+    const billingDayEl = document.getElementById("billingDay");
+    const nextInvoiceDateEl = document.getElementById("nextInvoiceDate");
+    const partnerCommissionPercentEl = document.getElementById("partnerCommissionPercent");
+    const partnerMonthlyCommissionEl = document.getElementById("partnerMonthlyCommission");
+    const statusEl = document.getElementById("status");
+    const resultCard = document.getElementById("resultCard");
 
     let businessIdTouched = false;
 
-    function slugifyBusinessName(name) {
+    function slugify(name) {
       return String(name || "")
         .toLowerCase()
         .trim()
@@ -403,135 +425,160 @@
         .replace(/^-+|-+$/g, "");
     }
 
-    businessNameEl.addEventListener("input", () => {
-      if (!businessIdTouched) {
-        businessIdEl.value = slugifyBusinessName(businessNameEl.value);
+    function includesWidget(type) {
+      return type === "widget" || type === "both";
+    }
+
+    function includesHosted(type) {
+      return type === "hosted" || type === "both";
+    }
+
+    function getAdminToken() {
+      return "1234";
+    }
+
+    function computeNextInvoiceDate() {
+      const billingDay = Math.max(1, Math.min(28, parseInt(billingDayEl.value || "1", 10)));
+      const today = new Date();
+      let next = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), billingDay));
+      if (next <= today) {
+        next = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, billingDay));
+      }
+      nextInvoiceDateEl.value = next.toISOString().slice(0, 10);
+    }
+
+    function recalcPricing() {
+      const plan = planTierEl.value;
+      const delivery = deliveryTypeEl.value;
+      const base = Number(DEFAULTS[plan]?.monthly || 0);
+      const setup = Number(DEFAULTS[plan]?.setup || 0);
+      const addon = includesWidget(delivery) && includesHosted(delivery)
+        ? Number((base * 0.5).toFixed(2))
+        : 0;
+      const total = base + addon;
+
+      baseMonthlyPriceEl.value = base.toFixed(2);
+      hostedAddonPriceEl.value = addon.toFixed(2);
+      totalMonthlyPriceEl.value = total.toFixed(2);
+      setupFeeAmountEl.value = setup.toFixed(2);
+
+      recalcCommission();
+    }
+
+    function recalcCommission() {
+      const total = Number(totalMonthlyPriceEl.value || 0);
+      const pct = Number(partnerCommissionPercentEl.value || 0);
+      partnerMonthlyCommissionEl.value = (total * pct / 100).toFixed(2);
+    }
+
+    function updateUI() {
+      const plan = planTierEl.value;
+      const delivery = deliveryTypeEl.value;
+
+      tempPasswordWrap.style.display = (plan === "pro" || plan === "premium") ? "block" : "none";
+      reviewPageWrap.style.display = includesWidget(delivery) ? "block" : "none";
+      hostedFieldsWrap.style.display = includesHosted(delivery) ? "block" : "none";
+
+      const googleImport = document.getElementById("googleImportEnabled");
+      if (plan !== "premium") {
+        googleImport.checked = false;
+        googleImport.disabled = true;
+      } else {
+        googleImport.disabled = false;
       }
 
-      if (!brandNameEl.value.trim()) {
-        brandNameEl.value = businessNameEl.value;
-      }
+      recalcPricing();
+      computeNextInvoiceDate();
+    }
+
+    businessNameEl.addEventListener("input", () => {
+      if (!businessIdTouched) businessIdEl.value = slugify(businessNameEl.value);
+      if (!brandNameEl.value.trim()) brandNameEl.value = businessNameEl.value;
     });
 
     businessIdEl.addEventListener("input", () => {
       businessIdTouched = true;
     });
 
-    function updatePlanUI() {
-      const plan = planTierEl.value;
-      const delivery = deliveryTypeEl.value;
-
-      tempPasswordWrap.style.display = (plan === "pro" || plan === "premium") ? "block" : "none";
-      reviewPageWrap.style.display = (delivery === "widget" || delivery === "both") ? "block" : "none";
-      hostedFieldsWrap.style.display = (delivery === "hosted" || delivery === "both") ? "block" : "none";
-
-      if (plan !== "premium") {
-        googleImportEnabledEl.checked = false;
-        googleImportEnabledEl.disabled = true;
-      } else {
-        googleImportEnabledEl.disabled = false;
-      }
-    }
-
-    planTierEl.addEventListener("change", updatePlanUI);
-    deliveryTypeEl.addEventListener("change", updatePlanUI);
-    updatePlanUI();
-
-    function getAdminToken() {
-      return "1234";
-    }
+    [planTierEl, deliveryTypeEl].forEach(el => el.addEventListener("change", updateUI));
+    [partnerCommissionPercentEl, totalMonthlyPriceEl].forEach(el => el.addEventListener("input", recalcCommission));
+    billingDayEl.addEventListener("input", computeNextInvoiceDate);
 
     async function copyText(text) {
       try {
         await navigator.clipboard.writeText(text);
         return true;
-      } catch (err) {
+      } catch (_) {
         return false;
       }
     }
 
     document.addEventListener("click", async (e) => {
       if (!e.target.matches(".copy-btn")) return;
-
-      const targetId = e.target.getAttribute("data-copy-target");
-      const target = document.getElementById(targetId);
-      if (!target) return;
-
+      const target = document.getElementById(e.target.getAttribute("data-copy-target"));
       const text = target.value !== undefined ? target.value : target.innerText;
       const ok = await copyText(text);
-
       const original = e.target.innerText;
       e.target.innerText = ok ? "Copied" : "Copy failed";
-      setTimeout(() => {
-        e.target.innerText = original;
-      }, 1200);
+      setTimeout(() => e.target.innerText = original, 1200);
     });
 
-    createBtn.addEventListener("click", async () => {
+    document.getElementById("createBtn").addEventListener("click", async () => {
       statusEl.className = "status";
       statusEl.innerText = "Creating client...";
-      createBtn.disabled = true;
-
-      const businessName = businessNameEl.value.trim();
-      const businessId = businessIdEl.value.trim();
-      const clientEmail = document.getElementById("clientEmail").value.trim();
-      const planTier = planTierEl.value;
-      const deliveryType = deliveryTypeEl.value;
-      const tempPassword = document.getElementById("tempPassword").value.trim();
-      const reviewPageUrl = document.getElementById("reviewPageUrl").value.trim();
-      const hostedHeader = document.getElementById("hostedHeader").value.trim();
-      const hostedFooter = document.getElementById("hostedFooter").value.trim();
-      const brandName = brandNameEl.value.trim();
-      const brandPrimary = document.getElementById("brandPrimary").value.trim();
-      const brandSecondary = document.getElementById("brandSecondary").value.trim();
-      const brandLogoUrl = document.getElementById("brandLogoUrl").value.trim();
-      const notificationEmail = document.getElementById("notificationEmail").value.trim();
-      const setupFeePaid = document.getElementById("setupFeePaid").checked;
-      const active = document.getElementById("active").checked;
-      const googleImportEnabled = googleImportEnabledEl.checked;
-
-      if (!businessName || !businessId || !clientEmail) {
-        statusEl.className = "status error";
-        statusEl.innerText = "Business name, business ID, and client email are required.";
-        createBtn.disabled = false;
-        return;
-      }
-
-      if ((deliveryType === "widget" || deliveryType === "both") && !reviewPageUrl) {
-        statusEl.className = "status error";
-        statusEl.innerText = "Website Review Page URL is required when widget delivery is selected.";
-        createBtn.disabled = false;
-        return;
-      }
-
-      if ((planTier === "pro" || planTier === "premium") && !tempPassword) {
-        statusEl.className = "status error";
-        statusEl.innerText = "Temporary password is required for Pro and Premium.";
-        createBtn.disabled = false;
-        return;
-      }
 
       const payload = {
-        businessName,
-        businessId,
-        clientEmail,
-        planTier,
-        deliveryType,
-        tempPassword,
-        reviewPageUrl,
-        hostedHeader,
-        hostedFooter,
-        brandName,
-        brandPrimary,
-        brandSecondary,
-        brandLogoUrl,
-        notificationEmail,
-        notificationsEnabled: (planTier === "pro" || planTier === "premium"),
-        brandingEnabled: (planTier === "premium"),
-        googleImportEnabled: (planTier === "premium") ? googleImportEnabled : false,
-        setupFeePaid,
-        active
+        businessName: businessNameEl.value.trim(),
+        businessId: businessIdEl.value.trim(),
+        clientEmail: document.getElementById("clientEmail").value.trim(),
+        planTier: planTierEl.value,
+        deliveryType: deliveryTypeEl.value,
+        tempPassword: document.getElementById("tempPassword").value.trim(),
+        reviewPageUrl: document.getElementById("reviewPageUrl").value.trim(),
+        hostedHeader: document.getElementById("hostedHeader").value.trim(),
+        hostedFooter: document.getElementById("hostedFooter").value.trim(),
+        brandName: brandNameEl.value.trim(),
+        brandPrimary: document.getElementById("brandPrimary").value.trim(),
+        brandSecondary: document.getElementById("brandSecondary").value.trim(),
+        brandLogoUrl: document.getElementById("brandLogoUrl").value.trim(),
+        notificationEmail: document.getElementById("notificationEmail").value.trim(),
+        notificationsEnabled: (planTierEl.value === "pro" || planTierEl.value === "premium"),
+        brandingEnabled: (planTierEl.value === "premium"),
+        googleImportEnabled: (planTierEl.value === "premium")
+          ? document.getElementById("googleImportEnabled").checked
+          : false,
+        setupFeePaid: document.getElementById("setupFeePaid").checked,
+        active: document.getElementById("active").checked,
+        baseMonthlyPrice: Number(baseMonthlyPriceEl.value || 0),
+        hostedAddonPrice: Number(hostedAddonPriceEl.value || 0),
+        totalMonthlyPrice: Number(totalMonthlyPriceEl.value || 0),
+        setupFeeAmount: Number(setupFeeAmountEl.value || 0),
+        billingDay: Number(billingDayEl.value || 1),
+        nextInvoiceDate: nextInvoiceDateEl.value,
+        billingStatus: document.getElementById("billingStatus").value,
+        partnerName: document.getElementById("partnerName").value.trim(),
+        partnerEmail: document.getElementById("partnerEmail").value.trim(),
+        partnerCommissionPercent: Number(partnerCommissionPercentEl.value || 0),
+        termsAccepted: document.getElementById("termsAccepted").checked
       };
+
+      if (!payload.businessName || !payload.businessId || !payload.clientEmail) {
+        statusEl.className = "status error";
+        statusEl.innerText = "Business name, business ID, and client email are required.";
+        return;
+      }
+
+      if (includesWidget(payload.deliveryType) && !payload.reviewPageUrl) {
+        statusEl.className = "status error";
+        statusEl.innerText = "Website Review Page URL is required when widget delivery is selected.";
+        return;
+      }
+
+      if (!payload.termsAccepted) {
+        statusEl.className = "status error";
+        statusEl.innerText = "Terms and conditions must be accepted during onboarding.";
+        return;
+      }
 
       try {
         const res = await fetch("/create-client", {
@@ -545,7 +592,6 @@
 
         const text = await res.text();
         let data = null;
-
         try {
           data = JSON.parse(text);
         } catch (_) {}
@@ -556,32 +602,31 @@
 
         resultCard.style.display = "block";
 
-        const summaryLines = [
+        document.getElementById("summaryLines").innerHTML = [
           `<div class="result-line"><strong>Business:</strong> ${data.businessName}</div>`,
           `<div class="result-line"><strong>Business ID:</strong> ${data.businessId}</div>`,
           `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
           `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
-          `<div class="result-line"><strong>Delivery Type:</strong> ${deliveryType}</div>`,
-          `<div class="result-line"><strong>Website Review Page URL:</strong> ${data.reviewPageUrl || "(none)"}</div>`,
-          `<div class="result-line"><strong>Google Import:</strong> ${payload.googleImportEnabled ? "Enabled" : "Disabled"}</div>`
+          `<div class="result-line"><strong>Delivery:</strong> ${data.deliveryType}</div>`,
+          `<div class="result-line"><strong>Total Monthly:</strong> $${Number(data.totalMonthlyPrice || 0).toFixed(2)}</div>`,
+          `<div class="result-line"><strong>Next Invoice Date:</strong> ${data.nextInvoiceDate || ""}</div>`,
+          `<div class="result-line"><strong>Partner Commission %:</strong> ${Number(data.partnerCommissionPercent || 0).toFixed(2)}%</div>`
         ].join("");
 
-        document.getElementById("summaryLines").innerHTML = summaryLines;
-
-        const hostedResultBlock = document.getElementById("hostedResultBlock");
-        if (deliveryType === "hosted" || deliveryType === "both") {
-          hostedResultBlock.style.display = "block";
+        const hostedBlock = document.getElementById("hostedResultBlock");
+        if (payload.deliveryType === "hosted" || payload.deliveryType === "both") {
+          hostedBlock.style.display = "block";
           document.getElementById("hostedPageUrl").innerText = data.hostedPageUrl || "";
         } else {
-          hostedResultBlock.style.display = "none";
+          hostedBlock.style.display = "none";
         }
 
-        const widgetResultBlock = document.getElementById("widgetResultBlock");
-        if (deliveryType === "widget" || deliveryType === "both") {
-          widgetResultBlock.style.display = "block";
+        const widgetBlock = document.getElementById("widgetResultBlock");
+        if (payload.deliveryType === "widget" || payload.deliveryType === "both") {
+          widgetBlock.style.display = "block";
           document.getElementById("widgetCode").value = data.widgetCode || "";
         } else {
-          widgetResultBlock.style.display = "none";
+          widgetBlock.style.display = "none";
         }
 
         document.getElementById("welcomeEmail").value = data.welcomeEmail || "";
@@ -597,16 +642,18 @@
         }
 
         statusEl.className = "status success";
-        statusEl.innerText = "Client created successfully.";
-        resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        statusEl.innerText = payload.planTier === "premium"
+          ? "Client created successfully. Premium onboarding email remains manual."
+          : "Client created successfully. Onboarding email was sent automatically if email service is configured.";
 
+        resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (err) {
         statusEl.className = "status error";
         statusEl.innerText = err.message || "Error creating client.";
       }
-
-      createBtn.disabled = false;
     });
+
+    updateUI();
   </script>
 </body>
 </html>
