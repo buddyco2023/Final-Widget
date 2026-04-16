@@ -43,9 +43,14 @@
       cursor: pointer;
       background: #2563eb;
       color: #fff;
+      margin: 4px 0;
     }
     .btn.green {
       background: #16a34a;
+    }
+    .btn.orange {
+      background: #f59e0b;
+      color: #111827;
     }
     .btn.light {
       background: #eef4ff;
@@ -114,16 +119,21 @@
       background: #f8fbff;
       margin-bottom: 12px;
     }
+    .action-stack {
+      display: grid;
+      gap: 8px;
+      min-width: 180px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <div class="title">Billing + Partner Tracker</div>
-      <div class="sub">Track invoice dates, payment status, reminders, and monthly partner payouts.</div>
+      <div class="sub">Track invoices, tax, payments, receipts, and partner payouts.</div>
       <div class="controls">
         <button class="btn" onclick="loadClients()">Refresh</button>
-        <button class="btn light" onclick="sendReminders()">Send Billing Reminders</button>
+        <button class="btn light" onclick="sendReminders()">Send Billing Reminder Batch</button>
         <button class="btn light" onclick="loadPayoutReport()">Load Partner Payout Report</button>
         <input id="filterInput" class="input" placeholder="Filter by business, plan, or partner" oninput="renderRows()" />
       </div>
@@ -213,12 +223,15 @@
           </td>
           <td>
             <strong>${escapeHtml((r.planTier || "").toUpperCase())}</strong><br>
-            <span style="color:#64748b">${escapeHtml((r.deliveryType || "").toUpperCase())}</span>
+            <span style="color:#64748b">${escapeHtml((r.deliveryType || "").toUpperCase())}</span><br>
+            <span style="color:#64748b">Invoice: ${escapeHtml(r.invoiceNumber || "")}</span>
           </td>
           <td>
             Base: ${money(r.baseMonthlyPrice)}<br>
             Hosted: ${money(r.hostedAddonPrice)}<br>
-            <strong>Total: ${money(r.totalMonthlyPrice)}</strong><br>
+            <strong>Subtotal: ${money(r.totalMonthlyPrice)}</strong><br>
+            HST: ${money(r.hstAmount)}<br>
+            <strong>Total: ${money(r.totalWithHst)}</strong><br>
             Setup: ${money(r.setupFeeAmount)}<br>
             ${pill(r.billingStatus)}
           </td>
@@ -237,10 +250,34 @@
             <strong>${money(r.partnerMonthlyCommission)}</strong>
           </td>
           <td>
-            <button class="btn green" onclick="recordPayment('${escapeJs(r.businessId)}')">Record Payment</button>
+            <div class="action-stack">
+              <button class="btn orange" onclick="sendInvoice('${escapeJs(r.businessId)}')">Send Invoice</button>
+              <button class="btn green" onclick="recordPayment('${escapeJs(r.businessId)}')">Record Payment</button>
+            </div>
           </td>
         </tr>
       `).join("");
+    }
+
+    async function sendInvoice(businessId) {
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Sending invoice...";
+
+      const res = await fetch("/ops-send-invoice/" + encodeURIComponent(businessId), {
+        method: "POST",
+        headers: {
+          "x-admin-token": token()
+        }
+      });
+
+      if (!res.ok) {
+        status.textContent = await res.text();
+        return;
+      }
+
+      const data = await res.json();
+      status.textContent = `Invoice sent: ${data.invoiceNumber || ""}`;
+      await loadClients();
     }
 
     async function recordPayment(businessId) {
@@ -248,7 +285,7 @@
       if (!paidDate) return;
 
       const status = document.getElementById("opsStatus");
-      status.textContent = "Recording payment...";
+      status.textContent = "Recording payment and sending receipt...";
 
       const res = await fetch("/ops-record-payment/" + encodeURIComponent(businessId), {
         method: "POST",
@@ -259,13 +296,13 @@
         body: JSON.stringify({ paidDate })
       });
 
-      status.textContent = res.ok ? "Payment recorded." : await res.text();
+      status.textContent = res.ok ? "Payment recorded and receipt sent." : await res.text();
       await loadClients();
     }
 
     async function sendReminders() {
       const status = document.getElementById("opsStatus");
-      status.textContent = "Sending reminders...";
+      status.textContent = "Sending reminder batch...";
 
       const res = await fetch("/ops-send-billing-reminders", {
         method: "POST",
@@ -278,7 +315,8 @@
       }
 
       const data = await res.json();
-      status.textContent = `Billing reminders sent: ${data.sent}`;
+      status.textContent = `Batch sent: ${data.sent} invoice email(s).`;
+      await loadClients();
     }
 
     async function loadPayoutReport() {
