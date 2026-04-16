@@ -107,18 +107,24 @@
       color: #334155;
       font-weight: 600;
     }
-    .submit-btn, .copy-btn {
+    .submit-btn, .copy-btn, .secondary-btn {
       border: none;
       border-radius: 14px;
       padding: 14px 18px;
       font-size: .98rem;
       font-weight: 800;
       cursor: pointer;
+      width: 100%;
     }
     .submit-btn {
-      width: 100%;
       background: linear-gradient(180deg, var(--secondary), var(--primary));
       color: white;
+      margin-top: 10px;
+    }
+    .secondary-btn {
+      background: #173b96;
+      color: white;
+      margin-bottom: 10px;
     }
     .copy-btn {
       background: #173b96;
@@ -173,7 +179,7 @@
       <div class="hero-top"></div>
       <div class="hero-body">
         <h1>AppLogix Client Onboarding</h1>
-        <p>Create a new client, calculate pricing, store billing details, assign partner commission, accept terms, and generate onboarding assets automatically.</p>
+        <p>Create a new client, send a pre-onboarding approval email, calculate pricing, store billing details, assign partner commission, accept terms, and generate onboarding assets.</p>
       </div>
     </section>
 
@@ -285,14 +291,14 @@
             <input id="hostedAddonPrice" class="field" type="number" step="0.01" />
           </div>
           <div>
-            <label class="field-label" for="totalMonthlyPrice">Total Monthly</label>
+            <label class="field-label" for="totalMonthlyPrice">Total Monthly (pre-tax)</label>
             <input id="totalMonthlyPrice" class="field" type="number" step="0.01" />
           </div>
         </div>
 
         <div class="two-col">
           <div>
-            <label class="field-label" for="setupFeeAmount">Setup Fee</label>
+            <label class="field-label" for="setupFeeAmount">Setup Fee (pre-tax)</label>
             <input id="setupFeeAmount" class="field" type="number" step="0.01" />
           </div>
           <div>
@@ -314,6 +320,28 @@
               <option value="past_due">Past Due</option>
               <option value="paused">Paused</option>
             </select>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label class="field-label">Monthly HST (13%)</label>
+            <input id="monthlyTax" class="field" type="text" readonly />
+          </div>
+          <div>
+            <label class="field-label">Monthly Total with HST</label>
+            <input id="monthlyTotalWithTax" class="field" type="text" readonly />
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label class="field-label">Setup Fee HST (13%)</label>
+            <input id="setupTax" class="field" type="text" readonly />
+          </div>
+          <div>
+            <label class="field-label">Setup Fee Total with HST</label>
+            <input id="setupTotalWithTax" class="field" type="text" readonly />
           </div>
         </div>
       </section>
@@ -346,6 +374,7 @@
           </label>
         </div>
 
+        <button id="preOnboardBtn" class="secondary-btn">Send Pre-Onboarding Email</button>
         <button id="createBtn" class="submit-btn">Create Client</button>
         <div id="status" class="status"></div>
       </section>
@@ -394,6 +423,8 @@
       premium: { monthly: 99, setup: 400 }
     };
 
+    const HST_RATE = 0.13;
+
     const businessNameEl = document.getElementById("businessName");
     const businessIdEl = document.getElementById("businessId");
     const brandNameEl = document.getElementById("brandName");
@@ -411,6 +442,10 @@
     const nextInvoiceDateEl = document.getElementById("nextInvoiceDate");
     const partnerCommissionPercentEl = document.getElementById("partnerCommissionPercent");
     const partnerMonthlyCommissionEl = document.getElementById("partnerMonthlyCommission");
+    const monthlyTaxEl = document.getElementById("monthlyTax");
+    const monthlyTotalWithTaxEl = document.getElementById("monthlyTotalWithTax");
+    const setupTaxEl = document.getElementById("setupTax");
+    const setupTotalWithTaxEl = document.getElementById("setupTotalWithTax");
     const statusEl = document.getElementById("status");
     const resultCard = document.getElementById("resultCard");
 
@@ -435,6 +470,14 @@
 
     function getAdminToken() {
       return "1234";
+    }
+
+    function calcTax(amount) {
+      return Number((Number(amount || 0) * HST_RATE).toFixed(2));
+    }
+
+    function calcTotalWithTax(amount) {
+      return Number((Number(amount || 0) + calcTax(amount)).toFixed(2));
     }
 
     function computeNextInvoiceDate() {
@@ -462,6 +505,11 @@
       totalMonthlyPriceEl.value = total.toFixed(2);
       setupFeeAmountEl.value = setup.toFixed(2);
 
+      monthlyTaxEl.value = calcTax(total).toFixed(2);
+      monthlyTotalWithTaxEl.value = calcTotalWithTax(total).toFixed(2);
+      setupTaxEl.value = calcTax(setup).toFixed(2);
+      setupTotalWithTaxEl.value = calcTotalWithTax(setup).toFixed(2);
+
       recalcCommission();
     }
 
@@ -469,6 +517,18 @@
       const total = Number(totalMonthlyPriceEl.value || 0);
       const pct = Number(partnerCommissionPercentEl.value || 0);
       partnerMonthlyCommissionEl.value = (total * pct / 100).toFixed(2);
+    }
+
+    function updateTaxDisplays() {
+      const monthly = Number(totalMonthlyPriceEl.value || 0);
+      const setup = Number(setupFeeAmountEl.value || 0);
+
+      monthlyTaxEl.value = calcTax(monthly).toFixed(2);
+      monthlyTotalWithTaxEl.value = calcTotalWithTax(monthly).toFixed(2);
+      setupTaxEl.value = calcTax(setup).toFixed(2);
+      setupTotalWithTaxEl.value = calcTotalWithTax(setup).toFixed(2);
+
+      recalcCommission();
     }
 
     function updateUI() {
@@ -491,43 +551,8 @@
       computeNextInvoiceDate();
     }
 
-    businessNameEl.addEventListener("input", () => {
-      if (!businessIdTouched) businessIdEl.value = slugify(businessNameEl.value);
-      if (!brandNameEl.value.trim()) brandNameEl.value = businessNameEl.value;
-    });
-
-    businessIdEl.addEventListener("input", () => {
-      businessIdTouched = true;
-    });
-
-    [planTierEl, deliveryTypeEl].forEach(el => el.addEventListener("change", updateUI));
-    [partnerCommissionPercentEl, totalMonthlyPriceEl].forEach(el => el.addEventListener("input", recalcCommission));
-    billingDayEl.addEventListener("input", computeNextInvoiceDate);
-
-    async function copyText(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (_) {
-        return false;
-      }
-    }
-
-    document.addEventListener("click", async (e) => {
-      if (!e.target.matches(".copy-btn")) return;
-      const target = document.getElementById(e.target.getAttribute("data-copy-target"));
-      const text = target.value !== undefined ? target.value : target.innerText;
-      const ok = await copyText(text);
-      const original = e.target.innerText;
-      e.target.innerText = ok ? "Copied" : "Copy failed";
-      setTimeout(() => e.target.innerText = original, 1200);
-    });
-
-    document.getElementById("createBtn").addEventListener("click", async () => {
-      statusEl.className = "status";
-      statusEl.innerText = "Creating client...";
-
-      const payload = {
+    function getPayload() {
+      return {
         businessName: businessNameEl.value.trim(),
         businessId: businessIdEl.value.trim(),
         clientEmail: document.getElementById("clientEmail").value.trim(),
@@ -561,24 +586,104 @@
         partnerCommissionPercent: Number(partnerCommissionPercentEl.value || 0),
         termsAccepted: document.getElementById("termsAccepted").checked
       };
+    }
 
+    function validateCore(payload, requireTerms = false) {
       if (!payload.businessName || !payload.businessId || !payload.clientEmail) {
-        statusEl.className = "status error";
-        statusEl.innerText = "Business name, business ID, and client email are required.";
-        return;
+        return "Business name, business ID, and client email are required.";
       }
 
       if (includesWidget(payload.deliveryType) && !payload.reviewPageUrl) {
+        return "Website Review Page URL is required when widget delivery is selected.";
+      }
+
+      if (requireTerms && !payload.termsAccepted) {
+        return "Terms and conditions must be accepted during onboarding.";
+      }
+
+      return "";
+    }
+
+    businessNameEl.addEventListener("input", () => {
+      if (!businessIdTouched) businessIdEl.value = slugify(businessNameEl.value);
+      if (!brandNameEl.value.trim()) brandNameEl.value = businessNameEl.value;
+    });
+
+    businessIdEl.addEventListener("input", () => {
+      businessIdTouched = true;
+    });
+
+    [planTierEl, deliveryTypeEl].forEach(el => el.addEventListener("change", updateUI));
+    [partnerCommissionPercentEl, totalMonthlyPriceEl, setupFeeAmountEl].forEach(el => el.addEventListener("input", updateTaxDisplays));
+    billingDayEl.addEventListener("input", computeNextInvoiceDate);
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    document.addEventListener("click", async (e) => {
+      if (!e.target.matches(".copy-btn")) return;
+      const target = document.getElementById(e.target.getAttribute("data-copy-target"));
+      const text = target.value !== undefined ? target.value : target.innerText;
+      const ok = await copyText(text);
+      const original = e.target.innerText;
+      e.target.innerText = ok ? "Copied" : "Copy failed";
+      setTimeout(() => e.target.innerText = original, 1200);
+    });
+
+    document.getElementById("preOnboardBtn").addEventListener("click", async () => {
+      const payload = getPayload();
+      const error = validateCore(payload, false);
+
+      if (error) {
         statusEl.className = "status error";
-        statusEl.innerText = "Website Review Page URL is required when widget delivery is selected.";
+        statusEl.innerText = error;
         return;
       }
 
-      if (!payload.termsAccepted) {
+      statusEl.className = "status";
+      statusEl.innerText = "Sending pre-onboarding email...";
+
+      try {
+        const res = await fetch("/send-pre-onboard-email", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": getAdminToken()
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(text || "Failed to send pre-onboarding email.");
+        }
+
+        statusEl.className = "status success";
+        statusEl.innerText = "Pre-onboarding email sent successfully.";
+      } catch (err) {
         statusEl.className = "status error";
-        statusEl.innerText = "Terms and conditions must be accepted during onboarding.";
+        statusEl.innerText = err.message || "Failed to send pre-onboarding email.";
+      }
+    });
+
+    document.getElementById("createBtn").addEventListener("click", async () => {
+      const payload = getPayload();
+      const error = validateCore(payload, true);
+
+      if (error) {
+        statusEl.className = "status error";
+        statusEl.innerText = error;
         return;
       }
+
+      statusEl.className = "status";
+      statusEl.innerText = "Creating client...";
 
       try {
         const res = await fetch("/create-client", {
@@ -608,7 +713,9 @@
           `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
           `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
           `<div class="result-line"><strong>Delivery:</strong> ${data.deliveryType}</div>`,
-          `<div class="result-line"><strong>Total Monthly:</strong> $${Number(data.totalMonthlyPrice || 0).toFixed(2)}</div>`,
+          `<div class="result-line"><strong>Total Monthly (pre-tax):</strong> $${Number(data.totalMonthlyPrice || 0).toFixed(2)}</div>`,
+          `<div class="result-line"><strong>Monthly HST:</strong> $${calcTax(Number(data.totalMonthlyPrice || 0)).toFixed(2)}</div>`,
+          `<div class="result-line"><strong>Monthly Total with HST:</strong> $${calcTotalWithTax(Number(data.totalMonthlyPrice || 0)).toFixed(2)}</div>`,
           `<div class="result-line"><strong>Next Invoice Date:</strong> ${data.nextInvoiceDate || ""}</div>`,
           `<div class="result-line"><strong>Partner Commission %:</strong> ${Number(data.partnerCommissionPercent || 0).toFixed(2)}%</div>`
         ].join("");
