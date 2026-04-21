@@ -1,223 +1,439 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AppLogix Google Review Import</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <title>AppLogix Internal Google Review Import</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #4ea3ff;
+      --dark: #0f172a;
+      --text: #334155;
+      --muted: #64748b;
+      --bg: #f5f8ff;
+      --card: #ffffff;
+      --border: #dbe7fb;
+      --success: #15803d;
+      --error: #b91c1c;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
-      background: linear-gradient(145deg, #eef5ff 0%, #f8fbff 55%, #edf4ff 100%);
-      color: #1f2937;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 18px;
     }
 
     .wrap {
-      max-width: 760px;
+      max-width: 860px;
       margin: 0 auto;
-      padding: 18px;
-    }
-
-    .panel {
-      background: #ffffff;
-      border-radius: 28px;
-      overflow: hidden;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
-      border: 1px solid #e5eefc;
-    }
-
-    .topbar {
-      height: 58px;
-      background: linear-gradient(90deg, #4ea3ff 0%, #2156d8 100%);
-    }
-
-    .content {
-      padding: 20px;
-    }
-
-    .title {
-      font-size: 28px;
-      font-weight: 800;
-      margin: 0 0 8px;
-    }
-
-    .sub {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 18px;
     }
 
     .card {
-      background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
-      border-radius: 22px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .topbar {
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+      color: white;
+      padding: 20px 24px;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .content {
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: var(--dark);
+      font-size: 2rem;
+    }
+
+    p.sub {
+      margin: 0 0 22px;
+      color: var(--muted);
+    }
+
+    .section {
+      margin-bottom: 26px;
       padding: 20px;
-      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
-      border: 1px solid #e4eefc;
-      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #fbfdff;
     }
 
-    .input, .textarea, .select {
+    .section h2 {
+      margin: 0 0 14px;
+      color: #1e3a8a;
+      font-size: 1.2rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--dark);
+    }
+
+    input, select, textarea {
       width: 100%;
-      box-sizing: border-box;
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid #cfdcf3;
-      background: #f9fbff;
+      padding: 14px 15px;
+      border: 1px solid #d6e4fb;
+      border-radius: 12px;
       font-size: 16px;
-      color: #1f2937;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      background: white;
+      color: var(--dark);
     }
 
-    .textarea {
-      min-height: 160px;
+    textarea {
+      min-height: 150px;
       resize: vertical;
-      font-family: Arial, sans-serif;
     }
 
     .btn {
       border: none;
-      border-radius: 16px;
-      padding: 13px 16px;
-      font-size: 15px;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 16px;
       font-weight: 800;
       cursor: pointer;
-      width: 100%;
-      margin-top: 8px;
-      background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+      transition: transform 0.15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
       color: white;
+      width: 100%;
+    }
+
+    .btn-secondary {
+      background: white;
+      border: 1px solid var(--border);
+      color: var(--primary);
+      width: 100%;
     }
 
     .status {
-      margin-top: 12px;
-      font-size: 14px;
-      color: #475569;
-      white-space: pre-wrap;
+      margin-top: 10px;
+      font-weight: 700;
+      min-height: 22px;
     }
 
-    .note {
-      font-size: 13px;
-      color: #64748b;
+    .status.success { color: var(--success); }
+    .status.error { color: var(--error); }
+
+    .hidden {
+      display: none;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .client-meta {
       margin-top: 8px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #eef5ff;
+      border: 1px solid var(--border);
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 700px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+
+      .content {
+        padding: 18px;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="panel">
-      <div class="topbar"></div>
+    <div class="card">
+      <div class="topbar">AppLogix Internal Tool</div>
 
       <div class="content">
-        <h1 class="title">Google Review Import</h1>
-        <div class="sub">Use this to manually import Google reviews into the AppLogix system.</div>
+        <h1>Google Review Import</h1>
+        <p class="sub">
+          Internal Premium-only review import tool. Log in with the AppLogix admin token, select a client, and import Google reviews directly.
+        </p>
 
-        <div class="card" id="loginCard">
-          <input id="email" class="input" type="text" placeholder="Admin email">
-          <input id="password" class="input" type="password" placeholder="Password">
-          <button class="btn" onclick="importLogin()">Login</button>
-          <div id="loginStatus" class="status">Ready.</div>
+        <div class="section" id="loginSection">
+          <h2>Internal Access</h2>
+          <label for="adminToken">Admin Token</label>
+          <input type="password" id="adminToken" placeholder="Enter admin token" />
+          <button class="btn btn-primary" id="loginBtn">Unlock Import Tool</button>
+          <div class="status" id="loginStatus"></div>
         </div>
 
-        <div class="card" id="importCard" style="display:none;">
-          <input id="businessId" class="input" type="text" placeholder="Business ID (example: kenorabuddyco)">
-          <input id="reviewerName" class="input" type="text" placeholder="Reviewer name">
-          <select id="rating" class="select">
-            <option value="">Select rating</option>
-            <option value="5">5 stars</option>
-            <option value="4">4 stars</option>
-            <option value="3">3 stars</option>
-            <option value="2">2 stars</option>
-            <option value="1">1 star</option>
+        <div class="section hidden" id="importSection">
+          <h2>Premium Client Selection</h2>
+
+          <label for="clientSelect">Choose Client</label>
+          <select id="clientSelect">
+            <option value="">Loading eligible clients...</option>
           </select>
-          <textarea id="reviewText" class="textarea" placeholder="Paste the Google review text here"></textarea>
-          <input id="imageUrl" class="input" type="text" placeholder="Optional image URL">
-          <button class="btn" onclick="submitImportedReview()">Import Google Review</button>
-          <div class="note">Imported reviews are saved as approved and tagged as Google reviews automatically.</div>
-          <div id="importStatus" class="status"></div>
+
+          <div class="client-meta hidden" id="clientMeta"></div>
+
+          <hr style="margin: 18px 0; border: none; border-top: 1px solid #e5eefc;">
+
+          <div class="row">
+            <div>
+              <label for="reviewerName">Reviewer Name</label>
+              <input type="text" id="reviewerName" placeholder="Reviewer name" />
+            </div>
+
+            <div>
+              <label for="rating">Rating</label>
+              <select id="rating">
+                <option value="">Choose rating</option>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="reviewText">Review Text</label>
+          <textarea id="reviewText" placeholder="Paste Google review text here"></textarea>
+
+          <label for="imageUrl">Image URL (optional)</label>
+          <input type="text" id="imageUrl" placeholder="Optional image URL" />
+
+          <button class="btn btn-primary" id="importBtn">Import Review</button>
+          <div class="status" id="importStatus"></div>
+
+          <div style="margin-top: 14px;">
+            <button class="btn btn-secondary" id="reloadBtn">Reload Premium Client List</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+  <script>
+    let ADMIN_TOKEN = "";
+    let clients = [];
 
-    let supabase = null;
-    let session = null;
+    const loginSection = document.getElementById("loginSection");
+    const importSection = document.getElementById("importSection");
 
-    async function init() {
-      const res = await fetch("/client-config?ts=" + Date.now(), { cache: "no-store" });
-      const cfg = await res.json();
-      supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    const adminTokenInput = document.getElementById("adminToken");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginStatus = document.getElementById("loginStatus");
+
+    const clientSelect = document.getElementById("clientSelect");
+    const clientMeta = document.getElementById("clientMeta");
+
+    const reviewerName = document.getElementById("reviewerName");
+    const rating = document.getElementById("rating");
+    const reviewText = document.getElementById("reviewText");
+    const imageUrl = document.getElementById("imageUrl");
+    const importBtn = document.getElementById("importBtn");
+    const importStatus = document.getElementById("importStatus");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    function setStatus(el, message, type = "") {
+      el.textContent = message;
+      el.className = "status" + (type ? " " + type : "");
     }
 
-    window.importLogin = async function () {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const loginStatus = document.getElementById("loginStatus");
+    function getSelectedClient() {
+      return clients.find(c => c.businessId === clientSelect.value) || null;
+    }
 
-      if (!email || !password) {
-        loginStatus.textContent = "Enter email and password.";
+    function renderClientMeta() {
+      const client = getSelectedClient();
+      if (!client) {
+        clientMeta.classList.add("hidden");
+        clientMeta.textContent = "";
         return;
       }
 
-      loginStatus.textContent = "Logging in...";
+      clientMeta.classList.remove("hidden");
+      clientMeta.innerHTML = `
+        <strong>Business:</strong> ${client.businessName}<br>
+        <strong>Business ID:</strong> ${client.businessId}<br>
+        <strong>Email:</strong> ${client.email || "(not available)"}
+      `;
+    }
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    async function loadClients() {
+      clientSelect.innerHTML = `<option value="">Loading eligible clients...</option>`;
+      clientMeta.classList.add("hidden");
+      clientMeta.textContent = "";
 
-      if (error) {
-        loginStatus.textContent = error.message;
+      try {
+        const res = await fetch("/ops-import-clients", {
+          method: "GET",
+          headers: {
+            "x-admin-token": ADMIN_TOKEN
+          }
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || "Failed to load clients.");
+        }
+
+        clients = await res.json();
+
+        if (!clients.length) {
+          clientSelect.innerHTML = `<option value="">No eligible Premium clients found</option>`;
+          return;
+        }
+
+        clientSelect.innerHTML = `<option value="">Select a Premium client</option>`;
+        for (const client of clients) {
+          const opt = document.createElement("option");
+          opt.value = client.businessId;
+          opt.textContent = `${client.businessName} (${client.businessId})`;
+          clientSelect.appendChild(opt);
+        }
+      } catch (err) {
+        clientSelect.innerHTML = `<option value="">Failed to load clients</option>`;
+        setStatus(loginStatus, err.message || "Failed to load clients.", "error");
+      }
+    }
+
+    loginBtn.addEventListener("click", async () => {
+      const token = adminTokenInput.value.trim();
+      if (!token) {
+        setStatus(loginStatus, "Enter the admin token.", "error");
         return;
       }
 
-      session = data.session;
-      loginStatus.textContent = "Logged in.";
-      document.getElementById("importCard").style.display = "block";
-    };
+      ADMIN_TOKEN = token;
+      setStatus(loginStatus, "Checking access...");
 
-    window.submitImportedReview = async function () {
-      const businessId = document.getElementById("businessId").value.trim();
-      const name = document.getElementById("reviewerName").value.trim();
-      const rating = document.getElementById("rating").value;
-      const text = document.getElementById("reviewText").value.trim();
-      const image = document.getElementById("imageUrl").value.trim();
-      const importStatus = document.getElementById("importStatus");
+      try {
+        const res = await fetch("/ops-import-clients", {
+          method: "GET",
+          headers: {
+            "x-admin-token": ADMIN_TOKEN
+          }
+        });
 
-      if (!session) {
-        importStatus.textContent = "Please log in first.";
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || "Invalid admin token.");
+        }
+
+        clients = await res.json();
+
+        loginSection.classList.add("hidden");
+        importSection.classList.remove("hidden");
+
+        if (!clients.length) {
+          clientSelect.innerHTML = `<option value="">No eligible Premium clients found</option>`;
+        } else {
+          clientSelect.innerHTML = `<option value="">Select a Premium client</option>`;
+          for (const client of clients) {
+            const opt = document.createElement("option");
+            opt.value = client.businessId;
+            opt.textContent = `${client.businessName} (${client.businessId})`;
+            clientSelect.appendChild(opt);
+          }
+        }
+      } catch (err) {
+        setStatus(loginStatus, err.message || "Access failed.", "error");
+      }
+    });
+
+    clientSelect.addEventListener("change", renderClientMeta);
+
+    reloadBtn.addEventListener("click", async () => {
+      setStatus(importStatus, "Reloading client list...");
+      await loadClients();
+      setStatus(importStatus, "Client list reloaded.", "success");
+    });
+
+    importBtn.addEventListener("click", async () => {
+      const client = getSelectedClient();
+
+      if (!client) {
+        setStatus(importStatus, "Choose a Premium client first.", "error");
         return;
       }
 
-      importStatus.textContent = "Importing...";
-
-      const res = await fetch("/import-google-review", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + session.access_token
-        },
-        body: JSON.stringify({
-          businessId,
-          name,
-          rating,
-          text,
-          image
-        })
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        importStatus.textContent = "Import failed: " + err;
+      if (!reviewerName.value.trim()) {
+        setStatus(importStatus, "Reviewer name is required.", "error");
         return;
       }
 
-      importStatus.textContent = "Google review imported successfully.";
+      if (!rating.value) {
+        setStatus(importStatus, "Rating is required.", "error");
+        return;
+      }
 
-      document.getElementById("reviewerName").value = "";
-      document.getElementById("rating").value = "";
-      document.getElementById("reviewText").value = "";
-      document.getElementById("imageUrl").value = "";
-    };
+      if (!reviewText.value.trim()) {
+        setStatus(importStatus, "Review text is required.", "error");
+        return;
+      }
 
-    init();
+      setStatus(importStatus, "Importing review...");
+
+      try {
+        const res = await fetch("/ops-import-google-review", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": ADMIN_TOKEN
+          },
+          body: JSON.stringify({
+            businessId: client.businessId,
+            name: reviewerName.value.trim(),
+            rating: parseInt(rating.value, 10),
+            text: reviewText.value.trim(),
+            image: imageUrl.value.trim()
+          })
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(text || "Import failed.");
+        }
+
+        reviewerName.value = "";
+        rating.value = "";
+        reviewText.value = "";
+        imageUrl.value = "";
+
+        setStatus(importStatus, "Google review imported successfully.", "success");
+      } catch (err) {
+        setStatus(importStatus, err.message || "Import failed.", "error");
+      }
+    });
   </script>
 </body>
 </html>
