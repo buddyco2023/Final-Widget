@@ -3,37 +3,65 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AppLogix Billing + Partner Tracker</title>
+  <title>AppLogix Internal Ops Dashboard</title>
   <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #4ea3ff;
+      --dark: #0f172a;
+      --text: #1f2937;
+      --muted: #64748b;
+      --bg: #eef5ff;
+      --card: #ffffff;
+      --border: #dbe7fb;
+      --success: #15803d;
+      --error: #b91c1c;
+      --warning: #b45309;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #eef5ff;
-      color: #1f2937;
+      background: var(--bg);
+      color: var(--text);
     }
+
     .wrap {
-      max-width: 1180px;
+      max-width: 1220px;
       margin: 0 auto;
       padding: 24px 16px 40px;
     }
+
     .card {
-      background: #fff;
-      border-radius: 18px;
+      background: var(--card);
+      border-radius: 20px;
       padding: 20px;
       margin-bottom: 18px;
-      border: 1px solid #dbe7fb;
+      border: 1px solid var(--border);
       box-shadow: 0 10px 24px rgba(15,23,42,.08);
     }
+
     .title {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 800;
       margin-bottom: 8px;
       color: #1e3a8a;
     }
+
     .sub {
-      color: #64748b;
+      color: var(--muted);
       margin-bottom: 14px;
     }
+
+    .section-title {
+      font-size: 21px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 14px;
+    }
+
     .btn {
       border: none;
       border-radius: 12px;
@@ -41,137 +69,291 @@
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
-      background: #2563eb;
+      background: var(--primary);
       color: #fff;
       margin: 4px 0;
+      transition: transform 0.15s ease;
     }
-    .btn.green {
-      background: #16a34a;
+
+    .btn:hover {
+      transform: translateY(-1px);
     }
-    .btn.orange {
-      background: #f59e0b;
-      color: #111827;
-    }
+
+    .btn.green { background: #16a34a; }
+    .btn.orange { background: #f59e0b; color: #111827; }
     .btn.light {
       background: #eef4ff;
       color: #1e3a8a;
-      border: 1px solid #dbe7fb;
+      border: 1px solid var(--border);
     }
+    .btn.secondary {
+      background: #173b96;
+      color: #fff;
+    }
+
     .status {
       margin-top: 10px;
       font-size: 14px;
       white-space: pre-wrap;
+      min-height: 20px;
+      font-weight: 700;
     }
+
+    .status.success { color: var(--success); }
+    .status.error { color: var(--error); }
+    .status.warn { color: var(--warning); }
+
     .table-wrap {
       overflow: auto;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 14px;
     }
+
     th, td {
       padding: 12px;
       border-bottom: 1px solid #e5e7eb;
       text-align: left;
       vertical-align: top;
     }
+
     th {
       color: #1e3a8a;
       background: #f8fbff;
       position: sticky;
       top: 0;
     }
+
     .pill {
       display: inline-block;
       padding: 4px 8px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
+      text-transform: capitalize;
     }
+
     .paid { background: #dcfce7; color: #166534; }
     .active { background: #dbeafe; color: #1d4ed8; }
     .past_due { background: #fee2e2; color: #b91c1c; }
     .paused { background: #e5e7eb; color: #374151; }
+
     .controls {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 12px;
     }
-    .input {
+
+    .input, .select, .textarea {
       padding: 12px;
       border-radius: 12px;
       border: 1px solid #cfdcf3;
       background: #fff;
       font-size: 14px;
+      width: 100%;
     }
-    .section-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #1e3a8a;
-      margin-bottom: 12px;
+
+    .textarea {
+      min-height: 140px;
+      resize: vertical;
     }
+
     .payout-card {
-      border: 1px solid #dbe7fb;
+      border: 1px solid var(--border);
       border-radius: 14px;
       padding: 16px;
       background: #f8fbff;
       margin-bottom: 12px;
     }
+
     .action-stack {
       display: grid;
       gap: 8px;
       min-width: 180px;
     }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+    }
+
+    .row-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .topbar {
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+      color: white;
+      padding: 18px 22px;
+      border-radius: 16px 16px 0 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin: -20px -20px 18px;
+    }
+
+    .client-meta {
+      margin-top: 8px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #eef5ff;
+      border: 1px solid var(--border);
+      color: var(--dark);
+      font-size: 0.95rem;
+    }
+
+    .logout-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 980px) {
+      .grid-two, .row-two {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card">
-      <div class="title">Billing + Partner Tracker</div>
-      <div class="sub">Track invoices, tax, payments, receipts, and partner payouts.</div>
-      <div class="controls">
-        <button class="btn" onclick="loadClients()">Refresh</button>
-        <button class="btn light" onclick="sendReminders()">Send Billing Reminder Batch</button>
-        <button class="btn light" onclick="loadPayoutReport()">Load Partner Payout Report</button>
-        <input id="filterInput" class="input" placeholder="Filter by business, plan, or partner" oninput="renderRows()" />
+
+    <div class="card" id="loginCard">
+      <div class="topbar">AppLogix Internal Access</div>
+      <div class="title">Ops Dashboard Login</div>
+      <div class="sub">Enter the AppLogix admin token to unlock billing, partner tracking, and Premium Google review import.</div>
+
+      <label for="adminTokenInput" style="display:block;font-weight:700;margin-bottom:8px;">Admin Token</label>
+      <input id="adminTokenInput" class="input" type="password" placeholder="Enter admin token" />
+      <div style="margin-top:12px;">
+        <button class="btn" id="unlockBtn">Unlock Dashboard</button>
       </div>
-      <div id="opsStatus" class="status"></div>
+      <div id="loginStatus" class="status"></div>
     </div>
 
-    <div class="card">
-      <div class="section-title">Client Billing Tracker</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Business</th>
-              <th>Plan / Delivery</th>
-              <th>Billing</th>
-              <th>Next Invoice</th>
-              <th>Last Payment</th>
-              <th>Partner</th>
-              <th>Commission</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
+    <div id="opsApp" class="hidden">
+      <div class="logout-row">
+        <button class="btn light" id="logoutBtn">Clear Token / Lock Dashboard</button>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="section-title">Partner Payout Report</div>
-      <div id="payouts"></div>
+      <div class="card">
+        <div class="topbar">AppLogix Internal Ops</div>
+        <div class="title">Billing + Import Dashboard</div>
+        <div class="sub">Manage client billing, partner payouts, receipts, invoices, and Premium Google review imports.</div>
+        <div class="controls">
+          <button class="btn" onclick="loadClients()">Refresh Billing Data</button>
+          <button class="btn light" onclick="sendReminders()">Send Billing Reminder Batch</button>
+          <button class="btn light" onclick="loadPayoutReport()">Load Partner Payout Report</button>
+          <input id="filterInput" class="input" placeholder="Filter by business, plan, or partner" oninput="renderRows()" style="max-width:320px;" />
+        </div>
+        <div id="opsStatus" class="status"></div>
+      </div>
+
+      <div class="grid-two">
+        <div>
+          <div class="card">
+            <div class="section-title">Client Billing Tracker</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Business</th>
+                    <th>Plan / Delivery</th>
+                    <th>Billing</th>
+                    <th>Next Invoice</th>
+                    <th>Last Payment</th>
+                    <th>Partner</th>
+                    <th>Commission</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-title">Partner Payout Report</div>
+            <div id="payouts"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="section-title">Premium Google Review Import</div>
+            <div class="sub">Internal Premium-only import tool. Choose an eligible client and import Google reviews directly.</div>
+
+            <label for="clientSelect" style="display:block;font-weight:700;margin-bottom:8px;">Choose Premium Client</label>
+            <select id="clientSelect" class="select">
+              <option value="">Load the client list first</option>
+            </select>
+
+            <div id="clientMeta" class="client-meta hidden"></div>
+
+            <div style="margin:14px 0;">
+              <button class="btn light" onclick="loadImportClients()">Reload Premium Client List</button>
+            </div>
+
+            <div class="row-two">
+              <div>
+                <label for="reviewerName" style="display:block;font-weight:700;margin-bottom:8px;">Reviewer Name</label>
+                <input id="reviewerName" class="input" type="text" placeholder="Reviewer name" />
+              </div>
+              <div>
+                <label for="rating" style="display:block;font-weight:700;margin-bottom:8px;">Rating</label>
+                <select id="rating" class="select">
+                  <option value="">Choose rating</option>
+                  <option value="5">5</option>
+                  <option value="4">4</option>
+                  <option value="3">3</option>
+                  <option value="2">2</option>
+                  <option value="1">1</option>
+                </select>
+              </div>
+            </div>
+
+            <label for="reviewText" style="display:block;font-weight:700;margin-bottom:8px;">Review Text</label>
+            <textarea id="reviewText" class="textarea" placeholder="Paste Google review text here"></textarea>
+
+            <label for="imageUrl" style="display:block;font-weight:700;margin-bottom:8px;">Image URL (optional)</label>
+            <input id="imageUrl" class="input" type="text" placeholder="Optional image URL" />
+
+            <button class="btn secondary" id="importBtn">Import Review</button>
+            <div id="importStatus" class="status"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
+    let ADMIN_TOKEN = sessionStorage.getItem("applogix_admin_token") || "";
     let clientRows = [];
+    let importClients = [];
 
-    function token() {
-      return "1234";
+    const loginCard = document.getElementById("loginCard");
+    const opsApp = document.getElementById("opsApp");
+    const adminTokenInput = document.getElementById("adminTokenInput");
+    const unlockBtn = document.getElementById("unlockBtn");
+    const loginStatus = document.getElementById("loginStatus");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const clientSelect = document.getElementById("clientSelect");
+    const clientMeta = document.getElementById("clientMeta");
+    const importStatus = document.getElementById("importStatus");
+
+    function getToken() {
+      return ADMIN_TOKEN;
     }
 
     function money(n) {
@@ -180,8 +362,92 @@
 
     function pill(status) {
       const safe = String(status || "active").toLowerCase();
-      return `<span class="pill ${safe}">${safe.replace("_", " ")}</span>`;
+      return `<span class="pill ${safe}">${escapeHtml(safe.replace(/_/g, " "))}</span>`;
     }
+
+    function setStatus(el, message, type = "") {
+      el.textContent = message;
+      el.className = "status" + (type ? " " + type : "");
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeJs(value) {
+      return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+    function showUnlockedUI() {
+      loginCard.classList.add("hidden");
+      opsApp.classList.remove("hidden");
+    }
+
+    function showLockedUI() {
+      opsApp.classList.add("hidden");
+      loginCard.classList.remove("hidden");
+    }
+
+    function clearTokenAndLock() {
+      ADMIN_TOKEN = "";
+      sessionStorage.removeItem("applogix_admin_token");
+      clientRows = [];
+      importClients = [];
+      document.getElementById("rows").innerHTML = "";
+      document.getElementById("payouts").innerHTML = "";
+      clientSelect.innerHTML = `<option value="">Load the client list first</option>`;
+      clientMeta.classList.add("hidden");
+      clientMeta.textContent = "";
+      adminTokenInput.value = "";
+      showLockedUI();
+      setStatus(loginStatus, "Token cleared.", "warn");
+    }
+
+    async function verifyToken(token) {
+      const res = await fetch("/ops-clients", {
+        headers: { "x-admin-token": token },
+        cache: "no-store"
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Invalid admin token.");
+      }
+
+      return res.json();
+    }
+
+    async function unlockDashboard() {
+      const token = adminTokenInput.value.trim();
+      if (!token) {
+        setStatus(loginStatus, "Enter the admin token.", "error");
+        return;
+      }
+
+      setStatus(loginStatus, "Checking access...");
+      try {
+        await verifyToken(token);
+        ADMIN_TOKEN = token;
+        sessionStorage.setItem("applogix_admin_token", token);
+        showUnlockedUI();
+        await Promise.all([loadClients(), loadImportClients()]);
+        setStatus(loginStatus, "", "");
+      } catch (err) {
+        setStatus(loginStatus, err.message || "Access failed.", "error");
+      }
+    }
+
+    unlockBtn.addEventListener("click", unlockDashboard);
+    logoutBtn.addEventListener("click", clearTokenAndLock);
+
+    adminTokenInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") unlockDashboard();
+    });
 
     async function loadClients() {
       const status = document.getElementById("opsStatus");
@@ -189,7 +455,7 @@
 
       try {
         const res = await fetch("/ops-clients", {
-          headers: { "x-admin-token": token() },
+          headers: { "x-admin-token": getToken() },
           cache: "no-store"
         });
 
@@ -266,7 +532,7 @@
       const res = await fetch("/ops-send-invoice/" + encodeURIComponent(businessId), {
         method: "POST",
         headers: {
-          "x-admin-token": token()
+          "x-admin-token": getToken()
         }
       });
 
@@ -291,7 +557,7 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": token()
+          "x-admin-token": getToken()
         },
         body: JSON.stringify({ paidDate })
       });
@@ -306,7 +572,7 @@
 
       const res = await fetch("/ops-send-billing-reminders", {
         method: "POST",
-        headers: { "x-admin-token": token() }
+        headers: { "x-admin-token": getToken() }
       });
 
       if (!res.ok) {
@@ -324,7 +590,7 @@
       status.textContent = "Loading payout report...";
 
       const res = await fetch("/ops-partner-payout-report", {
-        headers: { "x-admin-token": token() },
+        headers: { "x-admin-token": getToken() },
         cache: "no-store"
       });
 
@@ -359,20 +625,143 @@
       status.textContent = "Payout report loaded.";
     }
 
-    function escapeHtml(value) {
-      return String(value || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    async function loadImportClients() {
+      clientSelect.innerHTML = `<option value="">Loading eligible clients...</option>`;
+      clientMeta.classList.add("hidden");
+      clientMeta.textContent = "";
+
+      try {
+        const res = await fetch("/ops-import-clients", {
+          method: "GET",
+          headers: {
+            "x-admin-token": getToken()
+          }
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || "Failed to load clients.");
+        }
+
+        importClients = await res.json();
+
+        if (!importClients.length) {
+          clientSelect.innerHTML = `<option value="">No eligible Premium clients found</option>`;
+          return;
+        }
+
+        clientSelect.innerHTML = `<option value="">Select a Premium client</option>`;
+        for (const client of importClients) {
+          const opt = document.createElement("option");
+          opt.value = client.businessId;
+          opt.textContent = `${client.businessName} (${client.businessId})`;
+          clientSelect.appendChild(opt);
+        }
+      } catch (err) {
+        setStatus(importStatus, err.message || "Failed to load Premium clients.", "error");
+        clientSelect.innerHTML = `<option value="">Failed to load clients</option>`;
+      }
     }
 
-    function escapeJs(value) {
-      return String(value || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    function getSelectedImportClient() {
+      return importClients.find(c => c.businessId === clientSelect.value) || null;
     }
 
-    loadClients();
+    function renderClientMeta() {
+      const client = getSelectedImportClient();
+      if (!client) {
+        clientMeta.classList.add("hidden");
+        clientMeta.textContent = "";
+        return;
+      }
+
+      clientMeta.classList.remove("hidden");
+      clientMeta.innerHTML = `
+        <strong>Business:</strong> ${escapeHtml(client.businessName)}<br>
+        <strong>Business ID:</strong> ${escapeHtml(client.businessId)}<br>
+        <strong>Email:</strong> ${escapeHtml(client.email || "(not available)")}
+      `;
+    }
+
+    clientSelect.addEventListener("change", renderClientMeta);
+
+    document.getElementById("importBtn").addEventListener("click", async () => {
+      const client = getSelectedImportClient();
+      const reviewerName = document.getElementById("reviewerName").value.trim();
+      const rating = document.getElementById("rating").value;
+      const reviewText = document.getElementById("reviewText").value.trim();
+      const imageUrl = document.getElementById("imageUrl").value.trim();
+
+      if (!client) {
+        setStatus(importStatus, "Choose a Premium client first.", "error");
+        return;
+      }
+
+      if (!reviewerName) {
+        setStatus(importStatus, "Reviewer name is required.", "error");
+        return;
+      }
+
+      if (!rating) {
+        setStatus(importStatus, "Rating is required.", "error");
+        return;
+      }
+
+      if (!reviewText) {
+        setStatus(importStatus, "Review text is required.", "error");
+        return;
+      }
+
+      setStatus(importStatus, "Importing review...");
+
+      try {
+        const res = await fetch("/ops-import-google-review", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-token": getToken()
+          },
+          body: JSON.stringify({
+            businessId: client.businessId,
+            name: reviewerName,
+            rating: parseInt(rating, 10),
+            text: reviewText,
+            image: imageUrl
+          })
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(text || "Import failed.");
+        }
+
+        document.getElementById("reviewerName").value = "";
+        document.getElementById("rating").value = "";
+        document.getElementById("reviewText").value = "";
+        document.getElementById("imageUrl").value = "";
+
+        setStatus(importStatus, "Google review imported successfully.", "success");
+      } catch (err) {
+        setStatus(importStatus, err.message || "Import failed.", "error");
+      }
+    });
+
+    async function boot() {
+      if (!ADMIN_TOKEN) {
+        showLockedUI();
+        return;
+      }
+
+      try {
+        await verifyToken(ADMIN_TOKEN);
+        showUnlockedUI();
+        await Promise.all([loadClients(), loadImportClients()]);
+      } catch (_) {
+        clearTokenAndLock();
+      }
+    }
+
+    boot();
   </script>
 </body>
 </html>
