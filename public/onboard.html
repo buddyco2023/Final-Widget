@@ -10,10 +10,11 @@
       --secondary: #4ea3ff;
       --border: #dbe7fb;
       --muted: #64748b;
+      --success: #166534;
+      --error: #b91c1c;
+      --bg: #eef5ff;
     }
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
@@ -107,7 +108,7 @@
       color: #334155;
       font-weight: 600;
     }
-    .submit-btn, .copy-btn, .secondary-btn {
+    .submit-btn, .copy-btn, .secondary-btn, .unlock-btn, .clear-btn {
       border: none;
       border-radius: 14px;
       padding: 14px 18px;
@@ -131,14 +132,25 @@
       color: #fff;
       margin-top: 10px;
     }
+    .unlock-btn {
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: white;
+    }
+    .clear-btn {
+      background: #eef4ff;
+      color: #1e3a8a;
+      border: 1px solid var(--border);
+      margin-top: 12px;
+    }
     .status {
       margin-top: 12px;
       text-align: center;
       font-weight: 700;
       white-space: pre-wrap;
+      min-height: 22px;
     }
-    .error { color: #b91c1c; }
-    .success { color: #166534; }
+    .error { color: var(--error); }
+    .success { color: var(--success); }
     .result-card {
       padding: 22px;
       display: none;
@@ -166,6 +178,9 @@
       color: #0f172a;
       resize: vertical;
     }
+    .hidden {
+      display: none;
+    }
     @media (max-width: 900px) {
       .grid, .two-col, .three-col {
         grid-template-columns: 1fr;
@@ -175,244 +190,261 @@
 </head>
 <body>
   <div class="wrap">
-    <section class="hero">
+
+    <section class="hero" id="loginGate">
       <div class="hero-top"></div>
       <div class="hero-body">
         <h1>AppLogix Client Onboarding</h1>
-        <p>Create a new client, send a pre-onboarding approval email, calculate pricing, store billing details, assign partner commission, accept terms, and generate onboarding assets.</p>
+        <p>Internal access required. Enter the AppLogix admin token to unlock onboarding.</p>
+        <div style="max-width:420px;margin:20px auto 0;">
+          <input id="adminTokenInput" class="field" type="password" placeholder="Enter admin token" />
+          <button id="unlockBtn" class="unlock-btn">Unlock Onboarding</button>
+          <button id="clearTokenBtn" class="clear-btn">Clear Saved Token</button>
+          <div id="loginStatus" class="status"></div>
+        </div>
       </div>
     </section>
 
-    <div class="grid">
-      <section class="card">
-        <h2>Client + Delivery</h2>
-
-        <label class="field-label" for="businessName">Business Name</label>
-        <input id="businessName" class="field" type="text" placeholder="Buddy Co" />
-
-        <label class="field-label" for="businessId">Business ID</label>
-        <input id="businessId" class="field" type="text" placeholder="auto-generated from business name" />
-        <div class="muted">Auto-filled from business name. You can edit it manually.</div>
-
-        <label class="field-label" for="clientEmail">Client Email</label>
-        <input id="clientEmail" class="field" type="email" placeholder="owner@example.com" />
-
-        <div class="two-col">
-          <div>
-            <label class="field-label" for="planTier">Plan Tier</label>
-            <select id="planTier" class="select">
-              <option value="free">Free</option>
-              <option value="basic">Basic</option>
-              <option value="pro">Pro</option>
-              <option value="premium">Premium</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="deliveryType">Delivery Type</label>
-            <select id="deliveryType" class="select">
-              <option value="widget">Widget Only</option>
-              <option value="hosted">Hosted Page Only</option>
-              <option value="both">Widget + Hosted Page</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="tempPasswordWrap" style="display:none;">
-          <label class="field-label" for="tempPassword">Temporary Password</label>
-          <input id="tempPassword" class="field" type="text" value="AppLogix." />
-        </div>
-
-        <div id="reviewPageWrap">
-          <label class="field-label" for="reviewPageUrl">Website Review Page URL</label>
-          <input id="reviewPageUrl" class="field" type="text" placeholder="https://yourdomain.com/reviews" />
-          <div class="muted">Required when widget delivery is selected. This is the page where the widget lives.</div>
-        </div>
-
-        <div id="hostedFieldsWrap" style="display:none;">
-          <label class="field-label" for="hostedHeader">Hosted Page Header</label>
-          <input id="hostedHeader" class="field" type="text" placeholder="Leave a Review" />
-
-          <label class="field-label" for="hostedFooter">Hosted Page Footer</label>
-          <input id="hostedFooter" class="field" type="text" placeholder="Powered by AppLogix" />
+    <div id="onboardApp" class="hidden">
+      <section class="hero">
+        <div class="hero-top"></div>
+        <div class="hero-body">
+          <h1>AppLogix Client Onboarding</h1>
+          <p>Create a new client, send a pre-onboarding approval email, calculate pricing, store billing details, assign partner commission, accept terms, and generate onboarding assets.</p>
         </div>
       </section>
 
-      <section class="card">
-        <h2>Branding + Notifications</h2>
+      <div class="grid">
+        <section class="card">
+          <h2>Client + Delivery</h2>
 
-        <label class="field-label" for="brandName">Brand Name</label>
-        <input id="brandName" class="field" type="text" placeholder="Buddy Co" />
+          <label class="field-label" for="businessName">Business Name</label>
+          <input id="businessName" class="field" type="text" placeholder="Buddy Co" />
 
-        <div class="two-col">
-          <div>
-            <label class="field-label" for="brandPrimary">Primary Color</label>
-            <input id="brandPrimary" class="field" type="text" value="#2563eb" />
+          <label class="field-label" for="businessId">Business ID</label>
+          <input id="businessId" class="field" type="text" placeholder="auto-generated from business name" />
+          <div class="muted">Auto-filled from business name. You can edit it manually.</div>
+
+          <label class="field-label" for="clientEmail">Client Email</label>
+          <input id="clientEmail" class="field" type="email" placeholder="owner@example.com" />
+
+          <div class="two-col">
+            <div>
+              <label class="field-label" for="planTier">Plan Tier</label>
+              <select id="planTier" class="select">
+                <option value="free">Free</option>
+                <option value="basic">Basic</option>
+                <option value="pro">Pro</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="deliveryType">Delivery Type</label>
+              <select id="deliveryType" class="select">
+                <option value="widget">Widget Only</option>
+                <option value="hosted">Hosted Page Only</option>
+                <option value="both">Widget + Hosted Page</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="field-label" for="brandSecondary">Secondary Color</label>
-            <input id="brandSecondary" class="field" type="text" value="#4ea3ff" />
+
+          <div id="tempPasswordWrap" style="display:none;">
+            <label class="field-label" for="tempPassword">Temporary Password</label>
+            <input id="tempPassword" class="field" type="text" value="AppLogix." />
           </div>
+
+          <div id="reviewPageWrap">
+            <label class="field-label" for="reviewPageUrl">Website Review Page URL</label>
+            <input id="reviewPageUrl" class="field" type="text" placeholder="https://yourdomain.com/reviews" />
+            <div class="muted">Required when widget delivery is selected. This is the page where the widget lives.</div>
+          </div>
+
+          <div id="hostedFieldsWrap" style="display:none;">
+            <label class="field-label" for="hostedHeader">Hosted Page Header</label>
+            <input id="hostedHeader" class="field" type="text" placeholder="Leave a Review" />
+
+            <label class="field-label" for="hostedFooter">Hosted Page Footer</label>
+            <input id="hostedFooter" class="field" type="text" placeholder="Powered by AppLogix" />
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Branding + Notifications</h2>
+
+          <label class="field-label" for="brandName">Brand Name</label>
+          <input id="brandName" class="field" type="text" placeholder="Buddy Co" />
+
+          <div class="two-col">
+            <div>
+              <label class="field-label" for="brandPrimary">Primary Color</label>
+              <input id="brandPrimary" class="field" type="text" value="#2563eb" />
+            </div>
+            <div>
+              <label class="field-label" for="brandSecondary">Secondary Color</label>
+              <input id="brandSecondary" class="field" type="text" value="#4ea3ff" />
+            </div>
+          </div>
+
+          <label class="field-label" for="brandLogoUrl">Brand Logo URL</label>
+          <input id="brandLogoUrl" class="field" type="text" placeholder="https://..." />
+
+          <label class="field-label" for="notificationEmail">Notification Email</label>
+          <input id="notificationEmail" class="field" type="email" placeholder="notifications@example.com" />
+
+          <div class="check-row">
+            <input id="googleImportEnabled" type="checkbox" />
+            <label for="googleImportEnabled">Enable Google review import (Premium only)</label>
+          </div>
+
+          <div class="check-row">
+            <input id="setupFeePaid" type="checkbox" />
+            <label for="setupFeePaid">Setup fee paid</label>
+          </div>
+
+          <div class="check-row">
+            <input id="active" type="checkbox" checked />
+            <label for="active">Client active</label>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid">
+        <section class="card">
+          <h2>Pricing + Billing</h2>
+
+          <div class="three-col">
+            <div>
+              <label class="field-label" for="baseMonthlyPrice">Base Monthly</label>
+              <input id="baseMonthlyPrice" class="field" type="number" step="0.01" />
+            </div>
+            <div>
+              <label class="field-label" for="hostedAddonPrice">Hosted Add-On</label>
+              <input id="hostedAddonPrice" class="field" type="number" step="0.01" />
+            </div>
+            <div>
+              <label class="field-label" for="totalMonthlyPrice">Total Monthly (pre-tax)</label>
+              <input id="totalMonthlyPrice" class="field" type="number" step="0.01" />
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div>
+              <label class="field-label" for="setupFeeAmount">Setup Fee (pre-tax)</label>
+              <input id="setupFeeAmount" class="field" type="number" step="0.01" />
+            </div>
+            <div>
+              <label class="field-label" for="billingDay">Billing Day (1-28)</label>
+              <input id="billingDay" class="field" type="number" min="1" max="28" value="1" />
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div>
+              <label class="field-label" for="nextInvoiceDate">Next Invoice Date</label>
+              <input id="nextInvoiceDate" class="field" type="date" />
+            </div>
+            <div>
+              <label class="field-label" for="billingStatus">Billing Status</label>
+              <select id="billingStatus" class="select">
+                <option value="active">Active</option>
+                <option value="paid">Paid</option>
+                <option value="past_due">Past Due</option>
+                <option value="paused">Paused</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div>
+              <label class="field-label">Monthly HST (13%)</label>
+              <input id="monthlyTax" class="field" type="text" readonly />
+            </div>
+            <div>
+              <label class="field-label">Monthly Total with HST</label>
+              <input id="monthlyTotalWithTax" class="field" type="text" readonly />
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div>
+              <label class="field-label">Setup Fee HST (13%)</label>
+              <input id="setupTax" class="field" type="text" readonly />
+            </div>
+            <div>
+              <label class="field-label">Setup Fee Total with HST</label>
+              <input id="setupTotalWithTax" class="field" type="text" readonly />
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Partner Commission + Terms</h2>
+
+          <label class="field-label" for="partnerName">Partner Name</label>
+          <input id="partnerName" class="field" type="text" placeholder="Partner or referral source" />
+
+          <label class="field-label" for="partnerEmail">Partner Email</label>
+          <input id="partnerEmail" class="field" type="email" placeholder="partner@example.com" />
+
+          <div class="two-col">
+            <div>
+              <label class="field-label" for="partnerCommissionPercent">Commission %</label>
+              <input id="partnerCommissionPercent" class="field" type="number" step="0.01" value="25" />
+            </div>
+            <div>
+              <label class="field-label" for="partnerMonthlyCommission">Partner Monthly Commission</label>
+              <input id="partnerMonthlyCommission" class="field" type="number" step="0.01" readonly />
+            </div>
+          </div>
+
+          <div class="check-row">
+            <input id="termsAccepted" type="checkbox" />
+            <label for="termsAccepted">
+              I confirm the client has accepted the
+              <a href="https://applogix.org/terms.html" target="_blank" rel="noopener noreferrer">AppLogix Terms & Conditions</a>.
+            </label>
+          </div>
+
+          <button id="preOnboardBtn" class="secondary-btn">Send Pre-Onboarding Email</button>
+          <button id="createBtn" class="submit-btn">Create Client</button>
+          <div id="status" class="status"></div>
+        </section>
+      </div>
+
+      <section id="resultCard" class="result-card">
+        <h2>Onboarding Output</h2>
+
+        <div class="result-block">
+          <h3>Client Summary</h3>
+          <div id="summaryLines"></div>
         </div>
 
-        <label class="field-label" for="brandLogoUrl">Brand Logo URL</label>
-        <input id="brandLogoUrl" class="field" type="text" placeholder="https://..." />
-
-        <label class="field-label" for="notificationEmail">Notification Email</label>
-        <input id="notificationEmail" class="field" type="email" placeholder="notifications@example.com" />
-
-        <div class="check-row">
-          <input id="googleImportEnabled" type="checkbox" />
-          <label for="googleImportEnabled">Enable Google review import (Premium only)</label>
+        <div id="hostedResultBlock" class="result-block" style="display:none;">
+          <h3>Hosted Review Page</h3>
+          <div id="hostedPageUrl" class="result-line"></div>
+          <button class="copy-btn" data-copy-target="hostedPageUrl">Copy Hosted Page URL</button>
         </div>
 
-        <div class="check-row">
-          <input id="setupFeePaid" type="checkbox" />
-          <label for="setupFeePaid">Setup fee paid</label>
+        <div id="widgetResultBlock" class="result-block" style="display:none;">
+          <h3>Widget Install Code</h3>
+          <textarea id="widgetCode" class="code-box" readonly></textarea>
+          <button class="copy-btn" data-copy-target="widgetCode">Copy Widget Code</button>
         </div>
 
-        <div class="check-row">
-          <input id="active" type="checkbox" checked />
-          <label for="active">Client active</label>
+        <div class="result-block">
+          <h3>Welcome Email Draft</h3>
+          <textarea id="welcomeEmail" class="code-box" readonly></textarea>
+          <button class="copy-btn" data-copy-target="welcomeEmail">Copy Welcome Email</button>
+        </div>
+
+        <div id="dashboardBlock" class="result-block" style="display:none;">
+          <h3>Dashboard Access</h3>
+          <div id="dashboardUrl" class="result-line"></div>
+          <div id="dashboardEmail" class="result-line"></div>
+          <div id="dashboardPassword" class="result-line"></div>
         </div>
       </section>
     </div>
-
-    <div class="grid">
-      <section class="card">
-        <h2>Pricing + Billing</h2>
-
-        <div class="three-col">
-          <div>
-            <label class="field-label" for="baseMonthlyPrice">Base Monthly</label>
-            <input id="baseMonthlyPrice" class="field" type="number" step="0.01" />
-          </div>
-          <div>
-            <label class="field-label" for="hostedAddonPrice">Hosted Add-On</label>
-            <input id="hostedAddonPrice" class="field" type="number" step="0.01" />
-          </div>
-          <div>
-            <label class="field-label" for="totalMonthlyPrice">Total Monthly (pre-tax)</label>
-            <input id="totalMonthlyPrice" class="field" type="number" step="0.01" />
-          </div>
-        </div>
-
-        <div class="two-col">
-          <div>
-            <label class="field-label" for="setupFeeAmount">Setup Fee (pre-tax)</label>
-            <input id="setupFeeAmount" class="field" type="number" step="0.01" />
-          </div>
-          <div>
-            <label class="field-label" for="billingDay">Billing Day (1-28)</label>
-            <input id="billingDay" class="field" type="number" min="1" max="28" value="1" />
-          </div>
-        </div>
-
-        <div class="two-col">
-          <div>
-            <label class="field-label" for="nextInvoiceDate">Next Invoice Date</label>
-            <input id="nextInvoiceDate" class="field" type="date" />
-          </div>
-          <div>
-            <label class="field-label" for="billingStatus">Billing Status</label>
-            <select id="billingStatus" class="select">
-              <option value="active">Active</option>
-              <option value="paid">Paid</option>
-              <option value="past_due">Past Due</option>
-              <option value="paused">Paused</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="two-col">
-          <div>
-            <label class="field-label">Monthly HST (13%)</label>
-            <input id="monthlyTax" class="field" type="text" readonly />
-          </div>
-          <div>
-            <label class="field-label">Monthly Total with HST</label>
-            <input id="monthlyTotalWithTax" class="field" type="text" readonly />
-          </div>
-        </div>
-
-        <div class="two-col">
-          <div>
-            <label class="field-label">Setup Fee HST (13%)</label>
-            <input id="setupTax" class="field" type="text" readonly />
-          </div>
-          <div>
-            <label class="field-label">Setup Fee Total with HST</label>
-            <input id="setupTotalWithTax" class="field" type="text" readonly />
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h2>Partner Commission + Terms</h2>
-
-        <label class="field-label" for="partnerName">Partner Name</label>
-        <input id="partnerName" class="field" type="text" placeholder="Partner or referral source" />
-
-        <label class="field-label" for="partnerEmail">Partner Email</label>
-        <input id="partnerEmail" class="field" type="email" placeholder="partner@example.com" />
-
-        <div class="two-col">
-          <div>
-            <label class="field-label" for="partnerCommissionPercent">Commission %</label>
-            <input id="partnerCommissionPercent" class="field" type="number" step="0.01" value="25" />
-          </div>
-          <div>
-            <label class="field-label" for="partnerMonthlyCommission">Partner Monthly Commission</label>
-            <input id="partnerMonthlyCommission" class="field" type="number" step="0.01" readonly />
-          </div>
-        </div>
-
-        <div class="check-row">
-          <input id="termsAccepted" type="checkbox" />
-          <label for="termsAccepted">
-            I confirm the client has accepted the
-            <a href="https://applogix.org/terms.html" target="_blank" rel="noopener noreferrer">AppLogix Terms & Conditions</a>.
-          </label>
-        </div>
-
-        <button id="preOnboardBtn" class="secondary-btn">Send Pre-Onboarding Email</button>
-        <button id="createBtn" class="submit-btn">Create Client</button>
-        <div id="status" class="status"></div>
-      </section>
-    </div>
-
-    <section id="resultCard" class="result-card">
-      <h2>Onboarding Output</h2>
-
-      <div class="result-block">
-        <h3>Client Summary</h3>
-        <div id="summaryLines"></div>
-      </div>
-
-      <div id="hostedResultBlock" class="result-block" style="display:none;">
-        <h3>Hosted Review Page</h3>
-        <div id="hostedPageUrl" class="result-line"></div>
-        <button class="copy-btn" data-copy-target="hostedPageUrl">Copy Hosted Page URL</button>
-      </div>
-
-      <div id="widgetResultBlock" class="result-block" style="display:none;">
-        <h3>Widget Install Code</h3>
-        <textarea id="widgetCode" class="code-box" readonly></textarea>
-        <button class="copy-btn" data-copy-target="widgetCode">Copy Widget Code</button>
-      </div>
-
-      <div class="result-block">
-        <h3>Welcome Email Draft</h3>
-        <textarea id="welcomeEmail" class="code-box" readonly></textarea>
-        <button class="copy-btn" data-copy-target="welcomeEmail">Copy Welcome Email</button>
-      </div>
-
-      <div id="dashboardBlock" class="result-block" style="display:none;">
-        <h3>Dashboard Access</h3>
-        <div id="dashboardUrl" class="result-line"></div>
-        <div id="dashboardEmail" class="result-line"></div>
-        <div id="dashboardPassword" class="result-line"></div>
-      </div>
-    </section>
   </div>
 
   <script>
@@ -424,6 +456,12 @@
     };
 
     const HST_RATE = 0.13;
+    let ADMIN_TOKEN = sessionStorage.getItem("applogix_admin_token") || "";
+
+    const loginGate = document.getElementById("loginGate");
+    const onboardApp = document.getElementById("onboardApp");
+    const loginStatus = document.getElementById("loginStatus");
+    const adminTokenInput = document.getElementById("adminTokenInput");
 
     const businessNameEl = document.getElementById("businessName");
     const businessIdEl = document.getElementById("businessId");
@@ -451,6 +489,71 @@
 
     let businessIdTouched = false;
 
+    function showLocked() {
+      loginGate.classList.remove("hidden");
+      onboardApp.classList.add("hidden");
+    }
+
+    function showUnlocked() {
+      loginGate.classList.add("hidden");
+      onboardApp.classList.remove("hidden");
+    }
+
+    function setLoginStatus(message, cls = "") {
+      loginStatus.className = "status" + (cls ? " " + cls : "");
+      loginStatus.innerText = message;
+    }
+
+    async function verifyToken(token) {
+      const res = await fetch("/ops-clients", {
+        headers: { "x-admin-token": token },
+        cache: "no-store"
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Invalid admin token.");
+      }
+
+      return true;
+    }
+
+    async function unlockOnboarding() {
+      const token = adminTokenInput.value.trim();
+      if (!token) {
+        setLoginStatus("Enter the admin token.", "error");
+        return;
+      }
+
+      setLoginStatus("Checking access...");
+      try {
+        await verifyToken(token);
+        ADMIN_TOKEN = token;
+        sessionStorage.setItem("applogix_admin_token", token);
+        showUnlocked();
+        setLoginStatus("");
+      } catch (err) {
+        setLoginStatus(err.message || "Access failed.", "error");
+      }
+    }
+
+    document.getElementById("unlockBtn").addEventListener("click", unlockOnboarding);
+    document.getElementById("clearTokenBtn").addEventListener("click", () => {
+      ADMIN_TOKEN = "";
+      sessionStorage.removeItem("applogix_admin_token");
+      adminTokenInput.value = "";
+      showLocked();
+      setLoginStatus("Saved token cleared.");
+    });
+
+    adminTokenInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") unlockOnboarding();
+    });
+
+    function getAdminToken() {
+      return ADMIN_TOKEN;
+    }
+
     function slugify(name) {
       return String(name || "")
         .toLowerCase()
@@ -466,10 +569,6 @@
 
     function includesHosted(type) {
       return type === "hosted" || type === "both";
-    }
-
-    function getAdminToken() {
-      return "1234";
     }
 
     function calcTax(amount) {
@@ -760,7 +859,24 @@
       }
     });
 
+    async function boot() {
+      if (!ADMIN_TOKEN) {
+        showLocked();
+        return;
+      }
+
+      try {
+        await verifyToken(ADMIN_TOKEN);
+        showUnlocked();
+      } catch (_) {
+        ADMIN_TOKEN = "";
+        sessionStorage.removeItem("applogix_admin_token");
+        showLocked();
+      }
+    }
+
     updateUI();
+    boot();
   </script>
 </body>
 </html>
