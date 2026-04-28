@@ -577,6 +577,7 @@ function formatManagedHostedPages(profiles) {
       brandLogoUrl: p.brand_logo_url || "",
       hostedHeader: p.hosted_header || "",
       hostedFooter: p.hosted_footer || "",
+      nextInvoiceDate: p.next_invoice_date || "",
       notificationsEnabled: !!p.notifications_enabled,
       notificationEmail: p.notification_email || ""
     }));
