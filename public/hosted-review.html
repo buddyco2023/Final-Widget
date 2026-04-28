@@ -52,12 +52,12 @@
     }
 
     .hero-topbar {
-      height: 56px;
+      height: 64px;
       background: linear-gradient(90deg, var(--secondary), var(--primary));
     }
 
     .hero-body {
-      padding: 28px 24px;
+      padding: 30px 24px;
       text-align: center;
     }
 
@@ -75,16 +75,24 @@
 
     .business-name {
       margin: 0 0 10px;
-      font-size: 2rem;
+      font-size: 2.15rem;
       color: #16338a;
+      line-height: 1.15;
     }
 
     .business-subtitle {
       margin: 0 auto;
-      max-width: 680px;
+      max-width: 720px;
       color: var(--muted);
-      font-size: 1rem;
+      font-size: 1.05rem;
       line-height: 1.6;
+    }
+
+    .business-id-line {
+      margin-top: 12px;
+      color: #1e3a8a;
+      font-weight: 800;
+      font-size: 0.9rem;
     }
 
     .summary-card {
@@ -229,9 +237,15 @@
     }
 
     .form-title {
-      margin: 0 0 14px;
+      margin: 0 0 8px;
       font-size: 2rem;
       color: #173b96;
+    }
+
+    .form-subtitle {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.5;
     }
 
     .field,
@@ -356,44 +370,87 @@
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
-    <!-- (UNCHANGED CONTENT ABOVE) -->
+
+    <section class="hero">
+      <div class="hero-topbar"></div>
+      <div class="hero-body">
+        <img id="businessLogo" class="business-logo" src="" alt="Business logo" />
+        <h1 id="businessName" class="business-name">Loading...</h1>
+        <p id="businessSubtitle" class="business-subtitle">
+          Share your experience below. Reviews help businesses build trust and improve customer experience.
+        </p>
+        <div id="businessIdLine" class="business-id-line"></div>
+      </div>
+    </section>
+
+    <section class="summary-card">
+      <div class="summary-title">Review Summary</div>
+      <div class="summary-row">
+        <div id="summaryAverage" class="summary-number">0.0</div>
+        <div id="summaryStars" class="summary-stars">☆☆☆☆☆</div>
+      </div>
+      <div id="summaryCount" class="summary-count">No approved reviews yet.</div>
+    </section>
+
+    <section class="filters-card">
+      <div class="filters-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="5">5 Star</button>
+        <button class="filter-btn" data-filter="4">4 Star</button>
+        <button class="filter-btn" data-filter="3">3 Star</button>
+        <button class="filter-btn" data-filter="2">2 Star</button>
+        <button class="filter-btn" data-filter="1">1 Star</button>
+        <button class="filter-btn" data-filter="images">With Images</button>
+      </div>
+    </section>
+
+    <section id="reviewsGrid" class="reviews-grid">
+      <div class="empty-card">Loading reviews...</div>
+    </section>
+
+    <section class="load-wrap">
+      <button id="loadMoreBtn" class="load-more">Load More Reviews</button>
+    </section>
 
     <section class="form-card">
       <h2 id="formTitle" class="form-title">Leave a Review</h2>
+      <p id="formSubtitle" class="form-subtitle">
+        Your feedback can be submitted publicly or used internally depending on how this page is managed.
+      </p>
 
-      <input id="reviewName" class="field" type="text" placeholder="Your name">
+      <input id="reviewName" class="field" type="text" placeholder="Your name or Anonymous" />
 
       <div class="rating-block">
         <div class="rating-label">Select rating</div>
         <div class="star-picker">
-          <button type="button" class="star-btn" id="star1">★</button>
-          <button type="button" class="star-btn" id="star2">★</button>
-          <button type="button" class="star-btn" id="star3">★</button>
-          <button type="button" class="star-btn" id="star4">★</button>
-          <button type="button" class="star-btn" id="star5">★</button>
+          <button type="button" class="star-btn" id="star1" data-rating="1">★</button>
+          <button type="button" class="star-btn" id="star2" data-rating="2">★</button>
+          <button type="button" class="star-btn" id="star3" data-rating="3">★</button>
+          <button type="button" class="star-btn" id="star4" data-rating="4">★</button>
+          <button type="button" class="star-btn" id="star5" data-rating="5">★</button>
         </div>
       </div>
 
-      <textarea id="reviewText" class="textarea" placeholder="Share your experience..."></textarea>
+      <textarea id="reviewText" class="textarea" placeholder="Share your experience or feedback..."></textarea>
 
-      <input id="reviewImage" class="file" type="file" accept="image/jpeg,image/png,image/webp">
+      <input id="reviewImage" class="file" type="file" accept="image/jpeg,image/png,image/webp" />
 
       <button id="submitBtn" class="submit-btn">Submit Review</button>
 
       <div id="formStatus" class="status"></div>
       <div id="formNote" class="note">
-        Reviews are submitted for spam screening before appearing on site.
+        Reviews are submitted for spam screening before appearing publicly.
       </div>
     </section>
 
-    <!-- (UNCHANGED CONTENT BELOW) -->
-
     <section class="footer-card">
       <div id="footerText" class="footer-text">Powered by AppLogix</div>
-      <img src="/powered-by.png" alt="Powered by AppLogix" class="powered-by" onerror="this.style.display='none'">
+      <img src="/powered-by.png" alt="Powered by AppLogix" class="powered-by" onerror="this.style.display='none'" />
     </section>
+
   </div>
 
   <script src="/hosted-review.js"></script>
