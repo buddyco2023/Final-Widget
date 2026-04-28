@@ -425,6 +425,63 @@ function buildReceiptEmailHtml({
   `;
 }
 
+function buildPastDueWarningEmailHtml({
+  businessName,
+  planTier,
+  deliveryType,
+  amount,
+  nextBillingDate,
+  warningDays
+}) {
+  const subtotal = coerceMoney(amount);
+  const tax = calcTax(subtotal);
+  const total = calcTotalWithTax(subtotal);
+
+  return `
+    <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
+      <div style="max-width:640px;margin:auto;background:#fff;padding:24px;border-radius:18px;border:1px solid #dbe7fb;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;">
+        </div>
+
+        <h2 style="color:#b45309;margin-top:0;">Payment Reminder: Account Past Due</h2>
+
+        <p>Hi ${escapeHtml(businessName)},</p>
+
+        <p>
+          This is a reminder that your AppLogix account is currently past due.
+          Please arrange payment to keep your review system active.
+        </p>
+
+        <div style="margin:18px 0;padding:16px;border:1px solid #fed7aa;border-radius:14px;background:#fff7ed;color:#7c2d12;">
+          <strong>Important:</strong><br/>
+          If payment is not received within ${escapeHtml(warningDays)} days, your AppLogix account may be deactivated.
+        </div>
+
+        <table style="width:100%;margin-top:20px;border-collapse:collapse;">
+          <tr><td style="padding:8px 0;">Client</td><td style="padding:8px 0;text-align:right;">${escapeHtml(businessName)}</td></tr>
+          <tr><td style="padding:8px 0;">Plan</td><td style="padding:8px 0;text-align:right;">${escapeHtml((planTier || "").toUpperCase())}</td></tr>
+          <tr><td style="padding:8px 0;">Delivery Type</td><td style="padding:8px 0;text-align:right;">${escapeHtml((deliveryType || "").toUpperCase())}</td></tr>
+          <tr><td style="padding:8px 0;">Billing Date</td><td style="padding:8px 0;text-align:right;">${escapeHtml(nextBillingDate || "")}</td></tr>
+          <tr><td style="padding:8px 0;">Subtotal</td><td style="padding:8px 0;text-align:right;">$${money(subtotal)}</td></tr>
+          <tr><td style="padding:8px 0;">HST (13%)</td><td style="padding:8px 0;text-align:right;">$${money(tax)}</td></tr>
+          <tr><td style="padding:8px 0;"><strong>Total Due</strong></td><td style="padding:8px 0;text-align:right;"><strong>$${money(total)}</strong></td></tr>
+        </table>
+
+        <p style="margin-top:20px;">
+          If you have already sent payment, please reply with confirmation so we can update your account.
+        </p>
+
+        <div style="margin-top:30px;color:#64748b;font-size:14px;">
+          ${escapeHtml(LEGAL_COMPANY_NAME)}<br/>
+          GST/HST #: ${escapeHtml(GST_NUMBER)}<br/>
+          ${escapeHtml(CONTACT_EMAIL)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function getUserFromBearer(req) {
   const auth = req.headers.authorization || "";
   if (!auth.startsWith("Bearer ")) {
@@ -1286,7 +1343,8 @@ app.post("/ops-record-payment/:businessId", requireAdminToken, async (req, res) 
       .update({
         last_payment_date: paidDate,
         next_invoice_date: nextInvoiceDate,
-        billing_status: "paid"
+        billing_status: "paid",
+        active: true
       })
       .eq("business_id", businessId);
 
@@ -1318,6 +1376,81 @@ app.post("/ops-record-payment/:businessId", requireAdminToken, async (req, res) 
   } catch (err) {
     console.error("POST /ops-record-payment/:businessId error:", err);
     res.status(500).send("Server error");
+  }
+});
+
+app.post("/ops-send-past-due-warning/:businessId", requireAdminToken, async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email service is not configured.");
+    }
+
+    const businessId = (req.params.businessId || "").trim();
+    const warningDays = 21;
+
+    const profile = await getBusinessProfile(businessId);
+    if (!profile) return res.status(404).send("Client not found.");
+    if (!profile.email) return res.status(400).send("Client email is missing.");
+
+    const businessName = profile.brand_name || prettyBusinessName(businessId);
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: [profile.email],
+      reply_to: CONTACT_EMAIL,
+      subject: `Payment Reminder: AppLogix account past due – ${businessName}`,
+      html: buildPastDueWarningEmailHtml({
+        businessName,
+        planTier: profile.plan_tier || "",
+        deliveryType: profile.delivery_type || "",
+        amount: profile.total_monthly_price || 0,
+        nextBillingDate: profile.next_invoice_date || "",
+        warningDays
+      })
+    });
+
+    const { error } = await supabaseAdmin
+      .from("admin_users")
+      .update({
+        billing_status: "past_due"
+      })
+      .eq("business_id", businessId);
+
+    if (error) return res.status(500).send(error.message);
+
+    res.json({ success: true, warningDays });
+  } catch (err) {
+    console.error("POST /ops-send-past-due-warning/:businessId error:", err);
+    res.status(500).send(err.message || "Failed to send past-due warning.");
+  }
+});
+
+app.post("/ops-deactivate-client/:businessId", requireAdminToken, async (req, res) => {
+  try {
+    const businessId = (req.params.businessId || "").trim();
+
+    const profile = await getBusinessProfile(businessId);
+    if (!profile) return res.status(404).send("Client not found.");
+
+    const { error } = await supabaseAdmin
+      .from("admin_users")
+      .update({
+        active: false,
+        billing_status: "past_due"
+      })
+      .eq("business_id", businessId);
+
+    if (error) return res.status(500).send(error.message);
+
+    res.json({
+      success: true,
+      businessId,
+      active: false,
+      billingStatus: "past_due"
+    });
+  } catch (err) {
+    console.error("POST /ops-deactivate-client/:businessId error:", err);
+    res.status(500).send(err.message || "Failed to deactivate client.");
   }
 });
 
