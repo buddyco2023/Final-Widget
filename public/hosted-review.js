@@ -1,352 +1,340 @@
-// ==============================
-// AppLogix Hosted Review Script
-// ==============================
-
-const API_BASE = ""; // same domain
-
-let businessId = null;
+let businessId = "";
+let selectedRating = 0;
 let currentPage = 1;
 let currentFilter = "all";
-let isLoading = false;
-let selectedRating = 0;
+let hasMore = false;
+let businessConfig = null;
 
-// ------------------------------
-// INIT
-// ------------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  getBusinessId();
-  setupStarRating();
-  setupFilters();
-  setupSubmit();
-  loadBusiness();
-  loadReviews();
-});
+function $(id) {
+  return document.getElementById(id);
+}
 
-// ------------------------------
-// GET BUSINESS ID FROM URL
-// example: /r/abc123
-// fallback: /hosted-review.html?id=abc123
-// ------------------------------
-function getBusinessId() {
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function stars(n) {
+  const val = Math.max(0, Math.min(5, Math.round(Number(n) || 0)));
+  return "★".repeat(val) + "☆".repeat(5 - val);
+}
+
+function getBusinessIdFromUrl() {
   const pathParts = window.location.pathname.split("/").filter(Boolean);
-  const lastPart = pathParts[pathParts.length - 1];
 
-  if (lastPart && lastPart !== "hosted-review.html") {
-    businessId = lastPart;
-    return;
+  if (pathParts[0] === "r" && pathParts[1]) {
+    return decodeURIComponent(pathParts[1]);
   }
 
   const params = new URLSearchParams(window.location.search);
-  businessId = params.get("id");
+  return params.get("businessId") || "";
 }
 
-// ------------------------------
-// LOAD BUSINESS INFO
-// ------------------------------
+function setFormStatus(message) {
+  $("formStatus").textContent = message || "";
+}
+
+function setTheme(primary, secondary) {
+  if (primary) document.documentElement.style.setProperty("--primary", primary);
+  if (secondary) document.documentElement.style.setProperty("--secondary", secondary);
+}
+
 async function loadBusiness() {
+  businessId = getBusinessIdFromUrl();
+
+  if (!businessId) {
+    $("businessName").textContent = "Missing Business ID";
+    $("businessSubtitle").textContent = "This hosted review page is missing a business ID.";
+    $("reviewsGrid").innerHTML = `<div class="empty-card">Missing business ID.</div>`;
+    return;
+  }
+
   try {
-    const res = await fetch(`${API_BASE}/api/business/${businessId}`);
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      showBusinessError(text || "Could not load business.");
-      return;
-    }
+    const res = await fetch("/api/business/" + encodeURIComponent(businessId), {
+      cache: "no-store"
+    });
 
     const data = await res.json();
 
-    if (data.name) {
-      document.getElementById("businessName").innerText = data.name;
-      document.title = `Leave a Review | ${data.name}`;
+    if (!res.ok) {
+      throw new Error(data?.error || "Could not load business.");
     }
 
+    businessConfig = data;
+
+    setTheme(data.brandPrimary || "#2563eb", data.brandSecondary || "#4ea3ff");
+
+    document.title = "Leave a Review | " + (data.name || "AppLogix");
+
+    $("businessName").textContent = data.name || businessId;
+    $("businessSubtitle").textContent =
+      data.subtitle ||
+      "Share your experience below. Reviews help businesses build trust and improve customer experience.";
+
+    $("businessIdLine").textContent = "Page ID: " + businessId;
+
+    $("formTitle").textContent = "Leave a Review";
+    $("formSubtitle").textContent =
+      "Your feedback helps improve service and can be reviewed before being displayed publicly.";
+
+    $("footerText").textContent = data.footer || "Powered by AppLogix";
+
+    const logo = $("businessLogo");
     if (data.logo) {
-      const logo = document.getElementById("businessLogo");
       logo.src = data.logo;
       logo.style.display = "block";
+    } else {
+      logo.style.display = "none";
     }
 
-    if (data.subtitle) {
-      document.getElementById("businessSubtitle").innerText = data.subtitle;
-    }
+    $("formNote").textContent =
+      "Reviews are submitted for spam screening prior to being displayed.";
 
-    if (data.footer) {
-      document.getElementById("footerText").innerText = data.footer;
-    }
-
-    if (data.brandPrimary) {
-      document.documentElement.style.setProperty("--primary", data.brandPrimary);
-    }
-
-    if (data.brandSecondary) {
-      document.documentElement.style.setProperty("--secondary", data.brandSecondary);
-    }
-
-    if (data.planTier) {
-      const plan = String(data.planTier).toLowerCase();
-      const imageInput = document.getElementById("reviewImage");
-      const formNote = document.getElementById("formNote");
-
-      if (plan === "free") {
-        imageInput.style.display = "none";
-        formNote.innerText = "Reviews publish automatically on the Free plan.";
-      } else if (plan === "basic") {
-        formNote.innerText = "Reviews publish automatically on the Basic plan.";
-      } else {
-        formNote.innerText = "Reviews are submitted for approval before appearing publicly.";
-      }
-    }
+    await loadReviews(true);
   } catch (err) {
-    console.error("Business load failed:", err);
-    showBusinessError("Could not load business information.");
+    $("businessName").textContent = "Could Not Load Page";
+    $("businessSubtitle").textContent = err.message || "This hosted review page could not be loaded.";
+    $("reviewsGrid").innerHTML = `<div class="empty-card">${escapeHtml(err.message || "Could not load reviews.")}</div>`;
   }
 }
 
-function showBusinessError(message) {
-  document.getElementById("businessName").innerText = "Hosted Page Unavailable";
-  document.getElementById("businessSubtitle").innerText = message;
-  document.getElementById("reviewsGrid").innerHTML =
-    `<div class="empty-card">${escapeHTML(message)}</div>`;
-}
-
-// ------------------------------
-// LOAD REVIEWS
-// ------------------------------
-async function loadReviews(reset = true) {
-  if (isLoading || !businessId) return;
-  isLoading = true;
+async function loadReviews(reset = false) {
+  if (!businessId) return;
 
   if (reset) {
     currentPage = 1;
-    document.getElementById("reviewsGrid").innerHTML = "";
+    $("reviewsGrid").innerHTML = `<div class="empty-card">Loading reviews...</div>`;
   }
 
   try {
-    const res = await fetch(
-      `${API_BASE}/api/reviews/${businessId}?page=${currentPage}&filter=${encodeURIComponent(currentFilter)}`
-    );
+    const url =
+      "/api/reviews/" +
+      encodeURIComponent(businessId) +
+      "?page=" +
+      encodeURIComponent(currentPage) +
+      "&filter=" +
+      encodeURIComponent(currentFilter);
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      if (reset) {
-        document.getElementById("reviewsGrid").innerHTML =
-          `<div class="empty-card">${escapeHTML(text || "Could not load reviews.")}</div>`;
-      }
-      toggleLoadMore(false);
-      isLoading = false;
-      return;
-    }
-
+    const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
 
-    renderReviews(data.reviews || [], reset);
-    updateSummary(data.summary || {});
-    toggleLoadMore(!!data.hasMore);
-
-    currentPage++;
-  } catch (err) {
-    console.error("Error loading reviews:", err);
-    if (reset) {
-      document.getElementById("reviewsGrid").innerHTML =
-        `<div class="empty-card">Could not load reviews.</div>`;
+    if (!res.ok) {
+      throw new Error(data?.error || "Could not load reviews.");
     }
-    toggleLoadMore(false);
-  }
 
-  isLoading = false;
+    renderSummary(data.summary || {});
+    renderReviews(data.reviews || [], reset);
+
+    hasMore = !!data.hasMore;
+    $("loadMoreBtn").style.display = hasMore ? "inline-block" : "none";
+  } catch (err) {
+    $("reviewsGrid").innerHTML = `<div class="empty-card">${escapeHtml(err.message || "Could not load reviews.")}</div>`;
+    $("loadMoreBtn").style.display = "none";
+  }
 }
 
-// ------------------------------
-// RENDER REVIEWS
-// ------------------------------
-function renderReviews(reviews, reset) {
-  const grid = document.getElementById("reviewsGrid");
+function renderSummary(summary) {
+  const average = Number(summary.average || 0);
+  const count = Number(summary.count || 0);
 
-  if (reset && reviews.length === 0) {
-    grid.innerHTML = `<div class="empty-card">No reviews yet</div>`;
+  $("summaryAverage").textContent = average.toFixed(1);
+  $("summaryStars").textContent = stars(average);
+
+  if (count === 0) {
+    $("summaryCount").textContent = "No approved reviews yet.";
+  } else if (count === 1) {
+    $("summaryCount").textContent = "Based on 1 approved review.";
+  } else {
+    $("summaryCount").textContent = "Based on " + count + " approved reviews.";
+  }
+}
+
+function renderReviews(reviews, reset) {
+  if (!Array.isArray(reviews) || reviews.length === 0) {
+    if (reset) {
+      $("reviewsGrid").innerHTML = `<div class="empty-card">No approved reviews found yet.</div>`;
+    }
     return;
   }
 
-  reviews.forEach(r => {
-    const el = document.createElement("div");
-    el.className = "review-card";
+  const html = reviews.map((review) => {
+    const date = review.createdAt
+      ? new Date(review.createdAt).toLocaleDateString()
+      : "";
 
-    const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-
-    el.innerHTML = `
-      <div class="review-name">${escapeHTML(r.name || "Anonymous")}</div>
-      <div class="review-meta">${formatDate(r.createdAt)}</div>
-      <div class="review-stars">${stars}</div>
-      <div class="review-text">${escapeHTML(r.text || "")}</div>
-      ${r.image ? `<img src="${escapeHTML(r.image)}" alt="Review image" />` : ""}
+    return `
+      <article class="review-card">
+        <div class="review-name">${escapeHtml(review.name || "Anonymous")}</div>
+        <div class="review-meta">${escapeHtml(date)}</div>
+        <div class="review-stars">${stars(review.rating)}</div>
+        <div class="review-text">${escapeHtml(review.text || "")}</div>
+        ${
+          review.image
+            ? `<img src="${escapeHtml(review.image)}" alt="Review image" />`
+            : ""
+        }
+      </article>
     `;
+  }).join("");
 
-    grid.appendChild(el);
-  });
-}
-
-// ------------------------------
-// SUMMARY
-// ------------------------------
-function updateSummary(summary) {
-  const avg = Number(summary.average || 0);
-  const count = Number(summary.count || 0);
-
-  document.getElementById("summaryNumber").innerText = avg.toFixed(1);
-  document.getElementById("summaryStars").innerText =
-    "★".repeat(Math.round(avg)) + "☆".repeat(5 - Math.round(avg));
-  document.getElementById("summaryCount").innerText =
-    `${count} review${count !== 1 ? "s" : ""}`;
-}
-
-// ------------------------------
-// LOAD MORE BUTTON
-// ------------------------------
-function toggleLoadMore(show) {
-  const btn = document.getElementById("loadMoreBtn");
-  btn.style.display = show ? "inline-block" : "none";
-}
-
-document.getElementById("loadMoreBtn").addEventListener("click", () => {
-  loadReviews(false);
-});
-
-// ------------------------------
-// FILTERS
-// ------------------------------
-function setupFilters() {
-  const buttons = document.querySelectorAll(".filter-btn");
-
-  buttons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      buttons.forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
-      currentFilter = btn.dataset.filter;
-      loadReviews(true);
-    });
-  });
-}
-
-// ------------------------------
-// STAR RATING INPUT
-// ------------------------------
-function setupStarRating() {
-  for (let i = 1; i <= 5; i++) {
-    document.getElementById(`star${i}`).addEventListener("click", () => {
-      selectedRating = i;
-      updateStars();
-    });
+  if (reset) {
+    $("reviewsGrid").innerHTML = html;
+  } else {
+    $("reviewsGrid").insertAdjacentHTML("beforeend", html);
   }
 }
 
-function updateStars() {
+function setRating(rating) {
+  selectedRating = rating;
+
   for (let i = 1; i <= 5; i++) {
-    const btn = document.getElementById(`star${i}`);
-    btn.classList.toggle("active", i <= selectedRating);
+    const star = $("star" + i);
+    if (!star) continue;
+
+    if (i <= rating) {
+      star.classList.add("active");
+    } else {
+      star.classList.remove("active");
+    }
   }
 }
 
-// ------------------------------
-// SUBMIT REVIEW
-// ------------------------------
-function setupSubmit() {
-  document.getElementById("submitBtn").addEventListener("click", submitReview);
+async function uploadImageIfNeeded(file) {
+  if (!file) return "";
+
+  const sigRes = await fetch("/cloudinary-signature", { cache: "no-store" });
+
+  if (!sigRes.ok) {
+    throw new Error("Image upload is not configured yet.");
+  }
+
+  const sig = await sigRes.json();
+
+  const form = new FormData();
+  form.append("file", file);
+  form.append("api_key", sig.apiKey);
+  form.append("timestamp", sig.timestamp);
+  form.append("folder", sig.folder);
+  form.append("signature", sig.signature);
+
+  const uploadUrl = "https://api.cloudinary.com/v1_1/" + sig.cloudName + "/image/upload";
+
+  const uploadRes = await fetch(uploadUrl, {
+    method: "POST",
+    body: form
+  });
+
+  const uploadData = await uploadRes.json();
+
+  if (!uploadRes.ok) {
+    throw new Error(uploadData?.error?.message || "Image upload failed.");
+  }
+
+  return uploadData.secure_url || "";
 }
 
 async function submitReview() {
-  const name = document.getElementById("reviewName").value.trim();
-  const text = document.getElementById("reviewText").value.trim();
-  const imageFile = document.getElementById("reviewImage").files[0];
-  const status = document.getElementById("formStatus");
-  const btn = document.getElementById("submitBtn");
-
-  if (!selectedRating) {
-    status.innerText = "Please select a rating";
-    return;
-  }
+  const name = $("reviewName").value.trim();
+  const text = $("reviewText").value.trim();
+  const file = $("reviewImage").files && $("reviewImage").files[0];
 
   if (!businessId) {
-    status.innerText = "Missing business ID";
+    setFormStatus("Missing business ID.");
     return;
   }
 
-  btn.disabled = true;
-  status.innerText = "Submitting...";
+  if (!selectedRating) {
+    setFormStatus("Please select a rating.");
+    return;
+  }
+
+  const submitBtn = $("submitBtn");
+  submitBtn.disabled = true;
+  setFormStatus("Submitting review...");
 
   try {
-    let imageBase64 = null;
+    let imageUrl = "";
 
-    if (imageFile) {
-      imageBase64 = await fileToBase64(imageFile);
+    if (file) {
+      setFormStatus("Uploading image...");
+      imageUrl = await uploadImageIfNeeded(file);
     }
 
-    const res = await fetch(`${API_BASE}/api/review`, {
+    setFormStatus("Submitting review...");
+
+    const res = await fetch("/api/review", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         businessId,
-        name,
+        name: name || "Anonymous",
         rating: selectedRating,
         text,
-        image: imageBase64
+        image: imageUrl
       })
     });
 
-    const result = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
 
-    if (res.ok) {
-      if (result.approved) {
-        status.innerText = "Review submitted and published.";
-      } else {
-        status.innerText = "Review submitted for approval.";
-      }
-      resetForm();
-      loadReviews(true);
-    } else {
-      status.innerText = result.error || "Error submitting review";
+    if (!res.ok) {
+      throw new Error(data?.error || "Review submission failed.");
     }
+
+    $("reviewName").value = "";
+    $("reviewText").value = "";
+    $("reviewImage").value = "";
+    setRating(0);
+
+    setFormStatus(
+      data.approved
+        ? "Thank you. Your review has been published."
+        : "Thank you. Your review was submitted for spam screening prior to being displayed."
+    );
+
+    await loadReviews(true);
   } catch (err) {
-    console.error("Submit error:", err);
-    status.innerText = "Network error";
+    setFormStatus(err.message || "Network error.");
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+function setupEvents() {
+  for (let i = 1; i <= 5; i++) {
+    const star = $("star" + i);
+    if (star) {
+      star.addEventListener("click", () => setRating(i));
+    }
   }
 
-  btn.disabled = false;
-}
+  $("submitBtn").addEventListener("click", submitReview);
 
-// ------------------------------
-// HELPERS
-// ------------------------------
-function resetForm() {
-  document.getElementById("reviewName").value = "";
-  document.getElementById("reviewText").value = "";
-  document.getElementById("reviewImage").value = "";
-  selectedRating = 0;
-  updateStars();
-}
+  $("loadMoreBtn").addEventListener("click", async () => {
+    if (!hasMore) return;
+    currentPage += 1;
+    await loadReviews(false);
+  });
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  document.querySelectorAll(".filter-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      currentFilter = btn.getAttribute("data-filter") || "all";
+      await loadReviews(true);
+    });
   });
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString();
+async function boot() {
+  setupEvents();
+  await loadBusiness();
 }
 
-function escapeHTML(str) {
-  return String(str || "").replace(/[&<>"']/g, match => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#039;"
-  })[match]);
-}
+boot();
