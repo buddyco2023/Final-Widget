@@ -68,6 +68,10 @@
       color: white;
       margin-top: 6px;
     }
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
     .btn.gray { background: #64748b; }
     .btn.green { background: #16a34a; }
     .btn.orange { background: #f59e0b; color: #111827; }
@@ -223,6 +227,22 @@
       background: #dbeafe;
       color: #1d4ed8;
     }
+    .danger-card {
+      border-color: #fecaca;
+      background: #fffafa;
+    }
+    .danger-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #991b1b;
+      margin-bottom: 8px;
+    }
+    .danger-copy {
+      color: #7f1d1d;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
     @media (max-width: 700px) {
       .stats-grid {
         grid-template-columns: 1fr 1fr;
@@ -328,6 +348,15 @@
       <textarea id="reviewMessage" class="textarea"></textarea>
       <button class="btn light" onclick="copyMessage()">Copy Message</button>
       <div id="messageStatus" class="status"></div>
+    </div>
+
+    <div id="cancellationCard" class="card danger-card hidden">
+      <div class="danger-title">Subscription Cancellation</div>
+      <div class="danger-copy">
+        Use this to request cancellation for the currently selected page only. This sends AppLogix a notification for manual handling and does not deactivate your account automatically.
+      </div>
+      <button id="requestCancellationBtn" class="btn red" onclick="requestCancellation()">Request Cancellation</button>
+      <div id="cancellationStatus" class="status"></div>
     </div>
 
     <div id="reviews"></div>
@@ -552,10 +581,17 @@
       document.getElementById("reviewToolsCard").classList.add("hidden");
       document.getElementById("messageCard").classList.add("hidden");
       document.getElementById("premiumInviteCard").classList.add("hidden");
+      document.getElementById("cancellationCard").classList.add("hidden");
+      document.getElementById("cancellationStatus").textContent = "";
+
+      const requestCancellationBtn = document.getElementById("requestCancellationBtn");
+      requestCancellationBtn.disabled = false;
+      requestCancellationBtn.textContent = "Request Cancellation";
 
       if (planTier === "pro" || planTier === "premium") {
         document.getElementById("reviewToolsCard").classList.remove("hidden");
         document.getElementById("messageCard").classList.remove("hidden");
+        document.getElementById("cancellationCard").classList.remove("hidden");
         setupReviewTools();
       }
 
@@ -839,6 +875,64 @@ Thank you!`;
       inviteStatus.textContent = res.ok ? "Email sent successfully." : await res.text();
     };
 
+    window.requestCancellation = async function () {
+      const cancellationStatus = document.getElementById("cancellationStatus");
+      const requestCancellationBtn = document.getElementById("requestCancellationBtn");
+
+      if (!session || !session.access_token) {
+        cancellationStatus.textContent = "You must be logged in to request cancellation.";
+        return;
+      }
+
+      if (!businessId) {
+        cancellationStatus.textContent = "No page is selected.";
+        return;
+      }
+
+      const confirmed = confirm(
+        "Request cancellation for this selected page only?\n\nBusiness: " +
+        (businessName || businessId) +
+        "\nBusiness ID: " +
+        businessId +
+        "\n\nThis will notify AppLogix for manual handling. Your account will not be deactivated automatically."
+      );
+
+      if (!confirmed) return;
+
+      try {
+        requestCancellationBtn.disabled = true;
+        requestCancellationBtn.textContent = "Sending Request...";
+        cancellationStatus.textContent = "Submitting cancellation request...";
+
+        const res = await fetch("/request-cancellation", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + session.access_token,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            businessId
+          })
+        });
+
+        const text = await res.text();
+
+        if (!res.ok) {
+          cancellationStatus.textContent = text || "Cancellation request failed.";
+          requestCancellationBtn.disabled = false;
+          requestCancellationBtn.textContent = "Request Cancellation";
+          return;
+        }
+
+        cancellationStatus.textContent = "Cancellation request submitted successfully. AppLogix has been notified and will handle this manually.";
+        requestCancellationBtn.textContent = "Cancellation Requested";
+      } catch (err) {
+        cancellationStatus.textContent = "Cancellation request exception: " + (err.message || "Unknown error");
+        requestCancellationBtn.disabled = false;
+        requestCancellationBtn.textContent = "Request Cancellation";
+      }
+    };
+
     window.logout = async function () {
       try {
         if (supabase) {
@@ -851,4 +945,4 @@ Thank you!`;
     init();
   </script>
 </body>
-</html>
+  </html>
