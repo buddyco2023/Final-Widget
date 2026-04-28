@@ -13,6 +13,7 @@
       --success: #166534;
       --error: #b91c1c;
       --bg: #eef5ff;
+      --warning: #92400e;
     }
     * { box-sizing: border-box; }
     body {
@@ -50,8 +51,9 @@
     }
     .hero-body p {
       margin: 0 auto;
-      max-width: 760px;
+      max-width: 820px;
       color: var(--muted);
+      line-height: 1.5;
     }
     .grid {
       display: grid;
@@ -99,6 +101,18 @@
       font-size: .92rem;
       margin-top: -8px;
       margin-bottom: 14px;
+      line-height: 1.45;
+    }
+    .notice {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: var(--warning);
+      font-weight: 700;
+      line-height: 1.45;
+      margin-bottom: 14px;
+      font-size: .92rem;
     }
     .check-row {
       display: flex;
@@ -195,11 +209,11 @@
       <div class="hero-top"></div>
       <div class="hero-body">
         <h1>AppLogix Client Onboarding</h1>
-        <p>Internal access required. Enter the AppLogix admin token to unlock onboarding.</p>
+        <p>Internal access required. Enter the AppLogix admin token to unlock onboarding. The token is used only for this page session and is not saved.</p>
         <div style="max-width:420px;margin:20px auto 0;">
-          <input id="adminTokenInput" class="field" type="password" placeholder="Enter admin token" />
+          <input id="adminTokenInput" class="field" type="password" placeholder="Enter admin token" autocomplete="off" />
           <button id="unlockBtn" class="unlock-btn">Unlock Onboarding</button>
-          <button id="clearTokenBtn" class="clear-btn">Clear Saved Token</button>
+          <button id="clearTokenBtn" class="clear-btn">Clear Token / Lock</button>
           <div id="loginStatus" class="status"></div>
         </div>
       </div>
@@ -210,7 +224,7 @@
         <div class="hero-top"></div>
         <div class="hero-body">
           <h1>AppLogix Client Onboarding</h1>
-          <p>Create a new client, send a pre-onboarding approval email, calculate pricing, store billing details, assign partner commission, accept terms, and generate onboarding assets.</p>
+          <p>Create main client pages, realtor hosted listing pages, billing records, dashboard access, partner commissions, and onboarding assets.</p>
         </div>
       </section>
 
@@ -218,15 +232,25 @@
         <section class="card">
           <h2>Client + Delivery</h2>
 
-          <label class="field-label" for="businessName">Business Name</label>
-          <input id="businessName" class="field" type="text" placeholder="Buddy Co" />
+          <label class="field-label" for="pageType">Page Type</label>
+          <select id="pageType" class="select">
+            <option value="main">Business / Realtor Main Page</option>
+            <option value="listing">Individual Listing Page</option>
+          </select>
+          <div id="listingNotice" class="notice hidden">
+            Individual listing pages are hosted-only and require Pro or Premium. They can reuse the realtor's existing dashboard email, but every listing must have a unique Business ID.
+          </div>
+
+          <label class="field-label" for="businessName">Business / Page Name</label>
+          <input id="businessName" class="field" type="text" placeholder="Jane Smith Realty or 123 Main Street Listing" />
 
           <label class="field-label" for="businessId">Business ID</label>
-          <input id="businessId" class="field" type="text" placeholder="auto-generated from business name" />
-          <div class="muted">Auto-filled from business name. You can edit it manually.</div>
+          <input id="businessId" class="field" type="text" placeholder="auto-generated from name" />
+          <div class="muted">Auto-filled from the page name. You can edit it manually. Each hosted listing needs a unique Business ID.</div>
 
-          <label class="field-label" for="clientEmail">Client Email</label>
-          <input id="clientEmail" class="field" type="email" placeholder="owner@example.com" />
+          <label class="field-label" for="clientEmail">Client Login Email</label>
+          <input id="clientEmail" class="field" type="email" placeholder="realtor@example.com" />
+          <div class="muted">For individual listings, reuse the realtor's existing dashboard email so listings can appear together in one dashboard.</div>
 
           <div class="two-col">
             <div>
@@ -251,6 +275,7 @@
           <div id="tempPasswordWrap" style="display:none;">
             <label class="field-label" for="tempPassword">Temporary Password</label>
             <input id="tempPassword" class="field" type="text" value="AppLogix." />
+            <div class="muted">For a new Pro/Premium login. If the email already exists for hosted listing pages, the backend will reuse the existing Auth user.</div>
           </div>
 
           <div id="reviewPageWrap">
@@ -261,7 +286,7 @@
 
           <div id="hostedFieldsWrap" style="display:none;">
             <label class="field-label" for="hostedHeader">Hosted Page Header</label>
-            <input id="hostedHeader" class="field" type="text" placeholder="Leave a Review" />
+            <input id="hostedHeader" class="field" type="text" placeholder="Leave feedback for this listing" />
 
             <label class="field-label" for="hostedFooter">Hosted Page Footer</label>
             <input id="hostedFooter" class="field" type="text" placeholder="Powered by AppLogix" />
@@ -271,8 +296,8 @@
         <section class="card">
           <h2>Branding + Notifications</h2>
 
-          <label class="field-label" for="brandName">Brand Name</label>
-          <input id="brandName" class="field" type="text" placeholder="Buddy Co" />
+          <label class="field-label" for="brandName">Brand / Display Name</label>
+          <input id="brandName" class="field" type="text" placeholder="Jane Smith Realty" />
 
           <div class="two-col">
             <div>
@@ -303,7 +328,7 @@
 
           <div class="check-row">
             <input id="active" type="checkbox" checked />
-            <label for="active">Client active</label>
+            <label for="active">Client/page active</label>
           </div>
         </section>
       </div>
@@ -406,7 +431,7 @@
           </div>
 
           <button id="preOnboardBtn" class="secondary-btn">Send Pre-Onboarding Email</button>
-          <button id="createBtn" class="submit-btn">Create Client</button>
+          <button id="createBtn" class="submit-btn">Create Client / Page</button>
           <div id="status" class="status"></div>
         </section>
       </div>
@@ -455,14 +480,21 @@
       premium: { monthly: 99, setup: 400 }
     };
 
+    const LISTING_DEFAULTS = {
+      pro: { monthly: 49, setup: 200 },
+      premium: { monthly: 99, setup: 400 }
+    };
+
     const HST_RATE = 0.13;
-    let ADMIN_TOKEN = sessionStorage.getItem("applogix_admin_token") || "";
+    let ADMIN_TOKEN = "";
 
     const loginGate = document.getElementById("loginGate");
     const onboardApp = document.getElementById("onboardApp");
     const loginStatus = document.getElementById("loginStatus");
     const adminTokenInput = document.getElementById("adminTokenInput");
 
+    const pageTypeEl = document.getElementById("pageType");
+    const listingNotice = document.getElementById("listingNotice");
     const businessNameEl = document.getElementById("businessName");
     const businessIdEl = document.getElementById("businessId");
     const brandNameEl = document.getElementById("brandName");
@@ -529,10 +561,10 @@
       try {
         await verifyToken(token);
         ADMIN_TOKEN = token;
-        sessionStorage.setItem("applogix_admin_token", token);
         showUnlocked();
         setLoginStatus("");
       } catch (err) {
+        ADMIN_TOKEN = "";
         setLoginStatus(err.message || "Access failed.", "error");
       }
     }
@@ -540,10 +572,9 @@
     document.getElementById("unlockBtn").addEventListener("click", unlockOnboarding);
     document.getElementById("clearTokenBtn").addEventListener("click", () => {
       ADMIN_TOKEN = "";
-      sessionStorage.removeItem("applogix_admin_token");
       adminTokenInput.value = "";
       showLocked();
-      setLoginStatus("Saved token cleared.");
+      setLoginStatus("Token cleared.");
     });
 
     adminTokenInput.addEventListener("keydown", (e) => {
@@ -589,11 +620,48 @@
       nextInvoiceDateEl.value = next.toISOString().slice(0, 10);
     }
 
+    function isListingPage() {
+      return pageTypeEl.value === "listing";
+    }
+
+    function enforceListingRules() {
+      if (!isListingPage()) {
+        listingNotice.classList.add("hidden");
+        planTierEl.disabled = false;
+        deliveryTypeEl.disabled = false;
+        return;
+      }
+
+      listingNotice.classList.remove("hidden");
+
+      if (planTierEl.value !== "pro" && planTierEl.value !== "premium") {
+        planTierEl.value = "pro";
+      }
+
+      deliveryTypeEl.value = "hosted";
+      deliveryTypeEl.disabled = true;
+
+      if (!document.getElementById("hostedHeader").value.trim()) {
+        document.getElementById("hostedHeader").value = "Share feedback for this listing";
+      }
+
+      if (!document.getElementById("hostedFooter").value.trim()) {
+        document.getElementById("hostedFooter").value = "Powered by AppLogix";
+      }
+    }
+
     function recalcPricing() {
       const plan = planTierEl.value;
       const delivery = deliveryTypeEl.value;
-      const base = Number(DEFAULTS[plan]?.monthly || 0);
-      const setup = Number(DEFAULTS[plan]?.setup || 0);
+
+      let base = Number(DEFAULTS[plan]?.monthly || 0);
+      let setup = Number(DEFAULTS[plan]?.setup || 0);
+
+      if (isListingPage()) {
+        base = Number(LISTING_DEFAULTS[plan]?.monthly || 49);
+        setup = Number(LISTING_DEFAULTS[plan]?.setup || 200);
+      }
+
       const addon = includesWidget(delivery) && includesHosted(delivery)
         ? Number((base * 0.5).toFixed(2))
         : 0;
@@ -631,6 +699,8 @@
     }
 
     function updateUI() {
+      enforceListingRules();
+
       const plan = planTierEl.value;
       const delivery = deliveryTypeEl.value;
 
@@ -652,6 +722,7 @@
 
     function getPayload() {
       return {
+        pageType: pageTypeEl.value,
         businessName: businessNameEl.value.trim(),
         businessId: businessIdEl.value.trim(),
         clientEmail: document.getElementById("clientEmail").value.trim(),
@@ -689,11 +760,24 @@
 
     function validateCore(payload, requireTerms = false) {
       if (!payload.businessName || !payload.businessId || !payload.clientEmail) {
-        return "Business name, business ID, and client email are required.";
+        return "Business/page name, business ID, and client email are required.";
+      }
+
+      if (isListingPage()) {
+        if (payload.deliveryType !== "hosted") {
+          return "Individual listing pages must be hosted-only.";
+        }
+        if (payload.planTier !== "pro" && payload.planTier !== "premium") {
+          return "Individual listing pages require Pro or Premium.";
+        }
       }
 
       if (includesWidget(payload.deliveryType) && !payload.reviewPageUrl) {
         return "Website Review Page URL is required when widget delivery is selected.";
+      }
+
+      if ((payload.planTier === "pro" || payload.planTier === "premium") && !payload.tempPassword) {
+        return "Temporary password is required for Pro and Premium dashboard accounts.";
       }
 
       if (requireTerms && !payload.termsAccepted) {
@@ -712,7 +796,9 @@
       businessIdTouched = true;
     });
 
-    [planTierEl, deliveryTypeEl].forEach(el => el.addEventListener("change", updateUI));
+    pageTypeEl.addEventListener("change", updateUI);
+    planTierEl.addEventListener("change", updateUI);
+    deliveryTypeEl.addEventListener("change", updateUI);
     [partnerCommissionPercentEl, totalMonthlyPriceEl, setupFeeAmountEl].forEach(el => el.addEventListener("input", updateTaxDisplays));
     billingDayEl.addEventListener("input", computeNextInvoiceDate);
 
@@ -782,7 +868,7 @@
       }
 
       statusEl.className = "status";
-      statusEl.innerText = "Creating client...";
+      statusEl.innerText = "Creating client/page...";
 
       try {
         const res = await fetch("/create-client", {
@@ -801,13 +887,14 @@
         } catch (_) {}
 
         if (!res.ok) {
-          throw new Error(data?.error || text || "Failed to create client.");
+          throw new Error(data?.error || text || "Failed to create client/page.");
         }
 
         resultCard.style.display = "block";
 
         document.getElementById("summaryLines").innerHTML = [
-          `<div class="result-line"><strong>Business:</strong> ${data.businessName}</div>`,
+          `<div class="result-line"><strong>Page Type:</strong> ${payload.pageType === "listing" ? "Individual Listing Page" : "Business / Realtor Main Page"}</div>`,
+          `<div class="result-line"><strong>Business/Page:</strong> ${data.businessName}</div>`,
           `<div class="result-line"><strong>Business ID:</strong> ${data.businessId}</div>`,
           `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
           `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
@@ -849,30 +936,18 @@
 
         statusEl.className = "status success";
         statusEl.innerText = payload.planTier === "premium"
-          ? "Client created successfully. Premium onboarding email remains manual."
-          : "Client created successfully. Onboarding email was sent automatically if email service is configured.";
+          ? "Client/page created successfully. Premium onboarding email remains manual."
+          : "Client/page created successfully. Onboarding email was sent automatically if email service is configured.";
 
         resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (err) {
         statusEl.className = "status error";
-        statusEl.innerText = err.message || "Error creating client.";
+        statusEl.innerText = err.message || "Error creating client/page.";
       }
     });
 
-    async function boot() {
-      if (!ADMIN_TOKEN) {
-        showLocked();
-        return;
-      }
-
-      try {
-        await verifyToken(ADMIN_TOKEN);
-        showUnlocked();
-      } catch (_) {
-        ADMIN_TOKEN = "";
-        sessionStorage.removeItem("applogix_admin_token");
-        showLocked();
-      }
+    function boot() {
+      showLocked();
     }
 
     updateUI();
