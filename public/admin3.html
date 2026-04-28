@@ -518,7 +518,7 @@
       reviewPageUrl = page.reviewPageUrl || "";
       hostedUrl = page.hostedPageUrl || (window.location.origin + "/r/" + businessId);
       deliveryType = (page.deliveryType || "hosted").toLowerCase();
-      nextInvoiceDate = "—";
+      nextInvoiceDate = page.nextInvoiceDate || page.nextBillingDate || page.next_invoice_date || page.next_invoice || "—";
       googleImportEnabled = !!page.googleImportEnabled;
 
       await afterPageSelected();
@@ -531,7 +531,7 @@
       reviewPageUrl = profile.reviewPageUrl || "";
       hostedUrl = window.location.origin + "/r/" + businessId;
       deliveryType = (profile.deliveryType || "widget").toLowerCase();
-      nextInvoiceDate = profile.nextInvoiceDate || "—";
+      nextInvoiceDate = profile.nextInvoiceDate || profile.nextBillingDate || profile.next_invoice_date || "—";
       googleImportEnabled = !!profile.googleImportEnabled;
     }
 
