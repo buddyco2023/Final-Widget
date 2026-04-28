@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AppLogix Demo</title>
-
   <style>
     :root {
       --primary: #2563eb;
@@ -15,7 +14,10 @@
       --text: #1f2937;
       --muted: #64748b;
       --border: #dbe7fb;
+      --success: #166534;
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -25,7 +27,7 @@
     }
 
     .wrap {
-      max-width: 1000px;
+      max-width: 1050px;
       margin: 0 auto;
       padding: 24px 16px 50px;
     }
@@ -36,38 +38,87 @@
       border-radius: 24px;
       box-shadow: 0 12px 30px rgba(15,23,42,.08);
       margin-bottom: 22px;
-    }
-
-    .hero {
       overflow: hidden;
     }
 
-    .hero-top {
-      height: 56px;
+    .topbar {
+      height: 58px;
       background: linear-gradient(90deg, var(--secondary), var(--primary));
     }
 
     .hero-body {
-      padding: 26px;
+      padding: 30px 24px;
       text-align: center;
     }
 
-    .hero-body h1 {
+    .logo-mark {
+      width: 74px;
+      height: 74px;
+      margin: 0 auto 14px;
+      border-radius: 18px;
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    h1 {
       margin: 0 0 10px;
+      color: #173b96;
+      font-size: 2.3rem;
+    }
+
+    h2 {
+      margin: 0 0 12px;
       color: #173b96;
     }
 
-    .hero-body p {
+    p {
+      line-height: 1.55;
+    }
+
+    .sub {
       color: var(--muted);
-      max-width: 700px;
+      max-width: 760px;
       margin: 0 auto;
-      line-height: 1.5;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      padding: 20px;
+    }
+
+    .stat {
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #173b96;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
     }
 
     .reviews-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
+      gap: 18px;
       padding: 20px;
     }
 
@@ -87,60 +138,178 @@
     .stars {
       color: var(--gold);
       margin-bottom: 8px;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
+      letter-spacing: 1px;
     }
 
     .review img {
       width: 100%;
       border-radius: 14px;
       margin-top: 10px;
+      height: 150px;
+      object-fit: cover;
     }
 
-    .form {
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
       padding: 20px;
     }
 
-    .input, .textarea {
+    .feature {
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .feature-title {
+      font-weight: 900;
+      color: #173b96;
+      margin-bottom: 8px;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .compare {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .compare th,
+    .compare td {
+      padding: 14px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    .compare th {
+      color: #173b96;
+      background: #f8fbff;
+    }
+
+    .check {
+      color: var(--success);
+      font-weight: 900;
+    }
+
+    .demo-toggle {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding: 0 20px 20px;
+    }
+
+    .toggle-btn {
+      border: 1px solid var(--border);
+      background: #f8fbff;
+      color: #173b96;
+      padding: 12px 16px;
+      border-radius: 999px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .toggle-btn.active {
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: white;
+    }
+
+    .form {
+      padding: 22px;
+    }
+
+    .input,
+    .textarea {
       width: 100%;
       padding: 14px;
       border-radius: 14px;
       border: 1px solid var(--border);
       margin-bottom: 12px;
+      font-size: 1rem;
+      background: #f9fbff;
+    }
+
+    .textarea {
+      min-height: 130px;
+      resize: vertical;
     }
 
     .btn {
       width: 100%;
-      padding: 14px;
+      padding: 15px;
       border-radius: 14px;
       border: none;
       background: linear-gradient(180deg, var(--secondary), var(--primary));
       color: white;
-      font-weight: 800;
+      font-weight: 900;
       cursor: pointer;
+      font-size: 1rem;
     }
 
     .note {
       text-align: center;
-      margin-top: 10px;
+      margin-top: 12px;
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.92rem;
     }
 
-    .premium-note {
+    .success-box {
+      display: none;
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #dcfce7;
+      color: #166534;
+      font-weight: 800;
       text-align: center;
+    }
+
+    .lead-box {
+      padding: 22px;
+      text-align: center;
+      background: #f8fbff;
+      border-top: 1px solid var(--border);
+    }
+
+    .lead-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .small {
       font-size: 0.85rem;
       color: var(--muted);
       margin-top: 8px;
     }
 
-    @media(max-width:900px){
-      .reviews-grid{
+    @media(max-width: 900px) {
+      .summary-grid,
+      .reviews-grid,
+      .feature-grid {
         grid-template-columns: 1fr 1fr;
+      }
+
+      .lead-row {
+        grid-template-columns: 1fr;
       }
     }
 
-    @media(max-width:600px){
-      .reviews-grid{
+    @media(max-width: 600px) {
+      h1 { font-size: 1.85rem; }
+
+      .summary-grid,
+      .reviews-grid,
+      .feature-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -150,62 +319,212 @@
 
 <div class="wrap">
 
-  <!-- HERO -->
-  <div class="card hero">
-    <div class="hero-top"></div>
+  <section class="card">
+    <div class="topbar"></div>
     <div class="hero-body">
-      <h1>Customer Reviews</h1>
-      <p>This is a live preview of the AppLogix review system. Collect, manage, and display real customer feedback in seconds.</p>
+      <div class="logo-mark" id="logoMark">A</div>
+      <h1 id="demoTitle">AppLogix Hosted Review Demo</h1>
+      <p class="sub" id="demoSubtitle">
+        Collect public testimonials, private feedback, and review submissions through one clean hosted page.
+      </p>
     </div>
-  </div>
 
-  <!-- REVIEWS -->
-  <div class="card">
+    <div class="demo-toggle">
+      <button class="toggle-btn active" onclick="setDemo('default')">AppLogix Theme</button>
+      <button class="toggle-btn" onclick="setDemo('premium')">Premium Branding</button>
+      <button class="toggle-btn" onclick="setDemo('internal')">Internal Feedback</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="summary-grid">
+      <div class="stat">
+        <div class="stat-number">4.8</div>
+        <div class="stat-label">Average Rating</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">127</div>
+        <div class="stat-label">Reviews Collected</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">18</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Hosted Pages</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="hero-body">
+      <h2>Example Reviews</h2>
+      <p class="sub">Demo content is fictional. This shows how approved reviews could appear publicly.</p>
+    </div>
+
     <div class="reviews-grid">
-
       <div class="review">
         <strong>Sarah M.</strong>
         <div class="stars">★★★★★</div>
         <div>Super easy to use. We started collecting reviews instantly.</div>
-        <img src="https://images.unsplash.com/photo-1556740749-887f6717d7e4" />
+        <img src="https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=800&q=80" alt="Demo review image">
       </div>
 
       <div class="review">
         <strong>James R.</strong>
         <div class="stars">★★★★★</div>
-        <div>Our website finally looks professional with real testimonials.</div>
+        <div>Our website finally looks professional with real customer feedback displayed clearly.</div>
       </div>
 
       <div class="review">
         <strong>Olivia K.</strong>
         <div class="stars">★★★★☆</div>
-        <div>Great system, especially the hosted pages.</div>
-        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a" />
+        <div>The hosted page is simple, clean, and easy to share with customers.</div>
+        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80" alt="Demo review image">
       </div>
-
     </div>
-  </div>
+  </section>
 
-  <!-- FORM -->
-  <div class="card form">
-    <h2>Leave a Review</h2>
+  <section class="card">
+    <div class="hero-body">
+      <h2>What the Admin Dashboard Controls</h2>
+      <p class="sub">AppLogix is not just a form. The dashboard lets clients manage visibility, QR codes, review approvals, and page-specific feedback.</p>
+    </div>
 
-    <input class="input" placeholder="Your name">
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="feature-title">Approve or Hide Reviews</div>
+        <p>Keep full control over what becomes public.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-title">QR Code Sharing</div>
+        <p>Generate review links for signs, cards, emails, or websites.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-title">Multiple Hosted Pages</div>
+        <p>Use separate pages for listings, locations, teams, projects, or campaigns.</p>
+      </div>
+    </div>
+  </section>
 
-    <textarea class="textarea" placeholder="Share your experience..."></textarea>
+  <section class="card">
+    <div class="hero-body">
+      <h2>Basic vs Premium</h2>
+      <p class="sub">Standard pages stay clean and AppLogix-branded. Premium unlocks stronger branding and Google review import support.</p>
+    </div>
 
-    <button class="btn">Submit Review</button>
+    <table class="compare">
+      <tr>
+        <th>Feature</th>
+        <th>Standard Hosted Page</th>
+        <th>Premium Hosted Page</th>
+      </tr>
+      <tr>
+        <td>Hosted review page</td>
+        <td><span class="check">Yes</span></td>
+        <td><span class="check">Yes</span></td>
+      </tr>
+      <tr>
+        <td>QR code use</td>
+        <td><span class="check">Yes</span></td>
+        <td><span class="check">Yes</span></td>
+      </tr>
+      <tr>
+        <td>Client branding</td>
+        <td>Limited</td>
+        <td><span class="check">Logo, colors, display name</span></td>
+      </tr>
+      <tr>
+        <td>Google review imports</td>
+        <td>No</td>
+        <td><span class="check">Yes</span></td>
+      </tr>
+      <tr>
+        <td>Multiple individual pages</td>
+        <td>Pro / Premium</td>
+        <td><span class="check">Best fit</span></td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card form">
+    <h2>Try the Demo Form</h2>
+    <input class="input" id="demoName" placeholder="Your name">
+    <textarea class="textarea" id="demoText" placeholder="Share your experience..."></textarea>
+    <button class="btn" onclick="fakeSubmit()">Submit Review</button>
+
+    <div class="success-box" id="successBox">
+      Thank you. Your demo review was submitted for spam screening prior to being displayed.
+    </div>
 
     <div class="note">
       Reviews are submitted for spam screening prior to being displayed.
     </div>
+  </section>
 
-    <div class="premium-note">
-      *Advanced branding and customization available on Premium plans
+  <section class="card">
+    <div class="lead-box">
+      <h2>Want a demo page like this for your business?</h2>
+      <p class="sub">Enter contact details below. This demo does not send yet, but it shows how a lead form could work.</p>
+
+      <div class="lead-row">
+        <input class="input" placeholder="Name">
+        <input class="input" placeholder="Email">
+        <button class="btn" onclick="leadDemo()">Request Demo</button>
+      </div>
+
+      <div class="success-box" id="leadBox">
+        Demo request received. This is a sample success message.
+      </div>
+
+      <div class="small">Powered by AppLogix</div>
     </div>
-  </div>
+  </section>
 
 </div>
+
+<script>
+  function setDemo(mode) {
+    document.querySelectorAll(".toggle-btn").forEach(btn => btn.classList.remove("active"));
+    event.target.classList.add("active");
+
+    if (mode === "default") {
+      document.documentElement.style.setProperty("--primary", "#2563eb");
+      document.documentElement.style.setProperty("--secondary", "#4ea3ff");
+      document.getElementById("logoMark").textContent = "A";
+      document.getElementById("demoTitle").textContent = "AppLogix Hosted Review Demo";
+      document.getElementById("demoSubtitle").textContent =
+        "Collect public testimonials, private feedback, and review submissions through one clean hosted page.";
+    }
+
+    if (mode === "premium") {
+      document.documentElement.style.setProperty("--primary", "#173b96");
+      document.documentElement.style.setProperty("--secondary", "#60a5fa");
+      document.getElementById("logoMark").textContent = "★";
+      document.getElementById("demoTitle").textContent = "Premium Branded Review Page";
+      document.getElementById("demoSubtitle").textContent =
+        "Premium pages can show stronger branding, custom colours, logo display, and Google review imports.";
+    }
+
+    if (mode === "internal") {
+      document.documentElement.style.setProperty("--primary", "#334155");
+      document.documentElement.style.setProperty("--secondary", "#94a3b8");
+      document.getElementById("logoMark").textContent = "✓";
+      document.getElementById("demoTitle").textContent = "Internal Feedback Collection";
+      document.getElementById("demoSubtitle").textContent =
+        "Use hosted pages privately for honest feedback from teams, projects, clients, or listings.";
+    }
+  }
+
+  function fakeSubmit() {
+    document.getElementById("successBox").style.display = "block";
+  }
+
+  function leadDemo() {
+    document.getElementById("leadBox").style.display = "block";
+  }
+</script>
 
 </body>
 </html>
