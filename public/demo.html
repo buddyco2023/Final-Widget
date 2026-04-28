@@ -232,6 +232,7 @@
       border-radius: 18px;
       padding: 16px;
       background: #f9fbff;
+      position: relative;
     }
 
     .review strong {
@@ -258,6 +259,39 @@
       height: 150px;
       object-fit: cover;
       box-shadow: 0 10px 22px rgba(15,23,42,.12);
+    }
+
+    .source-badge {
+      display: inline-block;
+      margin-bottom: 9px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+      background: #eef4ff;
+      color: #1e3a8a;
+      border: 1px solid var(--border);
+    }
+
+    body.premium-mode .source-badge.google {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: #e6d6aa;
+    }
+
+    .source-badge.google::before {
+      content: "G";
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: #4285f4;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 900;
     }
 
     .feature-grid {
@@ -408,40 +442,11 @@
       text-align: center;
     }
 
-    .lead-box {
-      padding: 22px;
-      text-align: center;
-      background: #f8fbff;
-      border-top: 1px solid var(--border);
-    }
-
-    body.premium-mode .lead-box {
-      background: #fffaf0;
-      border-top-color: #e6d6aa;
-    }
-
-    .lead-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .small {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-
     @media(max-width: 900px) {
       .summary-grid,
       .reviews-grid,
       .feature-grid {
         grid-template-columns: 1fr 1fr;
-      }
-
-      .lead-row {
-        grid-template-columns: 1fr;
       }
     }
 
@@ -594,25 +599,6 @@
     </div>
   </section>
 
-  <section class="card">
-    <div class="lead-box">
-      <h2>Want a demo page like this for your business?</h2>
-      <p class="sub">Enter contact details below. This demo does not send yet, but it shows how a lead form could work.</p>
-
-      <div class="lead-row">
-        <input class="input" placeholder="Name">
-        <input class="input" placeholder="Email">
-        <button class="btn" onclick="leadDemo()">Request Demo</button>
-      </div>
-
-      <div class="success-box" id="leadBox">
-        Demo request received. This is a sample success message.
-      </div>
-
-      <div class="small">Powered by AppLogix</div>
-    </div>
-  </section>
-
 </div>
 
 <script>
@@ -620,20 +606,53 @@
     {
       name: "Sarah M.",
       stars: "★★★★★",
+      source: "Collected by AppLogix",
+      sourceType: "app",
       text: "Super easy to use. We started collecting reviews instantly.",
       image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=800&q=80"
     },
     {
       name: "James R.",
       stars: "★★★★★",
+      source: "Collected by AppLogix",
+      sourceType: "app",
       text: "Our website finally looks professional with real customer feedback displayed clearly.",
       image: ""
     },
     {
       name: "Olivia K.",
       stars: "★★★★☆",
+      source: "Collected by AppLogix",
+      sourceType: "app",
       text: "The hosted page is simple, clean, and easy to share with customers.",
       image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80"
+    }
+  ];
+
+  const premiumReviews = [
+    {
+      name: "Megan L.",
+      stars: "★★★★★",
+      source: "Imported from Google",
+      sourceType: "google",
+      text: "Excellent communication from start to finish. The whole experience felt professional and organized.",
+      image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      name: "Robert T.",
+      stars: "★★★★★",
+      source: "Imported from Google",
+      sourceType: "google",
+      text: "Very knowledgeable and responsive. I appreciated how easy it was to get answers throughout the process.",
+      image: ""
+    },
+    {
+      name: "Ashley P.",
+      stars: "★★★★★",
+      source: "Collected by AppLogix",
+      sourceType: "app",
+      text: "The branded review page made it easy to leave feedback and looked polished on mobile.",
+      image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80"
     }
   ];
 
@@ -641,18 +660,24 @@
     {
       name: "Anonymous Team Member",
       stars: "★★★★☆",
+      source: "Private Feedback",
+      sourceType: "app",
       text: "The project is moving in the right direction, but clearer timelines would help everyone stay aligned.",
       image: ""
     },
     {
       name: "Anonymous Client",
       stars: "★★★★★",
+      source: "Private Feedback",
+      sourceType: "app",
       text: "I felt more comfortable giving honest feedback privately instead of saying everything face-to-face.",
       image: ""
     },
     {
       name: "Anonymous Staff Feedback",
       stars: "★★★★☆",
+      source: "Private Feedback",
+      sourceType: "app",
       text: "The new process is better overall, but a simple checklist would reduce confusion during handoffs.",
       image: ""
     }
@@ -661,6 +686,7 @@
   function renderReviews(items) {
     document.getElementById("reviewsGrid").innerHTML = items.map(item => `
       <div class="review">
+        ${item.source ? `<div class="source-badge ${item.sourceType === "google" ? "google" : ""}">${item.source}</div>` : ""}
         <strong>${item.name}</strong>
         <div class="stars">${item.stars}</div>
         <div>${item.text}</div>
@@ -677,7 +703,6 @@
   function setDemo(mode, btn) {
     setActiveButton(btn);
     document.getElementById("successBox").style.display = "none";
-    document.getElementById("leadBox").style.display = "none";
 
     if (mode === "default") {
       document.body.classList.remove("premium-mode");
@@ -737,24 +762,24 @@
       document.getElementById("logoMark").innerHTML = "NH<div class='logo-small'>REALTY</div>";
       document.getElementById("demoTitle").textContent = "NorthHaven Realty Reviews";
       document.getElementById("demoSubtitle").textContent =
-        "A premium branded hosted review page with a custom display name, richer theme, logo-style branding, and polished client-facing presentation.";
+        "A premium branded hosted review page showing collected AppLogix reviews alongside imported Google reviews.";
 
       document.getElementById("statOne").textContent = "4.9";
       document.getElementById("statOneLabel").textContent = "Average Rating";
       document.getElementById("statTwo").textContent = "84";
       document.getElementById("statTwoLabel").textContent = "Reviews Collected";
-      document.getElementById("statThree").textContent = "9";
-      document.getElementById("statThreeLabel").textContent = "Pending Review";
+      document.getElementById("statThree").textContent = "31";
+      document.getElementById("statThreeLabel").textContent = "Google Imports";
       document.getElementById("statFour").textContent = "5";
       document.getElementById("statFourLabel").textContent = "Hosted Pages";
 
-      document.getElementById("reviewHeading").textContent = "Example Reviews";
+      document.getElementById("reviewHeading").textContent = "Premium Review Display";
       document.getElementById("reviewSub").textContent =
-        "Demo content is fictional. Premium changes the branded presentation while keeping the same review system underneath.";
+        "Premium can display branded feedback and imported Google reviews together in one polished hosted page.";
 
       document.getElementById("dashboardHeading").textContent = "Premium Branding, Same Dashboard Control";
       document.getElementById("dashboardSub").textContent =
-        "Premium pages keep the AppLogix approval, QR, and page-management workflow while adding a stronger branded front-end.";
+        "Premium pages keep the AppLogix approval, QR, and page-management workflow while adding stronger branding and Google import support.";
 
       document.getElementById("featureOneTitle").textContent = "Client-Branded Display";
       document.getElementById("featureOneText").textContent = "Show custom colours, brand name, logo treatment, and a more premium visual style.";
@@ -772,7 +797,7 @@
       document.getElementById("formNote").textContent =
         "Reviews are submitted for spam screening prior to being displayed.";
 
-      renderReviews(publicReviews);
+      renderReviews(premiumReviews);
     }
 
     if (mode === "internal") {
@@ -826,10 +851,6 @@
 
   function fakeSubmit() {
     document.getElementById("successBox").style.display = "block";
-  }
-
-  function leadDemo() {
-    document.getElementById("leadBox").style.display = "block";
   }
 
   renderReviews(publicReviews);
