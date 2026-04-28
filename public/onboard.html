@@ -12,63 +12,75 @@
       --muted: #64748b;
       --success: #166534;
       --error: #b91c1c;
-      --bg: #eef5ff;
       --warning: #92400e;
     }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: linear-gradient(180deg, #eef5ff 0%, #f8fbff 100%);
       color: #1f2937;
     }
+
     .wrap {
       max-width: 1180px;
       margin: 0 auto;
       padding: 28px 16px 50px;
     }
+
     .hero, .card, .result-card {
       background: #fff;
       border: 1px solid var(--border);
       border-radius: 24px;
       box-shadow: 0 12px 30px rgba(15,23,42,.08);
     }
+
     .hero {
       overflow: hidden;
       margin-bottom: 22px;
     }
+
     .hero-top {
       height: 56px;
       background: linear-gradient(90deg, var(--secondary), var(--primary));
     }
+
     .hero-body {
       padding: 26px 22px;
       text-align: center;
     }
+
     .hero-body h1 {
       margin: 0 0 10px;
       color: #173b96;
     }
+
     .hero-body p {
       margin: 0 auto;
       max-width: 820px;
       color: var(--muted);
       line-height: 1.5;
     }
+
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 22px;
       margin-bottom: 22px;
     }
+
     .card {
       padding: 22px;
     }
+
     .card h2 {
       margin: 0 0 14px;
       color: #173b96;
       font-size: 1.35rem;
     }
+
     .field-label {
       display: block;
       font-size: .92rem;
@@ -76,6 +88,7 @@
       margin-bottom: 8px;
       color: #334155;
     }
+
     .field, .select, .textarea {
       width: 100%;
       padding: 13px 14px;
@@ -86,16 +99,19 @@
       color: #1f2937;
       margin-bottom: 14px;
     }
+
     .two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
     }
+
     .three-col {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       gap: 14px;
     }
+
     .muted {
       color: var(--muted);
       font-size: .92rem;
@@ -103,6 +119,7 @@
       margin-bottom: 14px;
       line-height: 1.45;
     }
+
     .notice {
       padding: 12px 14px;
       border-radius: 14px;
@@ -114,6 +131,7 @@
       margin-bottom: 14px;
       font-size: .92rem;
     }
+
     .check-row {
       display: flex;
       align-items: flex-start;
@@ -122,6 +140,7 @@
       color: #334155;
       font-weight: 600;
     }
+
     .submit-btn, .copy-btn, .secondary-btn, .unlock-btn, .clear-btn {
       border: none;
       border-radius: 14px;
@@ -131,31 +150,37 @@
       cursor: pointer;
       width: 100%;
     }
+
     .submit-btn {
       background: linear-gradient(180deg, var(--secondary), var(--primary));
       color: white;
       margin-top: 10px;
     }
+
     .secondary-btn {
       background: #173b96;
       color: white;
       margin-bottom: 10px;
     }
+
     .copy-btn {
       background: #173b96;
       color: #fff;
       margin-top: 10px;
     }
+
     .unlock-btn {
       background: linear-gradient(180deg, var(--secondary), var(--primary));
       color: white;
     }
+
     .clear-btn {
       background: #eef4ff;
       color: #1e3a8a;
       border: 1px solid var(--border);
       margin-top: 12px;
     }
+
     .status {
       margin-top: 12px;
       text-align: center;
@@ -163,12 +188,15 @@
       white-space: pre-wrap;
       min-height: 22px;
     }
+
     .error { color: var(--error); }
     .success { color: var(--success); }
+
     .result-card {
       padding: 22px;
       display: none;
     }
+
     .result-block {
       margin-bottom: 22px;
       padding: 16px;
@@ -176,10 +204,12 @@
       border-radius: 18px;
       background: #f9fbff;
     }
+
     .result-line {
       margin-bottom: 8px;
       word-break: break-word;
     }
+
     .code-box {
       width: 100%;
       min-height: 180px;
@@ -192,9 +222,9 @@
       color: #0f172a;
       resize: vertical;
     }
-    .hidden {
-      display: none;
-    }
+
+    .hidden { display: none; }
+
     @media (max-width: 900px) {
       .grid, .two-col, .three-col {
         grid-template-columns: 1fr;
@@ -202,6 +232,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="wrap">
 
@@ -237,6 +268,7 @@
             <option value="main">Business / Realtor Main Page</option>
             <option value="listing">Individual Listing Page</option>
           </select>
+
           <div id="listingNotice" class="notice hidden">
             Individual listing pages are hosted-only and require Pro or Premium. They can reuse the realtor's existing dashboard email, but every listing must have a unique Business ID.
           </div>
@@ -262,6 +294,7 @@
                 <option value="premium">Premium</option>
               </select>
             </div>
+
             <div>
               <label class="field-label" for="deliveryType">Delivery Type</label>
               <select id="deliveryType" class="select">
@@ -558,6 +591,7 @@
       }
 
       setLoginStatus("Checking access...");
+
       try {
         await verifyToken(token);
         ADMIN_TOKEN = token;
@@ -570,6 +604,7 @@
     }
 
     document.getElementById("unlockBtn").addEventListener("click", unlockOnboarding);
+
     document.getElementById("clearTokenBtn").addEventListener("click", () => {
       ADMIN_TOKEN = "";
       adminTokenInput.value = "";
@@ -614,9 +649,11 @@
       const billingDay = Math.max(1, Math.min(28, parseInt(billingDayEl.value || "1", 10)));
       const today = new Date();
       let next = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), billingDay));
+
       if (next <= today) {
         next = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, billingDay));
       }
+
       nextInvoiceDateEl.value = next.toISOString().slice(0, 10);
     }
 
@@ -665,6 +702,7 @@
       const addon = includesWidget(delivery) && includesHosted(delivery)
         ? Number((base * 0.5).toFixed(2))
         : 0;
+
       const total = base + addon;
 
       baseMonthlyPriceEl.value = base.toFixed(2);
@@ -725,7 +763,7 @@
         pageType: pageTypeEl.value,
         businessName: businessNameEl.value.trim(),
         businessId: businessIdEl.value.trim(),
-        clientEmail: document.getElementById("clientEmail").value.trim(),
+        clientEmail: document.getElementById("clientEmail").value.trim().toLowerCase(),
         planTier: planTierEl.value,
         deliveryType: deliveryTypeEl.value,
         tempPassword: document.getElementById("tempPassword").value.trim(),
@@ -736,7 +774,7 @@
         brandPrimary: document.getElementById("brandPrimary").value.trim(),
         brandSecondary: document.getElementById("brandSecondary").value.trim(),
         brandLogoUrl: document.getElementById("brandLogoUrl").value.trim(),
-        notificationEmail: document.getElementById("notificationEmail").value.trim(),
+        notificationEmail: document.getElementById("notificationEmail").value.trim().toLowerCase(),
         notificationsEnabled: (planTierEl.value === "pro" || planTierEl.value === "premium"),
         brandingEnabled: (planTierEl.value === "premium"),
         googleImportEnabled: (planTierEl.value === "premium")
@@ -750,10 +788,10 @@
         setupFeeAmount: Number(setupFeeAmountEl.value || 0),
         billingDay: Number(billingDayEl.value || 1),
         nextInvoiceDate: nextInvoiceDateEl.value,
-        nextBillingDate: nextInvoiceDateE1.value,
+        nextBillingDate: nextInvoiceDateEl.value,
         billingStatus: document.getElementById("billingStatus").value,
         partnerName: document.getElementById("partnerName").value.trim(),
-        partnerEmail: document.getElementById("partnerEmail").value.trim(),
+        partnerEmail: document.getElementById("partnerEmail").value.trim().toLowerCase(),
         partnerCommissionPercent: Number(partnerCommissionPercentEl.value || 0),
         termsAccepted: document.getElementById("termsAccepted").checked
       };
@@ -768,6 +806,7 @@
         if (payload.deliveryType !== "hosted") {
           return "Individual listing pages must be hosted-only.";
         }
+
         if (payload.planTier !== "pro" && payload.planTier !== "premium") {
           return "Individual listing pages require Pro or Premium.";
         }
@@ -782,177 +821,3 @@
       }
 
       if (requireTerms && !payload.termsAccepted) {
-        return "Terms and conditions must be accepted during onboarding.";
-      }
-
-      return "";
-    }
-
-    businessNameEl.addEventListener("input", () => {
-      if (!businessIdTouched) businessIdEl.value = slugify(businessNameEl.value);
-      if (!brandNameEl.value.trim()) brandNameEl.value = businessNameEl.value;
-    });
-
-    businessIdEl.addEventListener("input", () => {
-      businessIdTouched = true;
-    });
-
-    pageTypeEl.addEventListener("change", updateUI);
-    planTierEl.addEventListener("change", updateUI);
-    deliveryTypeEl.addEventListener("change", updateUI);
-    [partnerCommissionPercentEl, totalMonthlyPriceEl, setupFeeAmountEl].forEach(el => el.addEventListener("input", updateTaxDisplays));
-    billingDayEl.addEventListener("input", computeNextInvoiceDate);
-
-    async function copyText(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (_) {
-        return false;
-      }
-    }
-
-    document.addEventListener("click", async (e) => {
-      if (!e.target.matches(".copy-btn")) return;
-      const target = document.getElementById(e.target.getAttribute("data-copy-target"));
-      const text = target.value !== undefined ? target.value : target.innerText;
-      const ok = await copyText(text);
-      const original = e.target.innerText;
-      e.target.innerText = ok ? "Copied" : "Copy failed";
-      setTimeout(() => e.target.innerText = original, 1200);
-    });
-
-    document.getElementById("preOnboardBtn").addEventListener("click", async () => {
-      const payload = getPayload();
-      const error = validateCore(payload, false);
-
-      if (error) {
-        statusEl.className = "status error";
-        statusEl.innerText = error;
-        return;
-      }
-
-      statusEl.className = "status";
-      statusEl.innerText = "Sending pre-onboarding email...";
-
-      try {
-        const res = await fetch("/send-pre-onboard-email", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-token": getAdminToken()
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const text = await res.text();
-        if (!res.ok) {
-          throw new Error(text || "Failed to send pre-onboarding email.");
-        }
-
-        statusEl.className = "status success";
-        statusEl.innerText = "Pre-onboarding email sent successfully.";
-      } catch (err) {
-        statusEl.className = "status error";
-        statusEl.innerText = err.message || "Failed to send pre-onboarding email.";
-      }
-    });
-
-    document.getElementById("createBtn").addEventListener("click", async () => {
-      const payload = getPayload();
-      const error = validateCore(payload, true);
-
-      if (error) {
-        statusEl.className = "status error";
-        statusEl.innerText = error;
-        return;
-      }
-
-      statusEl.className = "status";
-      statusEl.innerText = "Creating client/page...";
-
-      try {
-        const res = await fetch("/create-client", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-token": getAdminToken()
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const text = await res.text();
-        let data = null;
-        try {
-          data = JSON.parse(text);
-        } catch (_) {}
-
-        if (!res.ok) {
-          throw new Error(data?.error || text || "Failed to create client/page.");
-        }
-
-        resultCard.style.display = "block";
-
-        document.getElementById("summaryLines").innerHTML = [
-          `<div class="result-line"><strong>Page Type:</strong> ${payload.pageType === "listing" ? "Individual Listing Page" : "Business / Realtor Main Page"}</div>`,
-          `<div class="result-line"><strong>Business/Page:</strong> ${data.businessName}</div>`,
-          `<div class="result-line"><strong>Business ID:</strong> ${data.businessId}</div>`,
-          `<div class="result-line"><strong>Client Email:</strong> ${data.clientEmail}</div>`,
-          `<div class="result-line"><strong>Plan:</strong> ${data.planTier}</div>`,
-          `<div class="result-line"><strong>Delivery:</strong> ${data.deliveryType}</div>`,
-          `<div class="result-line"><strong>Total Monthly (pre-tax):</strong> $${Number(data.totalMonthlyPrice || 0).toFixed(2)}</div>`,
-          `<div class="result-line"><strong>Monthly HST:</strong> $${calcTax(Number(data.totalMonthlyPrice || 0)).toFixed(2)}</div>`,
-          `<div class="result-line"><strong>Monthly Total with HST:</strong> $${calcTotalWithTax(Number(data.totalMonthlyPrice || 0)).toFixed(2)}</div>`,
-          `<div class="result-line"><strong>Next Invoice Date:</strong> ${data.nextInvoiceDate || ""}</div>`,
-          `<div class="result-line"><strong>Partner Commission %:</strong> ${Number(data.partnerCommissionPercent || 0).toFixed(2)}%</div>`
-        ].join("");
-
-        const hostedBlock = document.getElementById("hostedResultBlock");
-        if (payload.deliveryType === "hosted" || payload.deliveryType === "both") {
-          hostedBlock.style.display = "block";
-          document.getElementById("hostedPageUrl").innerText = data.hostedPageUrl || "";
-        } else {
-          hostedBlock.style.display = "none";
-        }
-
-        const widgetBlock = document.getElementById("widgetResultBlock");
-        if (payload.deliveryType === "widget" || payload.deliveryType === "both") {
-          widgetBlock.style.display = "block";
-          document.getElementById("widgetCode").value = data.widgetCode || "";
-        } else {
-          widgetBlock.style.display = "none";
-        }
-
-        document.getElementById("welcomeEmail").value = data.welcomeEmail || "";
-
-        const dashboardBlock = document.getElementById("dashboardBlock");
-        if (data.dashboardIncluded) {
-          dashboardBlock.style.display = "block";
-          document.getElementById("dashboardUrl").innerHTML = `<strong>Dashboard:</strong> ${data.dashboardUrl || ""}`;
-          document.getElementById("dashboardEmail").innerHTML = `<strong>Email:</strong> ${data.clientEmail || ""}`;
-          document.getElementById("dashboardPassword").innerHTML = `<strong>Temporary Password:</strong> ${data.tempPassword || ""}`;
-        } else {
-          dashboardBlock.style.display = "none";
-        }
-
-        statusEl.className = "status success";
-        statusEl.innerText = payload.planTier === "premium"
-          ? "Client/page created successfully. Premium onboarding email remains manual."
-          : "Client/page created successfully. Onboarding email was sent automatically if email service is configured.";
-
-        resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
-      } catch (err) {
-        statusEl.className = "status error";
-        statusEl.innerText = err.message || "Error creating client/page.";
-      }
-    });
-
-    function boot() {
-      showLocked();
-    }
-
-    updateUI();
-    boot();
-  </script>
-</body>
-</html>
