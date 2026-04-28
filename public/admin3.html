@@ -28,12 +28,13 @@
       font-size: 28px;
       font-weight: 800;
       margin-bottom: 8px;
+      color: #1e3a8a;
     }
     .sub {
       color: #64748b;
       margin-bottom: 16px;
     }
-    .input {
+    .input, .select {
       width: 100%;
       box-sizing: border-box;
       padding: 14px;
@@ -69,7 +70,7 @@
     }
     .btn.gray { background: #64748b; }
     .btn.green { background: #16a34a; }
-    .btn.orange { background: #f59e0b; }
+    .btn.orange { background: #f59e0b; color: #111827; }
     .btn.red { background: #dc2626; }
     .btn.secondary { background: #1e3a8a; }
     .btn.light {
@@ -81,10 +82,9 @@
       margin-top: 12px;
       font-size: 14px;
       white-space: pre-wrap;
+      color: #64748b;
     }
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
     .review {
       border: 1px solid #dbe7fb;
       border-radius: 14px;
@@ -200,6 +200,29 @@
       color: #64748b;
       margin-top: 8px;
     }
+    .page-selector-card {
+      background: #f8fbff;
+      border: 1px solid #dbe7fb;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+    .page-selector-card label {
+      display: block;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 6px;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
     @media (max-width: 700px) {
       .stats-grid {
         grid-template-columns: 1fr 1fr;
@@ -234,6 +257,12 @@
     </div>
 
     <div id="dashboardCard" class="card hidden">
+      <div id="multiPageSelector" class="page-selector-card hidden">
+        <label for="managedPageSelect">Manage Page / Listing</label>
+        <select id="managedPageSelect" class="select"></select>
+        <div class="small-note">Switch between hosted pages tied to this login.</div>
+      </div>
+
       <div id="businessLabel" class="sub"></div>
 
       <div class="stats-grid">
@@ -309,6 +338,9 @@
 
     let supabase = null;
     let session = null;
+    let profileData = null;
+    let managedHostedPages = [];
+
     let businessId = null;
     let planTier = null;
     let businessName = null;
@@ -316,6 +348,8 @@
     let hostedUrl = "";
     let currentQrUrl = "";
     let deliveryType = "widget";
+    let nextInvoiceDate = "—";
+    let googleImportEnabled = false;
 
     function setStatus(message) {
       document.getElementById("status").textContent = message;
@@ -365,6 +399,11 @@
 
         document.getElementById("password").addEventListener("keydown", function (e) {
           if (e.key === "Enter") login();
+        });
+
+        document.getElementById("managedPageSelect").addEventListener("change", function () {
+          const selectedId = this.value;
+          selectManagedPage(selectedId);
         });
       } catch (err) {
         setStatus("Init failed: " + (err.message || "Unknown error"));
@@ -424,43 +463,107 @@
           return;
         }
 
-        const profile = JSON.parse(text);
-        businessId = profile.businessId;
-        planTier = (profile.planTier || "").toLowerCase();
-        businessName = profile.brandName || profile.businessName || profile.businessId || "Your Business";
-        reviewPageUrl = profile.reviewPageUrl || "";
-        hostedUrl = window.location.origin + "/r/" + businessId;
-        deliveryType = (profile.deliveryType || "widget").toLowerCase();
+        profileData = JSON.parse(text);
+        managedHostedPages = Array.isArray(profileData.managedHostedPages) ? profileData.managedHostedPages : [];
 
         document.getElementById("loginCard").classList.add("hidden");
         document.getElementById("logoutBtn").classList.remove("hidden");
 
-        if (profile.mustResetPassword) {
+        if (profileData.mustResetPassword) {
           document.getElementById("resetCard").classList.remove("hidden");
           setStatus("Password reset required.");
           return;
         }
 
+        setupManagedPages();
+
         document.getElementById("dashboardCard").classList.remove("hidden");
-        document.getElementById("businessLabel").textContent =
-          "Business ID: " + businessId + " | Plan: " + planTier + " | Delivery: " + deliveryType;
 
-        document.getElementById("nextBillingDate").textContent = profile.nextInvoiceDate || "—";
-
-        if (planTier === "pro" || planTier === "premium") {
-          document.getElementById("reviewToolsCard").classList.remove("hidden");
-          document.getElementById("messageCard").classList.remove("hidden");
-          setupReviewTools();
+        if (managedHostedPages.length > 1) {
+          selectManagedPage(managedHostedPages[0].businessId);
+        } else {
+          applyProfileToCurrentPage(profileData);
+          await afterPageSelected();
         }
-
-        if (planTier === "premium") {
-          document.getElementById("premiumInviteCard").classList.remove("hidden");
-        }
-
-        await loadReviews();
       } catch (err) {
         setStatus("Profile exception: " + (err.message || "Unknown error"));
       }
+    }
+
+    function setupManagedPages() {
+      const selectorCard = document.getElementById("multiPageSelector");
+      const select = document.getElementById("managedPageSelect");
+
+      if (!managedHostedPages.length || managedHostedPages.length === 1) {
+        selectorCard.classList.add("hidden");
+        select.innerHTML = "";
+        return;
+      }
+
+      selectorCard.classList.remove("hidden");
+      select.innerHTML = managedHostedPages.map(page => `
+        <option value="${escapeHtml(page.businessId)}">
+          ${escapeHtml(page.businessName || page.businessId)} (${escapeHtml(page.businessId)})
+        </option>
+      `).join("");
+    }
+
+    async function selectManagedPage(selectedBusinessId) {
+      const page = managedHostedPages.find(p => p.businessId === selectedBusinessId);
+      if (!page) return;
+
+      businessId = page.businessId;
+      planTier = (page.planTier || "").toLowerCase();
+      businessName = page.brandName || page.businessName || page.businessId || "Your Business";
+      reviewPageUrl = page.reviewPageUrl || "";
+      hostedUrl = page.hostedPageUrl || (window.location.origin + "/r/" + businessId);
+      deliveryType = (page.deliveryType || "hosted").toLowerCase();
+      nextInvoiceDate = "—";
+      googleImportEnabled = !!page.googleImportEnabled;
+
+      await afterPageSelected();
+    }
+
+    function applyProfileToCurrentPage(profile) {
+      businessId = profile.businessId;
+      planTier = (profile.planTier || "").toLowerCase();
+      businessName = profile.brandName || profile.businessName || profile.businessId || "Your Business";
+      reviewPageUrl = profile.reviewPageUrl || "";
+      hostedUrl = window.location.origin + "/r/" + businessId;
+      deliveryType = (profile.deliveryType || "widget").toLowerCase();
+      nextInvoiceDate = profile.nextInvoiceDate || "—";
+      googleImportEnabled = !!profile.googleImportEnabled;
+    }
+
+    async function afterPageSelected() {
+      currentQrUrl = "";
+      const canvas = document.getElementById("qrCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      document.getElementById("businessLabel").innerHTML =
+        "Business ID: " + escapeHtml(businessId) +
+        " | Plan: " + escapeHtml(planTier) +
+        " | Delivery: " + escapeHtml(deliveryType) +
+        (managedHostedPages.length > 1 ? " <span class='badge'>Managed hosted page</span>" : "");
+
+      document.getElementById("nextBillingDate").textContent = nextInvoiceDate || "—";
+
+      document.getElementById("reviewToolsCard").classList.add("hidden");
+      document.getElementById("messageCard").classList.add("hidden");
+      document.getElementById("premiumInviteCard").classList.add("hidden");
+
+      if (planTier === "pro" || planTier === "premium") {
+        document.getElementById("reviewToolsCard").classList.remove("hidden");
+        document.getElementById("messageCard").classList.remove("hidden");
+        setupReviewTools();
+      }
+
+      if (planTier === "premium") {
+        document.getElementById("premiumInviteCard").classList.remove("hidden");
+      }
+
+      await loadReviews();
     }
 
     function setupReviewTools() {
@@ -649,7 +752,7 @@ Thank you!`;
       document.getElementById("averageRating").textContent = avg.toFixed(1);
 
       if (!Array.isArray(data) || !data.length) {
-        document.getElementById("reviews").innerHTML = "<div class='card'>No reviews found.</div>";
+        document.getElementById("reviews").innerHTML = "<div class='card'>No reviews found for this page.</div>";
         return;
       }
 
@@ -696,6 +799,9 @@ Thank you!`;
     };
 
     window.removeReview = async function (id) {
+      const confirmed = confirm("Delete this review?");
+      if (!confirmed) return;
+
       await fetch("/reviews/" + id, {
         method: "DELETE",
         headers: {
@@ -725,7 +831,8 @@ Thank you!`;
         },
         body: JSON.stringify({
           reviewerEmail,
-          reviewerName
+          reviewerName,
+          businessId
         })
       });
 
