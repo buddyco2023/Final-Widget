@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AppLogix Demo</title>
+
+  <style>
+    :root {
+      --primary: #2563eb;
+      --secondary: #4ea3ff;
+      --gold: #ffd84d;
+      --bg: #eef5ff;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #64748b;
+      --border: #dbe7fb;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #eef5ff 0%, #f8fbff 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px 50px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 12px 30px rgba(15,23,42,.08);
+      margin-bottom: 22px;
+    }
+
+    .hero {
+      overflow: hidden;
+    }
+
+    .hero-top {
+      height: 56px;
+      background: linear-gradient(90deg, var(--secondary), var(--primary));
+    }
+
+    .hero-body {
+      padding: 26px;
+      text-align: center;
+    }
+
+    .hero-body h1 {
+      margin: 0 0 10px;
+      color: #173b96;
+    }
+
+    .hero-body p {
+      color: var(--muted);
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .review {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      background: #f9fbff;
+    }
+
+    .review strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1.1rem;
+    }
+
+    .stars {
+      color: var(--gold);
+      margin-bottom: 8px;
+      font-size: 1.2rem;
+    }
+
+    .review img {
+      width: 100%;
+      border-radius: 14px;
+      margin-top: 10px;
+    }
+
+    .form {
+      padding: 20px;
+    }
+
+    .input, .textarea {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(180deg, var(--secondary), var(--primary));
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .note {
+      text-align: center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .premium-note {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    @media(max-width:900px){
+      .reviews-grid{
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media(max-width:600px){
+      .reviews-grid{
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="card hero">
+    <div class="hero-top"></div>
+    <div class="hero-body">
+      <h1>Customer Reviews</h1>
+      <p>This is a live preview of the AppLogix review system. Collect, manage, and display real customer feedback in seconds.</p>
+    </div>
+  </div>
+
+  <!-- REVIEWS -->
+  <div class="card">
+    <div class="reviews-grid">
+
+      <div class="review">
+        <strong>Sarah M.</strong>
+        <div class="stars">★★★★★</div>
+        <div>Super easy to use. We started collecting reviews instantly.</div>
+        <img src="https://images.unsplash.com/photo-1556740749-887f6717d7e4" />
+      </div>
+
+      <div class="review">
+        <strong>James R.</strong>
+        <div class="stars">★★★★★</div>
+        <div>Our website finally looks professional with real testimonials.</div>
+      </div>
+
+      <div class="review">
+        <strong>Olivia K.</strong>
+        <div class="stars">★★★★☆</div>
+        <div>Great system, especially the hosted pages.</div>
+        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a" />
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FORM -->
+  <div class="card form">
+    <h2>Leave a Review</h2>
+
+    <input class="input" placeholder="Your name">
+
+    <textarea class="textarea" placeholder="Share your experience..."></textarea>
+
+    <button class="btn">Submit Review</button>
+
+    <div class="note">
+      Reviews are submitted for spam screening prior to being displayed.
+    </div>
+
+    <div class="premium-note">
+      *Advanced branding and customization available on Premium plans
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
