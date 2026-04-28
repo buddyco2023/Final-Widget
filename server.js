@@ -724,7 +724,8 @@ app.post("/send-pre-onboard-email", requireAdminToken, async (req, res) => {
       clientEmail,
       planTier,
       deliveryType,
-      reviewPageUrl
+      reviewPageUrl,
+      nextBillingDate
     } = req.body;
 
     if (!businessName || !clientEmail || !planTier) {
@@ -752,6 +753,7 @@ app.post("/send-pre-onboard-email", requireAdminToken, async (req, res) => {
             <ul style="line-height:1.6;color:#334155;">
               <li><strong>Plan:</strong> ${escapeHtml(planTier)}</li>
               <li><strong>Delivery Type:</strong> ${escapeHtml(deliveryType)}</li>
+              ${nextBillingDate ? `<li><strong>Next Billing Date:</strong> ${escapeHtml(nextBillingDate)}</li>` : ""}
               ${reviewPageUrl ? `<li><strong>Website URL:</strong> ${escapeHtml(reviewPageUrl)}</li>` : ""}
             </ul>
 
