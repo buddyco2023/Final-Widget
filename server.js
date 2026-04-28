@@ -2117,6 +2117,103 @@ app.post("/import-google-review", async (req, res) => {
 });
 
 // ------------------------------
+// Request cancellation
+// ------------------------------
+app.post("/request-cancellation", async (req, res) => {
+  try {
+    if (!resend || !RESEND_FROM) {
+      return res.status(500).send("Email service is not configured.");
+    }
+
+    const user = await getUserFromBearer(req);
+    const businessId = (req.body.businessId || "").trim();
+
+    if (!businessId) {
+      return res.status(400).send("Missing businessId.");
+    }
+
+    const profile = await getAuthorizedProfileForBusiness(user.email, businessId);
+
+    const businessName = profile.brand_name || prettyBusinessName(businessId);
+    const clientEmail = profile.email || user.email || "";
+    const planTier = profile.plan_tier || "";
+    const deliveryType = profile.delivery_type || "";
+    const timestamp = new Date().toISOString();
+
+    try {
+      const { error: flagError } = await supabaseAdmin
+        .from("admin_users")
+        .update({ cancellation_requested: true })
+        .eq("business_id", businessId)
+        .eq("email", profile.email);
+
+      if (flagError) {
+        console.warn("Optional cancellation_requested flag not saved:", flagError.message);
+      }
+    } catch (flagErr) {
+      console.warn("Optional cancellation_requested flag failed:", flagErr.message || flagErr);
+    }
+
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: [CONTACT_EMAIL],
+      reply_to: clientEmail || CONTACT_EMAIL,
+      subject: "Cancellation Request - AppLogix",
+      html: `
+        <div style="font-family:Arial,sans-serif;padding:24px;background:#eef5ff;">
+          <div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #dbe7fb;border-radius:18px;padding:24px;">
+            <div style="text-align:center;margin-bottom:20px;">
+              <img src="${BRAND_LOGO_PUBLIC_URL}" alt="AppLogix" style="max-height:60px;max-width:240px;">
+            </div>
+
+            <h2 style="margin-top:0;color:#1e3a8a;">Cancellation Request</h2>
+
+            <p style="color:#334155;">A client has requested cancellation. This is a notification only. No account has been deactivated automatically.</p>
+
+            <table style="width:100%;border-collapse:collapse;margin-top:18px;">
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Client Email</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${escapeHtml(clientEmail)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Business ID</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${escapeHtml(businessId)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Business Name</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${escapeHtml(businessName)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Plan Tier</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${escapeHtml(planTier)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Delivery Type</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${escapeHtml(deliveryType)}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#64748b;"><strong>Timestamp</strong></td>
+                <td style="padding:8px 0;color:#0f172a;">${escapeHtml(timestamp)}</td>
+              </tr>
+            </table>
+
+            <div style="margin-top:24px;color:#64748b;font-size:14px;">
+              ${escapeHtml(LEGAL_COMPANY_NAME)}<br/>
+              ${escapeHtml(CONTACT_EMAIL)}
+            </div>
+          </div>
+        </div>
+      `
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("POST /request-cancellation error:", err);
+    res.status(401).send(err.message || "Failed to request cancellation.");
+  }
+});
+
+// ------------------------------
 // Admin moderation
 // ------------------------------
 app.put("/reviews/:id", async (req, res) => {
