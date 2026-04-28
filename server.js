@@ -498,49 +498,141 @@ async function getUserFromBearer(req) {
   return data.user;
 }
 
-async function getAdminProfileByEmail(email) {
+const ADMIN_PROFILE_SELECT = `
+  email,
+  business_id,
+  must_reset_password,
+  notifications_enabled,
+  notification_email,
+  plan_tier,
+  google_import_enabled,
+  branding_enabled,
+  review_page_url,
+  brand_name,
+  brand_primary,
+  brand_secondary,
+  brand_logo_url,
+  active,
+  setup_fee_paid,
+  partner_name,
+  partner_email,
+  delivery_type,
+  hosted_header,
+  hosted_footer,
+  base_monthly_price,
+  hosted_addon_price,
+  total_monthly_price,
+  setup_fee_amount,
+  billing_day,
+  next_invoice_date,
+  last_payment_date,
+  billing_status,
+  partner_commission_percent,
+  terms_accepted,
+  terms_accepted_at
+`;
+
+async function getAdminProfilesByEmail(email) {
   const { data, error } = await supabaseAdmin
     .from("admin_users")
-    .select(`
-      email,
-      business_id,
-      must_reset_password,
-      notifications_enabled,
-      notification_email,
-      plan_tier,
-      google_import_enabled,
-      branding_enabled,
-      review_page_url,
-      brand_name,
-      brand_primary,
-      brand_secondary,
-      brand_logo_url,
-      active,
-      setup_fee_paid,
-      partner_name,
-      partner_email,
-      delivery_type,
-      hosted_header,
-      hosted_footer,
-      base_monthly_price,
-      hosted_addon_price,
-      total_monthly_price,
-      setup_fee_amount,
-      billing_day,
-      next_invoice_date,
-      last_payment_date,
-      billing_status,
-      partner_commission_percent,
-      terms_accepted,
-      terms_accepted_at
-    `)
+    .select(ADMIN_PROFILE_SELECT)
     .eq("email", email)
-    .limit(1);
+    .order("business_id", { ascending: true });
 
   if (error) throw error;
   if (!data || !data.length) throw new Error("Admin profile not found");
 
-  return data[0];
+  return data;
+}
+
+function choosePrimaryProfile(profiles) {
+  const activeProfiles = (profiles || []).filter((p) => p.active !== false);
+  const pool = activeProfiles.length ? activeProfiles : profiles || [];
+
+  return (
+    pool.find((p) => includesWidget(p.delivery_type || "widget")) ||
+    pool.find((p) => PAID_DASHBOARD_PLANS.includes((p.plan_tier || "").toLowerCase())) ||
+    pool[0]
+  );
+}
+
+function formatManagedHostedPages(profiles) {
+  return (profiles || [])
+    .filter((p) => includesHosted(p.delivery_type || "widget"))
+    .filter((p) => PAID_DASHBOARD_PLANS.includes((p.plan_tier || "").toLowerCase()))
+    .map((p) => ({
+      businessId: p.business_id,
+      businessName: p.brand_name || prettyBusinessName(p.business_id),
+      email: p.email || "",
+      planTier: p.plan_tier || "",
+      active: p.active !== false,
+      deliveryType: p.delivery_type || "hosted",
+      brandingEnabled: !!p.branding_enabled,
+      googleImportEnabled: !!p.google_import_enabled,
+      reviewPageUrl: p.review_page_url || "",
+      hostedPageUrl: `${PUBLIC_APP_URL}/r/${p.business_id}`,
+      brandName: p.brand_name || "",
+      brandPrimary: p.brand_primary || "",
+      brandSecondary: p.brand_secondary || "",
+      brandLogoUrl: p.brand_logo_url || "",
+      hostedHeader: p.hosted_header || "",
+      hostedFooter: p.hosted_footer || "",
+      notificationsEnabled: !!p.notifications_enabled,
+      notificationEmail: p.notification_email || ""
+    }));
+}
+
+async function getAdminProfileByEmail(email) {
+  const profiles = await getAdminProfilesByEmail(email);
+  return choosePrimaryProfile(profiles);
+}
+
+async function getAuthorizedProfileForBusiness(email, businessId) {
+  const profiles = await getAdminProfilesByEmail(email);
+  const primary = choosePrimaryProfile(profiles);
+  const target = profiles.find((p) => p.business_id === businessId);
+
+  if (!target) {
+    throw new Error("Business is not assigned to this login.");
+  }
+
+  const primaryBusinessId = primary?.business_id || "";
+  const targetDeliveryType = target.delivery_type || "widget";
+
+  if (businessId === primaryBusinessId) {
+    return target;
+  }
+
+  if (!includesHosted(targetDeliveryType)) {
+    throw new Error("Only hosted pages can be grouped under one login.");
+  }
+
+  if (!PAID_DASHBOARD_PLANS.includes((target.plan_tier || "").toLowerCase())) {
+    throw new Error("This hosted page does not include dashboard access.");
+  }
+
+  return target;
+}
+
+async function getAuthorizedBusinessIdsForEmail(email) {
+  const profiles = await getAdminProfilesByEmail(email);
+  const primary = choosePrimaryProfile(profiles);
+  const ids = new Set();
+
+  if (primary?.business_id) {
+    ids.add(primary.business_id);
+  }
+
+  for (const p of profiles) {
+    if (
+      includesHosted(p.delivery_type || "widget") &&
+      PAID_DASHBOARD_PLANS.includes((p.plan_tier || "").toLowerCase())
+    ) {
+      ids.add(p.business_id);
+    }
+  }
+
+  return Array.from(ids);
 }
 
 async function getBusinessProfile(businessId) {
@@ -698,7 +790,8 @@ app.post("/upload", async (req, res) => {
 app.post("/admin-me", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
-    const profile = await getAdminProfileByEmail(user.email);
+    const profiles = await getAdminProfilesByEmail(user.email);
+    const profile = choosePrimaryProfile(profiles);
 
     if (!PAID_DASHBOARD_PLANS.includes((profile.plan_tier || "").toLowerCase())) {
       return res.status(403).send("This plan does not include dashboard access.");
@@ -733,7 +826,8 @@ app.post("/admin-me", async (req, res) => {
       billingStatus: profile.billing_status || "active",
       partnerName: profile.partner_name || "",
       partnerEmail: profile.partner_email || "",
-      partnerCommissionPercent: coerceMoney(profile.partner_commission_percent, 25)
+      partnerCommissionPercent: coerceMoney(profile.partner_commission_percent, 25),
+      managedHostedPages: formatManagedHostedPages(profiles)
     });
   } catch (err) {
     console.error("POST /admin-me error:", err);
@@ -744,7 +838,8 @@ app.post("/admin-me", async (req, res) => {
 app.post("/admin-mark-password-reset-complete", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
-    const profile = await getAdminProfileByEmail(user.email);
+    const profiles = await getAdminProfilesByEmail(user.email);
+    const profile = choosePrimaryProfile(profiles);
 
     if (!PAID_DASHBOARD_PLANS.includes((profile.plan_tier || "").toLowerCase())) {
       return res.status(403).send("This plan does not include dashboard access.");
@@ -1033,6 +1128,36 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       return res.status(400).send("Temporary password is required for Pro and Premium plans.");
     }
 
+    const { data: existingByBusinessId, error: existingBusinessErr } = await supabaseAdmin
+      .from("admin_users")
+      .select("email,business_id,delivery_type")
+      .eq("business_id", businessId)
+      .limit(1);
+
+    if (existingBusinessErr) return res.status(500).send(existingBusinessErr.message);
+    if (existingByBusinessId && existingByBusinessId.length) {
+      return res.status(400).send("An admin row already exists with that business ID.");
+    }
+
+    const { data: existingByEmail, error: existingEmailErr } = await supabaseAdmin
+      .from("admin_users")
+      .select("email,business_id,delivery_type")
+      .eq("email", clientEmail);
+
+    if (existingEmailErr) return res.status(500).send(existingEmailErr.message);
+
+    if (includesWidget(deliveryType) && existingByEmail && existingByEmail.length) {
+      return res.status(400).send("Widget or combined delivery accounts must use a unique login email.");
+    }
+
+    if (!includesHosted(deliveryType) && existingByEmail && existingByEmail.length) {
+      return res.status(400).send("This delivery type must use a unique login email.");
+    }
+
+    if (existingByEmail && existingByEmail.some((row) => includesWidget(row.delivery_type || "widget"))) {
+      return res.status(400).send("This email is already tied to a widget account and cannot be reused for grouped hosted pages.");
+    }
+
     if (planTier === PLAN_FREE || planTier === PLAN_BASIC) {
       notificationsEnabled = false;
       notificationEmail = "";
@@ -1053,16 +1178,6 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       if (!notificationEmail) notificationEmail = clientEmail;
     }
 
-    const { data: existingAdmins, error: existingAdminErr } = await supabaseAdmin
-      .from("admin_users")
-      .select("email,business_id")
-      .or(`email.eq.${clientEmail},business_id.eq.${businessId}`);
-
-    if (existingAdminErr) return res.status(500).send(existingAdminErr.message);
-    if (existingAdmins && existingAdmins.length) {
-      return res.status(400).send("An admin row already exists with that email or business ID.");
-    }
-
     let authData = null;
 
     if (isDashboardPlan) {
@@ -1073,16 +1188,24 @@ app.post("/create-client", requireAdminToken, async (req, res) => {
       });
 
       if (createAuthResult.error) {
-        return res.status(500).send(createAuthResult.error.message);
-      }
+        const message = String(createAuthResult.error.message || "").toLowerCase();
+        const alreadyExists =
+          message.includes("already") ||
+          message.includes("registered") ||
+          message.includes("exists");
 
-      authData = createAuthResult.data;
+        if (!alreadyExists) {
+          return res.status(500).send(createAuthResult.error.message);
+        }
+      } else {
+        authData = createAuthResult.data;
+      }
     }
 
     const rowPayload = {
       email: clientEmail,
       business_id: businessId,
-      must_reset_password: isDashboardPlan,
+      must_reset_password: isDashboardPlan && !existingByEmail?.length,
       notifications_enabled: notificationsEnabled,
       notification_email: notificationEmail,
       plan_tier: planTier,
@@ -1951,16 +2074,6 @@ app.post("/api/review", async (req, res) => {
 app.post("/import-google-review", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
-    const profile = await getAdminProfileByEmail(user.email);
-
-    if ((profile.plan_tier || "").toLowerCase() !== PLAN_PREMIUM) {
-      return res.status(403).send("Google review import is Premium only.");
-    }
-
-    if (!profile.google_import_enabled) {
-      return res.status(403).send("Google review import is disabled for this account.");
-    }
-
     const name = (req.body.name || "").trim();
     const text = (req.body.text || "").trim();
     const image = (req.body.image || "").trim() || null;
@@ -1973,7 +2086,16 @@ app.post("/import-google-review", async (req, res) => {
     if (!parsedRating || Number.isNaN(parsedRating) || parsedRating < 1 || parsedRating > 5) {
       return res.status(400).send("Invalid rating");
     }
-    if (businessId !== profile.business_id) return res.status(403).send("Business mismatch.");
+
+    const profile = await getAuthorizedProfileForBusiness(user.email, businessId);
+
+    if ((profile.plan_tier || "").toLowerCase() !== PLAN_PREMIUM) {
+      return res.status(403).send("Google review import is Premium only.");
+    }
+
+    if (!profile.google_import_enabled) {
+      return res.status(403).send("Google review import is disabled for this account.");
+    }
 
     const { error } = await supabaseAdmin.from("reviews").insert([{
       name,
@@ -1999,17 +2121,27 @@ app.post("/import-google-review", async (req, res) => {
 app.put("/reviews/:id", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
-    const profile = await getAdminProfileByEmail(user.email);
+    const allowedBusinessIds = await getAuthorizedBusinessIdsForEmail(user.email);
 
-    if (!PAID_DASHBOARD_PLANS.includes((profile.plan_tier || "").toLowerCase())) {
-      return res.status(403).send("This plan does not include dashboard access.");
+    const { data: reviewRows, error: reviewErr } = await supabaseAdmin
+      .from("reviews")
+      .select("id,business_id")
+      .eq("id", req.params.id)
+      .limit(1);
+
+    if (reviewErr) return res.status(500).send(reviewErr.message);
+    if (!reviewRows || !reviewRows.length) return res.status(404).send("Review not found.");
+
+    const reviewBusinessId = reviewRows[0].business_id;
+    if (!allowedBusinessIds.includes(reviewBusinessId)) {
+      return res.status(403).send("You do not have access to this review.");
     }
 
     const { error } = await supabaseAdmin
       .from("reviews")
       .update({ approved: !!req.body.approved })
       .eq("id", req.params.id)
-      .eq("business_id", profile.business_id);
+      .eq("business_id", reviewBusinessId);
 
     if (error) return res.status(500).send(error.message);
     res.json({ success: true });
@@ -2022,17 +2154,27 @@ app.put("/reviews/:id", async (req, res) => {
 app.delete("/reviews/:id", async (req, res) => {
   try {
     const user = await getUserFromBearer(req);
-    const profile = await getAdminProfileByEmail(user.email);
+    const allowedBusinessIds = await getAuthorizedBusinessIdsForEmail(user.email);
 
-    if (!PAID_DASHBOARD_PLANS.includes((profile.plan_tier || "").toLowerCase())) {
-      return res.status(403).send("This plan does not include dashboard access.");
+    const { data: reviewRows, error: reviewErr } = await supabaseAdmin
+      .from("reviews")
+      .select("id,business_id")
+      .eq("id", req.params.id)
+      .limit(1);
+
+    if (reviewErr) return res.status(500).send(reviewErr.message);
+    if (!reviewRows || !reviewRows.length) return res.status(404).send("Review not found.");
+
+    const reviewBusinessId = reviewRows[0].business_id;
+    if (!allowedBusinessIds.includes(reviewBusinessId)) {
+      return res.status(403).send("You do not have access to this review.");
     }
 
     const { error } = await supabaseAdmin
       .from("reviews")
       .delete()
       .eq("id", req.params.id)
-      .eq("business_id", profile.business_id);
+      .eq("business_id", reviewBusinessId);
 
     if (error) return res.status(500).send(error.message);
     res.json({ success: true });
