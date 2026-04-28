@@ -65,11 +65,10 @@
       color: #fff;
       margin: 4px 0;
     }
-    .btn:hover {
-      transform: translateY(-1px);
-    }
+    .btn:hover { transform: translateY(-1px); }
     .btn.green { background: #16a34a; }
     .btn.orange { background: #f59e0b; color: #111827; }
+    .btn.red { background: #dc2626; color: #fff; }
     .btn.light {
       background: #eef4ff;
       color: #1e3a8a;
@@ -90,9 +89,7 @@
     .status.error { color: var(--error); }
     .status.warn { color: var(--warning); }
 
-    .table-wrap {
-      overflow: auto;
-    }
+    .table-wrap { overflow: auto; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -156,7 +153,18 @@
     .action-stack {
       display: grid;
       gap: 8px;
-      min-width: 180px;
+      min-width: 190px;
+    }
+
+    .action-select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #cfdcf3;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e3a8a;
     }
 
     .grid-two {
@@ -171,9 +179,7 @@
       gap: 12px;
     }
 
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
 
     .topbar {
       background: linear-gradient(90deg, var(--secondary), var(--primary));
@@ -217,7 +223,7 @@
       <div class="sub">Enter the AppLogix admin token to unlock billing, partner tracking, and Premium Google review import.</div>
 
       <label for="adminTokenInput" style="display:block;font-weight:700;margin-bottom:8px;">Admin Token</label>
-      <input id="adminTokenInput" class="input" type="password" placeholder="Enter admin token" />
+      <input id="adminTokenInput" class="input" type="password" placeholder="Enter admin token" autocomplete="off" />
       <div style="margin-top:12px;">
         <button class="btn" id="unlockBtn">Unlock Dashboard</button>
       </div>
@@ -232,7 +238,7 @@
       <div class="card">
         <div class="topbar">AppLogix Internal Ops</div>
         <div class="title">Billing + Import Dashboard</div>
-        <div class="sub">Manage client billing, partner payouts, receipts, invoices, and Premium Google review imports.</div>
+        <div class="sub">Manage client billing, partner payouts, receipts, invoices, past-due warnings, deactivations, and Premium Google review imports.</div>
         <div class="controls">
           <button class="btn" onclick="loadClients()">Refresh Billing Data</button>
           <button class="btn light" onclick="sendReminders()">Send Billing Reminder Batch</button>
@@ -320,7 +326,7 @@
   </div>
 
   <script>
-    let ADMIN_TOKEN = sessionStorage.getItem("applogix_admin_token") || "";
+    let ADMIN_TOKEN = "";
     let clientRows = [];
     let importClients = [];
 
@@ -378,7 +384,6 @@
 
     function clearTokenAndLock() {
       ADMIN_TOKEN = "";
-      sessionStorage.removeItem("applogix_admin_token");
       clientRows = [];
       importClients = [];
       document.getElementById("rows").innerHTML = "";
@@ -416,11 +421,11 @@
       try {
         await verifyToken(token);
         ADMIN_TOKEN = token;
-        sessionStorage.setItem("applogix_admin_token", token);
         showUnlockedUI();
         await Promise.all([loadClients(), loadImportClients()]);
         setStatus(loginStatus, "", "");
       } catch (err) {
+        ADMIN_TOKEN = "";
         setStatus(loginStatus, err.message || "Access failed.", "error");
       }
     }
@@ -459,7 +464,7 @@
       const q = document.getElementById("filterInput").value.trim().toLowerCase();
 
       const rows = clientRows.filter(r => {
-        const blob = `${r.businessName} ${r.businessId} ${r.planTier} ${r.deliveryType} ${r.partnerName}`.toLowerCase();
+        const blob = `${r.businessName} ${r.businessId} ${r.planTier} ${r.deliveryType} ${r.partnerName} ${r.billingStatus}`.toLowerCase();
         return !q || blob.includes(q);
       });
 
@@ -468,7 +473,10 @@
           <td>
             <strong>${escapeHtml(r.businessName)}</strong><br>
             <span style="color:#64748b">${escapeHtml(r.businessId)}</span><br>
-            <span style="color:#64748b">${escapeHtml(r.email || "")}</span>
+            <span style="color:#64748b">${escapeHtml(r.email || "")}</span><br>
+            <span style="color:${r.active === false ? '#b91c1c' : '#15803d'};font-weight:800;">
+              ${r.active === false ? "Inactive" : "Active"}
+            </span>
           </td>
           <td>
             <strong>${escapeHtml((r.planTier || "").toUpperCase())}</strong><br>
@@ -500,12 +508,43 @@
           </td>
           <td>
             <div class="action-stack">
-              <button class="btn orange" onclick="sendInvoice('${escapeJs(r.businessId)}')">Send Invoice</button>
-              <button class="btn green" onclick="recordPayment('${escapeJs(r.businessId)}')">Record Payment</button>
+              <select class="action-select" onchange="handleClientAction(this, '${escapeJs(r.businessId)}')">
+                <option value="">Choose Action</option>
+                <option value="sendInvoice">Send Invoice</option>
+                <option value="recordPayment">Record Payment</option>
+                <option value="pastDueWarning">Send Past-Due Warning</option>
+                <option value="deactivate">Deactivate Client</option>
+              </select>
             </div>
           </td>
         </tr>
       `).join("");
+    }
+
+    async function handleClientAction(selectEl, businessId) {
+      const action = selectEl.value;
+      selectEl.value = "";
+
+      if (!action) return;
+
+      if (action === "sendInvoice") {
+        await sendInvoice(businessId);
+        return;
+      }
+
+      if (action === "recordPayment") {
+        await recordPayment(businessId);
+        return;
+      }
+
+      if (action === "pastDueWarning") {
+        await sendPastDueWarning(businessId);
+        return;
+      }
+
+      if (action === "deactivate") {
+        await deactivateClient(businessId);
+      }
     }
 
     async function sendInvoice(businessId) {
@@ -545,8 +584,59 @@
         body: JSON.stringify({ paidDate })
       });
 
-      status.textContent = res.ok ? "Payment recorded and receipt sent." : await res.text();
+      status.textContent = res.ok ? "Payment recorded and receipt sent. Client marked active." : await res.text();
       await loadClients();
+    }
+
+    async function sendPastDueWarning(businessId) {
+      const confirmed = confirm("Send a past-due warning email to this client? This email says the account may be deactivated in 21 days.");
+      if (!confirmed) return;
+
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Sending past-due warning...";
+
+      const res = await fetch("/ops-send-past-due-warning/" + encodeURIComponent(businessId), {
+        method: "POST",
+        headers: {
+          "x-admin-token": getToken()
+        }
+      });
+
+      if (!res.ok) {
+        status.textContent = await res.text();
+        return;
+      }
+
+      const data = await res.json();
+      status.textContent = `Past-due warning sent. Billing status set to past_due. Warning period: ${data.warningDays || 21} days.`;
+      await loadClients();
+    }
+
+    async function deactivateClient(businessId) {
+      const confirmed = confirm("Deactivate this client? This keeps the record for billing and accounts receivable, but disables active public/client functionality.");
+      if (!confirmed) return;
+
+      const secondConfirm = confirm("Final confirmation: deactivate this client now?");
+      if (!secondConfirm) return;
+
+      const status = document.getElementById("opsStatus");
+      status.textContent = "Deactivating client...";
+
+      const res = await fetch("/ops-deactivate-client/" + encodeURIComponent(businessId), {
+        method: "POST",
+        headers: {
+          "x-admin-token": getToken()
+        }
+      });
+
+      if (!res.ok) {
+        status.textContent = await res.text();
+        return;
+      }
+
+      status.textContent = "Client deactivated. Records preserved.";
+      await loadClients();
+      await loadImportClients();
     }
 
     async function sendReminders() {
@@ -729,22 +819,7 @@
       }
     });
 
-    async function boot() {
-      if (!ADMIN_TOKEN) {
-        showLockedUI();
-        return;
-      }
-
-      try {
-        await verifyToken(ADMIN_TOKEN);
-        showUnlockedUI();
-        await Promise.all([loadClients(), loadImportClients()]);
-      } catch (_) {
-        clearTokenAndLock();
-      }
-    }
-
-    boot();
+    showLockedUI();
   </script>
 </body>
 </html>
