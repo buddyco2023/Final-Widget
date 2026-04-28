@@ -26,6 +26,12 @@
       color: var(--text);
     }
 
+    body.premium-mode {
+      background:
+        radial-gradient(circle at top left, rgba(212, 175, 55, 0.22), transparent 32%),
+        linear-gradient(180deg, #f7f2e8 0%, #f8fbff 100%);
+    }
+
     .wrap {
       max-width: 1050px;
       margin: 0 auto;
@@ -41,14 +47,60 @@
       overflow: hidden;
     }
 
+    body.premium-mode .card {
+      border-color: #e6d6aa;
+      box-shadow: 0 18px 45px rgba(15,23,42,.14);
+    }
+
     .topbar {
-      height: 58px;
+      min-height: 58px;
       background: linear-gradient(90deg, var(--secondary), var(--primary));
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body.premium-mode .topbar {
+      background: linear-gradient(90deg, #0f172a, #1f2f46);
+    }
+
+    .premium-brand {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      font-weight: 900;
+      letter-spacing: .3px;
+    }
+
+    body.premium-mode .premium-brand {
+      display: flex;
+    }
+
+    .premium-house-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fff7d6, #d4af37);
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.22);
     }
 
     .hero-body {
       padding: 30px 24px;
       text-align: center;
+    }
+
+    body.premium-mode .hero-body {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.9)),
+        radial-gradient(circle at top right, rgba(212,175,55,.25), transparent 36%);
+      padding: 38px 24px;
     }
 
     .logo-mark {
@@ -66,6 +118,26 @@
       font-weight: 900;
     }
 
+    body.premium-mode .logo-mark {
+      width: 96px;
+      height: 96px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, #0f172a, #1f2f46);
+      color: #d4af37;
+      border: 2px solid #d4af37;
+      box-shadow: 0 16px 35px rgba(15,23,42,.25);
+      font-size: 20px;
+      line-height: 1;
+      flex-direction: column;
+    }
+
+    .logo-small {
+      font-size: 11px;
+      color: #fff7d6;
+      margin-top: 5px;
+      letter-spacing: 1px;
+    }
+
     h1 {
       margin: 0 0 10px;
       color: #173b96;
@@ -77,6 +149,11 @@
       color: #173b96;
     }
 
+    body.premium-mode h1,
+    body.premium-mode h2 {
+      color: #0f172a;
+    }
+
     p {
       line-height: 1.55;
     }
@@ -85,6 +162,23 @@
       color: var(--muted);
       max-width: 760px;
       margin: 0 auto;
+    }
+
+    .premium-note {
+      display: none;
+      max-width: 760px;
+      margin: 18px auto 0;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #fff7d6;
+      border: 1px solid #e6d6aa;
+      color: #6b4f00;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    body.premium-mode .premium-note {
+      display: block;
     }
 
     .summary-grid {
@@ -102,11 +196,22 @@
       text-align: center;
     }
 
+    body.premium-mode .stat,
+    body.premium-mode .review,
+    body.premium-mode .feature {
+      background: #fffaf0;
+      border-color: #e6d6aa;
+    }
+
     .stat-number {
       font-size: 2rem;
       font-weight: 900;
       color: #173b96;
       margin-bottom: 5px;
+    }
+
+    body.premium-mode .stat-number {
+      color: #0f172a;
     }
 
     .stat-label {
@@ -142,12 +247,17 @@
       letter-spacing: 1px;
     }
 
+    body.premium-mode .stars {
+      color: #d4af37;
+    }
+
     .review img {
       width: 100%;
       border-radius: 14px;
       margin-top: 10px;
       height: 150px;
       object-fit: cover;
+      box-shadow: 0 10px 22px rgba(15,23,42,.12);
     }
 
     .feature-grid {
@@ -168,6 +278,10 @@
       font-weight: 900;
       color: #173b96;
       margin-bottom: 8px;
+    }
+
+    body.premium-mode .feature-title {
+      color: #0f172a;
     }
 
     .feature p {
@@ -192,6 +306,11 @@
     .compare th {
       color: #173b96;
       background: #f8fbff;
+    }
+
+    body.premium-mode .compare th {
+      color: #0f172a;
+      background: #fffaf0;
     }
 
     .check {
@@ -222,6 +341,12 @@
       color: white;
     }
 
+    body.premium-mode .toggle-btn.active {
+      background: linear-gradient(180deg, #d4af37, #9f7929);
+      color: #111827;
+      border-color: #9f7929;
+    }
+
     .form {
       padding: 22px;
     }
@@ -235,6 +360,12 @@
       margin-bottom: 12px;
       font-size: 1rem;
       background: #f9fbff;
+    }
+
+    body.premium-mode .input,
+    body.premium-mode .textarea {
+      background: #fffaf0;
+      border-color: #e6d6aa;
     }
 
     .textarea {
@@ -252,6 +383,11 @@
       font-weight: 900;
       cursor: pointer;
       font-size: 1rem;
+    }
+
+    body.premium-mode .btn {
+      background: linear-gradient(180deg, #d4af37, #9f7929);
+      color: #111827;
     }
 
     .note {
@@ -277,6 +413,11 @@
       text-align: center;
       background: #f8fbff;
       border-top: 1px solid var(--border);
+    }
+
+    body.premium-mode .lead-box {
+      background: #fffaf0;
+      border-top-color: #e6d6aa;
     }
 
     .lead-row {
@@ -320,90 +461,80 @@
 <div class="wrap">
 
   <section class="card">
-    <div class="topbar"></div>
+    <div class="topbar">
+      <div class="premium-brand">
+        <div class="premium-house-logo">⌂</div>
+        <div>NorthHaven Realty</div>
+      </div>
+    </div>
+
     <div class="hero-body">
       <div class="logo-mark" id="logoMark">A</div>
       <h1 id="demoTitle">AppLogix Hosted Review Demo</h1>
       <p class="sub" id="demoSubtitle">
         Collect public testimonials, private feedback, and review submissions through one clean hosted page.
       </p>
+
+      <div class="premium-note">
+        Premium branding preview shown with a fictional real-estate-style brand. Premium can include custom colours, logo display, branded page styling, and Google review imports.
+      </div>
     </div>
 
     <div class="demo-toggle">
-      <button class="toggle-btn active" onclick="setDemo('default')">AppLogix Theme</button>
-      <button class="toggle-btn" onclick="setDemo('premium')">Premium Branding</button>
-      <button class="toggle-btn" onclick="setDemo('internal')">Internal Feedback</button>
+      <button class="toggle-btn active" onclick="setDemo('default', this)">AppLogix Theme</button>
+      <button class="toggle-btn" onclick="setDemo('premium', this)">Premium Branding</button>
+      <button class="toggle-btn" onclick="setDemo('internal', this)">Internal Feedback</button>
     </div>
   </section>
 
   <section class="card">
     <div class="summary-grid">
       <div class="stat">
-        <div class="stat-number">4.8</div>
-        <div class="stat-label">Average Rating</div>
+        <div class="stat-number" id="statOne">4.8</div>
+        <div class="stat-label" id="statOneLabel">Average Rating</div>
       </div>
       <div class="stat">
-        <div class="stat-number">127</div>
-        <div class="stat-label">Reviews Collected</div>
+        <div class="stat-number" id="statTwo">127</div>
+        <div class="stat-label" id="statTwoLabel">Reviews Collected</div>
       </div>
       <div class="stat">
-        <div class="stat-number">18</div>
-        <div class="stat-label">Pending Review</div>
+        <div class="stat-number" id="statThree">18</div>
+        <div class="stat-label" id="statThreeLabel">Pending Review</div>
       </div>
       <div class="stat">
-        <div class="stat-number">3</div>
-        <div class="stat-label">Hosted Pages</div>
+        <div class="stat-number" id="statFour">3</div>
+        <div class="stat-label" id="statFourLabel">Hosted Pages</div>
       </div>
     </div>
   </section>
 
   <section class="card">
     <div class="hero-body">
-      <h2>Example Reviews</h2>
-      <p class="sub">Demo content is fictional. This shows how approved reviews could appear publicly.</p>
+      <h2 id="reviewHeading">Example Reviews</h2>
+      <p class="sub" id="reviewSub">Demo content is fictional. This shows how approved reviews could appear publicly.</p>
     </div>
 
-    <div class="reviews-grid">
-      <div class="review">
-        <strong>Sarah M.</strong>
-        <div class="stars">★★★★★</div>
-        <div>Super easy to use. We started collecting reviews instantly.</div>
-        <img src="https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=800&q=80" alt="Demo review image">
-      </div>
-
-      <div class="review">
-        <strong>James R.</strong>
-        <div class="stars">★★★★★</div>
-        <div>Our website finally looks professional with real customer feedback displayed clearly.</div>
-      </div>
-
-      <div class="review">
-        <strong>Olivia K.</strong>
-        <div class="stars">★★★★☆</div>
-        <div>The hosted page is simple, clean, and easy to share with customers.</div>
-        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80" alt="Demo review image">
-      </div>
-    </div>
+    <div class="reviews-grid" id="reviewsGrid"></div>
   </section>
 
   <section class="card">
     <div class="hero-body">
-      <h2>What the Admin Dashboard Controls</h2>
-      <p class="sub">AppLogix is not just a form. The dashboard lets clients manage visibility, QR codes, review approvals, and page-specific feedback.</p>
+      <h2 id="dashboardHeading">What the Admin Dashboard Controls</h2>
+      <p class="sub" id="dashboardSub">AppLogix is not just a form. The dashboard lets clients manage visibility, QR codes, review approvals, and page-specific feedback.</p>
     </div>
 
     <div class="feature-grid">
       <div class="feature">
-        <div class="feature-title">Approve or Hide Reviews</div>
-        <p>Keep full control over what becomes public.</p>
+        <div class="feature-title" id="featureOneTitle">Approve or Hide Reviews</div>
+        <p id="featureOneText">Keep full control over what becomes public.</p>
       </div>
       <div class="feature">
-        <div class="feature-title">QR Code Sharing</div>
-        <p>Generate review links for signs, cards, emails, or websites.</p>
+        <div class="feature-title" id="featureTwoTitle">QR Code Sharing</div>
+        <p id="featureTwoText">Generate review links for signs, cards, emails, or websites.</p>
       </div>
       <div class="feature">
-        <div class="feature-title">Multiple Hosted Pages</div>
-        <p>Use separate pages for listings, locations, teams, projects, or campaigns.</p>
+        <div class="feature-title" id="featureThreeTitle">Multiple Hosted Pages</div>
+        <p id="featureThreeText">Use separate pages for listings, locations, teams, projects, or campaigns.</p>
       </div>
     </div>
   </section>
@@ -449,16 +580,16 @@
   </section>
 
   <section class="card form">
-    <h2>Try the Demo Form</h2>
+    <h2 id="formHeading">Try the Demo Form</h2>
     <input class="input" id="demoName" placeholder="Your name">
     <textarea class="textarea" id="demoText" placeholder="Share your experience..."></textarea>
-    <button class="btn" onclick="fakeSubmit()">Submit Review</button>
+    <button class="btn" id="submitBtn" onclick="fakeSubmit()">Submit Review</button>
 
     <div class="success-box" id="successBox">
       Thank you. Your demo review was submitted for spam screening prior to being displayed.
     </div>
 
-    <div class="note">
+    <div class="note" id="formNote">
       Reviews are submitted for spam screening prior to being displayed.
     </div>
   </section>
@@ -485,35 +616,211 @@
 </div>
 
 <script>
-  function setDemo(mode) {
-    document.querySelectorAll(".toggle-btn").forEach(btn => btn.classList.remove("active"));
-    event.target.classList.add("active");
+  const publicReviews = [
+    {
+      name: "Sarah M.",
+      stars: "★★★★★",
+      text: "Super easy to use. We started collecting reviews instantly.",
+      image: "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      name: "James R.",
+      stars: "★★★★★",
+      text: "Our website finally looks professional with real customer feedback displayed clearly.",
+      image: ""
+    },
+    {
+      name: "Olivia K.",
+      stars: "★★★★☆",
+      text: "The hosted page is simple, clean, and easy to share with customers.",
+      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80"
+    }
+  ];
+
+  const internalFeedback = [
+    {
+      name: "Anonymous Team Member",
+      stars: "★★★★☆",
+      text: "The project is moving in the right direction, but clearer timelines would help everyone stay aligned.",
+      image: ""
+    },
+    {
+      name: "Anonymous Client",
+      stars: "★★★★★",
+      text: "I felt more comfortable giving honest feedback privately instead of saying everything face-to-face.",
+      image: ""
+    },
+    {
+      name: "Anonymous Staff Feedback",
+      stars: "★★★★☆",
+      text: "The new process is better overall, but a simple checklist would reduce confusion during handoffs.",
+      image: ""
+    }
+  ];
+
+  function renderReviews(items) {
+    document.getElementById("reviewsGrid").innerHTML = items.map(item => `
+      <div class="review">
+        <strong>${item.name}</strong>
+        <div class="stars">${item.stars}</div>
+        <div>${item.text}</div>
+        ${item.image ? `<img src="${item.image}" alt="Demo review image">` : ""}
+      </div>
+    `).join("");
+  }
+
+  function setActiveButton(btn) {
+    document.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
+  function setDemo(mode, btn) {
+    setActiveButton(btn);
+    document.getElementById("successBox").style.display = "none";
+    document.getElementById("leadBox").style.display = "none";
 
     if (mode === "default") {
+      document.body.classList.remove("premium-mode");
+
       document.documentElement.style.setProperty("--primary", "#2563eb");
       document.documentElement.style.setProperty("--secondary", "#4ea3ff");
+      document.documentElement.style.setProperty("--gold", "#ffd84d");
+
       document.getElementById("logoMark").textContent = "A";
       document.getElementById("demoTitle").textContent = "AppLogix Hosted Review Demo";
       document.getElementById("demoSubtitle").textContent =
         "Collect public testimonials, private feedback, and review submissions through one clean hosted page.";
+
+      document.getElementById("statOne").textContent = "4.8";
+      document.getElementById("statOneLabel").textContent = "Average Rating";
+      document.getElementById("statTwo").textContent = "127";
+      document.getElementById("statTwoLabel").textContent = "Reviews Collected";
+      document.getElementById("statThree").textContent = "18";
+      document.getElementById("statThreeLabel").textContent = "Pending Review";
+      document.getElementById("statFour").textContent = "3";
+      document.getElementById("statFourLabel").textContent = "Hosted Pages";
+
+      document.getElementById("reviewHeading").textContent = "Example Reviews";
+      document.getElementById("reviewSub").textContent =
+        "Demo content is fictional. This shows how approved reviews could appear publicly.";
+
+      document.getElementById("dashboardHeading").textContent = "What the Admin Dashboard Controls";
+      document.getElementById("dashboardSub").textContent =
+        "AppLogix is not just a form. The dashboard lets clients manage visibility, QR codes, review approvals, and page-specific feedback.";
+
+      document.getElementById("featureOneTitle").textContent = "Approve or Hide Reviews";
+      document.getElementById("featureOneText").textContent = "Keep full control over what becomes public.";
+      document.getElementById("featureTwoTitle").textContent = "QR Code Sharing";
+      document.getElementById("featureTwoText").textContent = "Generate review links for signs, cards, emails, or websites.";
+      document.getElementById("featureThreeTitle").textContent = "Multiple Hosted Pages";
+      document.getElementById("featureThreeText").textContent = "Use separate pages for listings, locations, teams, projects, or campaigns.";
+
+      document.getElementById("formHeading").textContent = "Try the Demo Form";
+      document.getElementById("demoName").placeholder = "Your name";
+      document.getElementById("demoText").placeholder = "Share your experience...";
+      document.getElementById("submitBtn").textContent = "Submit Review";
+      document.getElementById("successBox").textContent =
+        "Thank you. Your demo review was submitted for spam screening prior to being displayed.";
+      document.getElementById("formNote").textContent =
+        "Reviews are submitted for spam screening prior to being displayed.";
+
+      renderReviews(publicReviews);
     }
 
     if (mode === "premium") {
-      document.documentElement.style.setProperty("--primary", "#173b96");
-      document.documentElement.style.setProperty("--secondary", "#60a5fa");
-      document.getElementById("logoMark").textContent = "★";
-      document.getElementById("demoTitle").textContent = "Premium Branded Review Page";
+      document.body.classList.add("premium-mode");
+
+      document.documentElement.style.setProperty("--primary", "#0f172a");
+      document.documentElement.style.setProperty("--secondary", "#1f2f46");
+      document.documentElement.style.setProperty("--gold", "#d4af37");
+
+      document.getElementById("logoMark").innerHTML = "NH<div class='logo-small'>REALTY</div>";
+      document.getElementById("demoTitle").textContent = "NorthHaven Realty Reviews";
       document.getElementById("demoSubtitle").textContent =
-        "Premium pages can show stronger branding, custom colours, logo display, and Google review imports.";
+        "A premium branded hosted review page with a custom display name, richer theme, logo-style branding, and polished client-facing presentation.";
+
+      document.getElementById("statOne").textContent = "4.9";
+      document.getElementById("statOneLabel").textContent = "Average Rating";
+      document.getElementById("statTwo").textContent = "84";
+      document.getElementById("statTwoLabel").textContent = "Reviews Collected";
+      document.getElementById("statThree").textContent = "9";
+      document.getElementById("statThreeLabel").textContent = "Pending Review";
+      document.getElementById("statFour").textContent = "5";
+      document.getElementById("statFourLabel").textContent = "Hosted Pages";
+
+      document.getElementById("reviewHeading").textContent = "Example Reviews";
+      document.getElementById("reviewSub").textContent =
+        "Demo content is fictional. Premium changes the branded presentation while keeping the same review system underneath.";
+
+      document.getElementById("dashboardHeading").textContent = "Premium Branding, Same Dashboard Control";
+      document.getElementById("dashboardSub").textContent =
+        "Premium pages keep the AppLogix approval, QR, and page-management workflow while adding a stronger branded front-end.";
+
+      document.getElementById("featureOneTitle").textContent = "Client-Branded Display";
+      document.getElementById("featureOneText").textContent = "Show custom colours, brand name, logo treatment, and a more premium visual style.";
+      document.getElementById("featureTwoTitle").textContent = "Google Review Imports";
+      document.getElementById("featureTwoText").textContent = "Premium can support imported Google reviews alongside newly collected feedback.";
+      document.getElementById("featureThreeTitle").textContent = "Individual Premium Pages";
+      document.getElementById("featureThreeText").textContent = "Use branded hosted pages for listings, teams, campaigns, locations, or projects.";
+
+      document.getElementById("formHeading").textContent = "Try the Demo Form";
+      document.getElementById("demoName").placeholder = "Your name";
+      document.getElementById("demoText").placeholder = "Share your experience...";
+      document.getElementById("submitBtn").textContent = "Submit Review";
+      document.getElementById("successBox").textContent =
+        "Thank you. Your demo review was submitted for spam screening prior to being displayed.";
+      document.getElementById("formNote").textContent =
+        "Reviews are submitted for spam screening prior to being displayed.";
+
+      renderReviews(publicReviews);
     }
 
     if (mode === "internal") {
+      document.body.classList.remove("premium-mode");
+
       document.documentElement.style.setProperty("--primary", "#334155");
       document.documentElement.style.setProperty("--secondary", "#94a3b8");
+      document.documentElement.style.setProperty("--gold", "#ffd84d");
+
       document.getElementById("logoMark").textContent = "✓";
       document.getElementById("demoTitle").textContent = "Internal Feedback Collection";
       document.getElementById("demoSubtitle").textContent =
-        "Use hosted pages privately for honest feedback from teams, projects, clients, or listings.";
+        "Use hosted pages privately to collect honest feedback from teams, projects, clients, listings, departments, or events.";
+
+      document.getElementById("statOne").textContent = "4.6";
+      document.getElementById("statOneLabel").textContent = "Average Score";
+      document.getElementById("statTwo").textContent = "42";
+      document.getElementById("statTwoLabel").textContent = "Feedback Items";
+      document.getElementById("statThree").textContent = "11";
+      document.getElementById("statThreeLabel").textContent = "Needs Review";
+      document.getElementById("statFour").textContent = "4";
+      document.getElementById("statFourLabel").textContent = "Internal Pages";
+
+      document.getElementById("reviewHeading").textContent = "Example Internal Feedback";
+      document.getElementById("reviewSub").textContent =
+        "Demo content is fictional. Anonymous internal feedback can be more honest and more useful.";
+
+      document.getElementById("dashboardHeading").textContent = "Private Feedback, Managed in One Dashboard";
+      document.getElementById("dashboardSub").textContent =
+        "Feedback can stay internal, be reviewed by an admin, or be approved for public display when appropriate.";
+
+      document.getElementById("featureOneTitle").textContent = "Anonymous Collection";
+      document.getElementById("featureOneText").textContent = "Let people share honest feedback without pressure or awkward conversations.";
+      document.getElementById("featureTwoTitle").textContent = "Team and Project Pages";
+      document.getElementById("featureTwoText").textContent = "Create dedicated pages for departments, launches, listings, campaigns, or events.";
+      document.getElementById("featureThreeTitle").textContent = "Keep Private or Publish";
+      document.getElementById("featureThreeText").textContent = "Admins can keep feedback internal or approve selected submissions for display.";
+
+      document.getElementById("formHeading").textContent = "Submit Internal Feedback";
+      document.getElementById("demoName").placeholder = "Name optional";
+      document.getElementById("demoText").placeholder = "Share constructive feedback...";
+      document.getElementById("submitBtn").textContent = "Submit Feedback";
+      document.getElementById("successBox").textContent =
+        "Thank you. Your demo feedback was submitted for review.";
+      document.getElementById("formNote").textContent =
+        "Feedback is submitted for review prior to being displayed or shared.";
+
+      renderReviews(internalFeedback);
     }
   }
 
@@ -524,6 +831,8 @@
   function leadDemo() {
     document.getElementById("leadBox").style.display = "block";
   }
+
+  renderReviews(publicReviews);
 </script>
 
 </body>
